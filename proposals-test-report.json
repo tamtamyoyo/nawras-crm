@@ -1,0 +1,109 @@
+{
+  "summary": {
+    "totalTests": 13,
+    "passed": 5,
+    "failed": 8,
+    "passRate": "38.5%",
+    "highSeverityIssues": 2,
+    "mediumSeverityIssues": 5,
+    "lowSeverityIssues": 1
+  },
+  "results": [
+    {
+      "test": "Database Connection",
+      "status": "PASS",
+      "details": "Connected successfully, found 1 proposals",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:23.197Z"
+    },
+    {
+      "test": "Proposal CRUD",
+      "status": "FAIL",
+      "details": "CRUD operation failed: new row violates row-level security policy for table \"proposals\"",
+      "severity": "high",
+      "timestamp": "2025-09-18T09:56:25.037Z"
+    },
+    {
+      "test": "Dashboard Proposals Widget",
+      "status": "FAIL",
+      "details": "Proposals widget not found on dashboard",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:27.564Z"
+    },
+    {
+      "test": "Dashboard Metrics",
+      "status": "FAIL",
+      "details": "No metrics found on dashboard",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:27.569Z"
+    },
+    {
+      "test": "Analytics Charts",
+      "status": "PASS",
+      "details": "Found 188 chart elements",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:31.699Z"
+    },
+    {
+      "test": "Analytics Module",
+      "status": "FAIL",
+      "details": "Analytics test failed: locator.all: SyntaxError: Invalid flags supplied to RegExp constructor 'i, [data-testid*=\"proposal\"]'\n    at new RegExp (<anonymous>)\n    at createTextMatcher (<anonymous>:7696:16)\n    at Object.queryAll (<anonymous>:6613:33)\n    at InjectedScript._queryEngineAll (<anonymous>:6586:49)\n    at InjectedScript.querySelectorAll (<anonymous>:6573:30)\n    at eval (eval at evaluate (:291:30), <anonymous>:2:23)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:31.703Z"
+    },
+    {
+      "test": "Lead to Proposal Conversion",
+      "status": "FAIL",
+      "details": "No lead-to-proposal conversion found",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:33.622Z"
+    },
+    {
+      "test": "Customer Data Sync",
+      "status": "PASS",
+      "details": "Customer selection available in proposals",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:39.382Z"
+    },
+    {
+      "test": "Real-Time Sync",
+      "status": "FAIL",
+      "details": "Real-time sync test failed: new row violates row-level security policy for table \"proposals\"",
+      "severity": "low",
+      "timestamp": "2025-09-18T09:56:42.682Z"
+    },
+    {
+      "test": "Proposals Page Load",
+      "status": "FAIL",
+      "details": "Proposals page did not load properly",
+      "severity": "high",
+      "timestamp": "2025-09-18T09:56:44.828Z"
+    },
+    {
+      "test": "Proposals Filters",
+      "status": "PASS",
+      "details": "Found 2 filter elements",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:44.830Z"
+    },
+    {
+      "test": "Proposals Display",
+      "status": "PASS",
+      "details": "Found 2 proposal elements",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:44.832Z"
+    },
+    {
+      "test": "Proposal Actions",
+      "status": "FAIL",
+      "details": "No action buttons found",
+      "severity": "medium",
+      "timestamp": "2025-09-18T09:56:44.835Z"
+    }
+  ],
+  "recommendations": [
+    "Verify dashboard components are properly integrated with proposals data",
+    "Implement or fix analytics tracking for proposals",
+    "Implement real-time data synchronization across pages"
+  ]
+}

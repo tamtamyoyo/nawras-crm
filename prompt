@@ -1,0 +1,335 @@
+# Nawras CRM System - Project Recreation Guide
+
+## Project Overview
+
+Create a Customer Relationship Management (CRM) system called "Nawras CRM" - a modern web application built with React/Vite, TypeScript, and Supabase for managing customers, leads, deals, proposals, and invoices.
+
+## 1. Technology Stack
+
+### Core Framework
+* **Frontend**: React 18.3.1 with Vite 6.0.7
+* **Language**: TypeScript 5.7.2
+* **Styling**: Tailwind CSS 3.4.17
+* **State Management**: Zustand 5.0.6
+* **Routing**: React Router DOM 6.28.0
+
+### Backend & Database
+* **Backend**: Supabase (PostgreSQL + Auth + Storage)
+* **Authentication**: Supabase Auth
+* **Database**: PostgreSQL via Supabase
+
+### Key Libraries
+* **UI Components**: Radix UI primitives
+* **Icons**: Lucide React 0.468.0
+* **Forms**: React Hook Form 7.60.0 with Zod validation
+* **PDF Generation**: jsPDF 3.0.2
+* **Charts**: Recharts 3.1.0
+* **Testing**: Playwright 1.55.0
+
+## 2. Project Structure
+
+```
+nawras-crm/
+├── .env.local                  # Environment variables
+├── package.json               # Dependencies
+├── vite.config.ts             # Vite configuration
+├── tailwind.config.js         # Tailwind configuration
+├── index.html                 # Main HTML template
+│
+├── app/                       # Main application
+│   ├── layout.tsx             # Root layout
+│   ├── page.tsx               # Home page
+│   ├── globals.css            # Global styles
+│   ├── providers.tsx          # App providers
+│   │
+│   ├── login/                 # Authentication
+│   │   └── page.tsx           # Login page
+│   │
+│   ├── dashboard/             # Main dashboard
+│   │   ├── layout.tsx         # Dashboard layout
+│   │   ├── page.tsx           # Dashboard overview
+│   │   ├── customers/         # Customer management
+│   │   ├── leads/             # Lead management
+│   │   ├── deals/             # Deal pipeline
+│   │   ├── proposals/         # Proposal management
+│   │   ├── invoices/          # Invoice management
+│   │   ├── analytics/         # Analytics & reporting
+│   │   ├── calendar/          # Calendar view
+│   │   ├── settings/          # User settings
+│   │   └── users/             # User management
+│   │
+│   └── api/                   # API routes
+│       └── data/              # Data endpoints
+│
+├── components/                # UI components
+│   ├── ui/                    # Base components
+│   ├── layout/                # Layout components
+│   ├── forms/                 # Form components
+│   ├── tables/                # Data tables
+│   └── charts/                # Chart components
+│
+├── lib/                       # Utilities
+│   ├── supabase.ts            # Supabase client
+│   ├── auth/                  # Auth utilities
+│   ├── utils.ts               # General utilities
+│   └── validation/            # Form validation
+│
+├── hooks/                     # Custom hooks
+│   ├── use-auth.ts            # Authentication
+│   ├── use-mobile.ts          # Mobile detection
+│   └── use-toast.ts           # Notifications
+│
+├── types/                     # TypeScript types
+│   ├── database.ts            # Database types
+│   └── user.ts                # User types
+│
+├── tests/                     # E2E tests
+│   ├── auth/                  # Auth tests
+│   ├── forms/                 # Form tests
+│   └── responsive/            # Responsive tests
+│
+└── public/                    # Static assets
+    ├── favicon.ico
+    └── logo.svg
+```
+
+## 3. Environment Setup
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+## 4. Database Schema
+
+### Core Tables
+
+```sql
+-- Users (extends Supabase auth)
+CREATE TABLE public.users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id),
+    email TEXT NOT NULL UNIQUE,
+    full_name TEXT,
+    role TEXT DEFAULT 'user',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Customers
+CREATE TABLE public.customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    company TEXT,
+    status TEXT DEFAULT 'prospect',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Leads
+CREATE TABLE public.leads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    customer_id UUID REFERENCES public.customers(id),
+    title TEXT NOT NULL,
+    status TEXT DEFAULT 'new',
+    value DECIMAL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Deals
+CREATE TABLE public.deals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    customer_id UUID REFERENCES public.customers(id) NOT NULL,
+    title TEXT NOT NULL,
+    stage TEXT DEFAULT 'prospecting',
+    value DECIMAL NOT NULL,
+    expected_close_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Proposals
+CREATE TABLE public.proposals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    customer_id UUID REFERENCES public.customers(id) NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT DEFAULT 'draft',
+    total_amount DECIMAL NOT NULL,
+    content JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Invoices
+CREATE TABLE public.invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    customer_id UUID REFERENCES public.customers(id) NOT NULL,
+    invoice_number TEXT UNIQUE NOT NULL,
+    total_amount DECIMAL NOT NULL,
+    status TEXT DEFAULT 'draft',
+    due_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Row Level Security
+
+```sql
+-- Enable RLS
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+-- Basic policies
+CREATE POLICY "Users manage own data" ON public.customers FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON public.leads FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON public.deals FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON public.proposals FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON public.invoices FOR ALL USING (auth.uid() = user_id);
+```
+
+## 5. Authentication Setup
+
+### Supabase Client
+
+```typescript
+// lib/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
+
+### Auth Hook
+
+```typescript
+// hooks/use-auth.ts
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+
+export function useAuth() {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return { user, loading }
+}
+```
+
+## 6. Core Features
+
+### Customer Management
+- Create, read, update, delete customers
+- Customer profiles with contact information
+- Status tracking (prospect, active, inactive)
+
+### Lead Management
+- Lead capture and qualification
+- Lead scoring and prioritization
+- Conversion tracking
+
+### Deal Pipeline
+- Visual pipeline with drag-and-drop
+- Deal stages (prospecting, qualification, proposal, negotiation)
+- Revenue forecasting
+
+### Proposal System
+- Create and send proposals
+- PDF generation
+- Proposal tracking and analytics
+
+### Invoice Management
+- Invoice creation and management
+- Payment tracking
+- PDF generation
+
+### Analytics Dashboard
+- Sales metrics and KPIs
+- Revenue charts
+- Performance tracking
+
+## 7. UI Design System
+
+### Colors
+- Primary: Blue (#3B82F6)
+- Secondary: Gray (#6B7280)
+- Success: Green (#10B981)
+- Warning: Yellow (#F59E0B)
+- Error: Red (#EF4444)
+
+### Components
+- Modern card-based layout
+- Consistent spacing and typography
+- Responsive design (mobile-first)
+- Dark/light theme support
+
+## 8. Implementation Steps
+
+1. **Setup Project**
+   - Initialize Vite + React + TypeScript
+   - Install dependencies
+   - Configure Tailwind CSS
+
+2. **Setup Supabase**
+   - Create Supabase project
+   - Run database migrations
+   - Configure authentication
+
+3. **Build Authentication**
+   - Login/logout functionality
+   - Protected routes
+   - User session management
+
+4. **Create Core Pages**
+   - Dashboard overview
+   - Customer management
+   - Lead management
+   - Deal pipeline
+
+5. **Add Advanced Features**
+   - Proposal system
+   - Invoice management
+   - Analytics dashboard
+   - PDF generation
+
+6. **Testing & Deployment**
+   - E2E tests with Playwright
+   - Deploy to Vercel/Netlify
+   - Performance optimization
+
+## 9. Key Files to Create
+
+- `app/layout.tsx` - Root layout with providers
+- `app/login/page.tsx` - Login form with validation
+- `app/dashboard/layout.tsx` - Dashboard with sidebar
+- `components/ui/` - Reusable UI components
+- `lib/supabase.ts` - Database client
+- `hooks/use-auth.ts` - Authentication hook
+- `types/database.ts` - TypeScript types
+
+This guide provides the essential structure and implementation details needed to recreate the Nawras CRM system from scratch.

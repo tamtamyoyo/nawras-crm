@@ -1,0 +1,222 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Lenovo/Desktop/new_simple_crm[39m
+
+[90mstdout[2m | src/pages/Dashboard.test.tsx
+[22m[39m🔧 Supabase config: {
+  url: [32m'https://rnqjqhqhqhqhqhqhqhqh.s...'[39m,
+  key: [32m'eyJ0eXAiOiJKV1QiLCJh...'[39m,
+  env: {
+    AHA_CHROME_CRASHPAD_PIPE_NAME: [32m'\\\\.\\pipe\\crashpad_16336_DJYFJKOFGRPZHQIJ'[39m,
+    ALLUSERSPROFILE: [32m'C:\\ProgramData'[39m,
+    ANDROID_HOME: [32m'C:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk'[39m,
+    APPDATA: [32m'C:\\Users\\Lenovo\\AppData\\Roaming'[39m,
+    BASE_URL: [32m'/'[39m,
+    CHOCOLATEYINSTALL: [32m'C:\\ProgramData\\chocolatey'[39m,
+    COLOR: [32m'0'[39m,
+    COLORTERM: [32m'truecolor'[39m,
+    COMMONPROGRAMFILES: [32m'C:\\Program Files\\Common Files'[39m,
+    [32m'COMMONPROGRAMFILES(X86)'[39m: [32m'C:\\Program Files (x86)\\Common Files'[39m,
+    COMMONPROGRAMW6432: [32m'C:\\Program Files\\Common Files'[39m,
+    COMPUTERNAME: [32m'DESKTOP-J595T7P'[39m,
+    COMSPEC: [32m'C:\\WINDOWS\\system32\\cmd.exe'[39m,
+    DEV: [32m'1'[39m,
+    DRIVERDATA: [32m'C:\\Windows\\System32\\Drivers\\DriverData'[39m,
+    EDITOR: [32m'C:\\WINDOWS\\notepad.exe'[39m,
+    EFC_9244_1262719628: [32m'1'[39m,
+    EFC_9244_1592913036: [32m'1'[39m,
+    EFC_9244_2283032206: [32m'1'[39m,
+    EFC_9244_2775293581: [32m'1'[39m,
+    EFC_9244_3789132940: [32m'1'[39m,
+    FORCE_TTY: [32m''[39m,
+    FPS_BROWSER_APP_PROFILE_STRING: [32m'Internet Explorer'[39m,
+    FPS_BROWSER_USER_PROFILE_STRING: [32m'Default'[39m,
+    GIT_ASKPASS: [32m'c:\\Users\\Lenovo\\AppData\\Local\\Programs\\Trae\\resources\\app\\extensions\\git\\dist\\askpass.sh'[39m,
+    GIT_LFS_PATH: [32m'C:\\Program Files\\Git LFS'[39m,
+    GIT_PAGER: [32m''[39m,
+    HOME: [32m'C:\\Users\\Lenovo'[39m,
+    HOMEDRIVE: [32m'C:'[39m,
+    HOMEPATH: [32m'\\Users\\Lenovo'[39m,
+    INIT_CWD: [32m'C:\\Users\\Lenovo\\Desktop\\new_simple_crm'[39m,
+    LANG: [32m'en_US.UTF-8'[39m,
+    LOCALAPPDATA: [32m'C:\\Users\\Lenovo\\AppData\\Local'[39m,
+    LOGONSERVER: [32m'\\\\DESKTOP-J595T7P'[39m,
+    MODE: [32m'test'[39m,
+    NODE: [32m'C:\\Program Files\\nodejs\\node.exe'[39m,
+    NODE_ENV: [32m'test'[39m,
+    NODE_EXE: [32m'C:\\Program Files\\nodejs\\\\node.exe'[39m,
+    NPM_COMMAND: [32m'exec'[39m,
+    NPM_CONFIG_CACHE: [32m'C:\\Users\\Lenovo\\AppData\\Local\\npm-cache'[39m,
+    NPM_CONFIG_GLOBALCONFIG: [32m'C:\\Users\\Lenovo\\AppData\\Roaming\\npm\\etc\\npmrc'[39m,
+    NPM_CONFIG_GLOBAL_PREFIX: [32m'C:\\Users\\Lenovo\\AppData\\Roaming\\npm'[39m,
+    NPM_CONFIG_INIT_MODULE: [32m'C:\\Users\\Lenovo\\.npm-init.js'[39m,
+    NPM_CONFIG_LOCAL_PREFIX: [32m'C:\\Users\\Lenovo\\Desktop\\new_simple_crm'[39m,
+    NPM_CONFIG_NODE_GYP: [32m'C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\node-gyp\\bin\\node-gyp.js'[39m,
+    NPM_CONFIG_NOPROXY: [32m''[39m,
+    NPM_CONFIG_NPM_VERSION: [32m'10.9.2'[39m,
+    NPM_CONFIG_PREFIX: [32m'C:\\Users\\Lenovo\\AppData\\Roaming\\npm'[39m,
+    NPM_CONFIG_USERCONFIG: [32m'C:\\Users\\Lenovo\\.npmrc'[39m,
+    NPM_CONFIG_USER_AGENT: [32m'npm/10.9.2 node/v22.14.0 win32 x64 workspaces/false'[39m,
+    NPM_EXECPATH: [32m'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js'[39m,
+    NPM_LIFECYCLE_EVENT: [32m'npx'[39m,
+    NPM_LIFECYCLE_SCRIPT: [32m'vitest'[39m,
+    NPM_NODE_EXECPATH: [32m'C:\\Program Files\\nodejs\\node.exe'[39m,
+    NPM_PACKAGE_JSON: [32m'C:\\Users\\Lenovo\\Desktop\\new_simple_crm\\package.json'[39m,
+    NPM_PACKAGE_NAME: [32m'new_simple_crm'[39m,
+    NPM_PACKAGE_VERSION: [32m'0.0.0'[39m,
+    NPM_PREFIX_JS: [32m'C:\\Program Files\\nodejs\\\\node_modules\\npm\\bin\\npm-prefix.js'[39m,
+    NPM_PREFIX_NPX_CLI_JS: [32m'C:\\Users\\Lenovo\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npx-cli.js'[39m,
+    NPX_CLI_JS: [32m'C:\\Program Files\\nodejs\\\\node_modules\\npm\\bin\\npx-cli.js'[39m,
+    NUMBER_OF_PROCESSORS: [32m'8'[39m,
+    OCULUSBASE: [32m'C:\\Program Files\\Oculus\\'[39m,
+    ONEDRIVE: [32m'C:\\Users\\Lenovo\\OneDrive'[39m,
+    OPENSSL_CONF: [32m'C:\\Program Files\\PostgreSQL\\psqlODBC\\etc\\openssl.cnf'[39m,
+    ORIGINAL_XDG_CURRENT_DESKTOP: [32m'undefined'[39m,
+    OS: [32m'Windows_NT'[39m,
+    PAGER: [32m''[39m,
+    PATH: [32m'C:\\Users\\Lenovo\\Desktop\\new_simple_crm\\node_modules\\.bin;C:\\Users\\Lenovo\\Desktop\\new_simple_crm\\node_modules\\.bin;C:\\Users\\Lenovo\\Desktop\\node_modules\\.bin;C:\\Users\\Lenovo\\node_modules\\.bin;C:\\Users\\node_modules\\.bin;C:\\node_modules\\.bin;C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin;c:\\\\Users\\\\Lenovo\\\\.trae\\\\sdks\\\\workspaces\\\\29b78ebe\\\\versions\\\\node\\\\current;c:\\\\Users\\\\Lenovo\\\\.trae\\\\sdks\\\\versions\\\\node\\\\current;C:\\Program Files\\PowerShell\\7;c:\\Users\\Lenovo\\.trae\\sdks\\workspaces\\29b78ebe\\versions\\node\\current;c:\\Users\\Lenovo\\.trae\\sdks\\versions\\node\\current;C:\\Program Files\\Oculus\\Support\\oculus-runtime;c:\\Users\\Mr. Taha\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\flutter\\bin;C:\\Python313\\Scripts\\;C:\\Python313\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\nodejs\\;C:\\ProgramData\\chocolatey\\bin;C:\\Program Files\\dotnet\\;C:\\Program Files\\Git LFS;C:\\Users\\Lenovo\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Lenovo\\AppData\\Local\\Microsoft\\WinGet\\Links;C:\\Program Files\\Git\\cmd;C:\\Program Files\\PowerShell\\7\\;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;c:\\\\Users\\\\Lenovo\\\\.trae\\\\sdks\\\\workspaces\\\\abae64b8\\\\versions\\\\node\\\\current;c:\\\\Users\\\\Lenovo\\\\.trae\\\\sdks\\\\versions\\\\node\\\\current;C:\\Program Files\\PowerShell\\7;C:\\Users\\Lenovo\\Downloads\\Halati\\Halati\\flutter\\bin\\;c:\\Users\\Lenovo\\.trae\\sdks\\workspaces\\abae64b8\\versions\\node\\current;c:\\Users\\Lenovo\\.trae\\sdks\\versions\\node\\current;C:\\Program Files\\Oculus\\Support\\oculus-runtime;c:\\Users\\Mr. Taha\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\flutter\\bin;C:\\Python313\\Scripts\\;C:\\Python313\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\nodejs\\;C:\\ProgramData\\chocolatey\\bin;C:\\Program Files\\dotnet\\;C:\\Program Files\\Git LFS;C:\\Users\\Lenovo\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Lenovo\\AppData\\Local\\Microsoft\\WinGet\\Links;C:\\Program Files\\PowerShell\\7\\;C:\\Program Files\\Git\\cmd;C:\\Users\\Lenovo\\.local\\bin;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Microsoft VS Code Insiders\\bin;C:\\Users\\Lenovo\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Users\\Lenovo\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Users\\Lenovo\\.deno\\bin;C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Qoder\\bin;%USERPROFILE%\\AppData\\Local\\Microsoft\\WindowsApps;'[39m,
+    PATHEXT: [32m'.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL'[39m,
+    POWERSHELL_DISTRIBUTION_CHANNEL: [32m'MSI:Windows 10 Pro'[39m,
+    PROCESSOR_ARCHITECTURE: [32m'AMD64'[39m,
+    PROCESSOR_IDENTIFIER: [32m'Intel64 Family 6 Model 142 Stepping 12, GenuineIntel'[39m,
+    PROCESSOR_LEVEL: [32m'6'[39m,
+    PROCESSOR_REVISION: [32m'8e0c'[39m,
+    PROD: [32m''[39m,
+    PROGRAMDATA: [32m'C:\\ProgramData'[39m,
+    PROGRAMFILES: [32m'C:\\Program Files'[39m,
+    [32m'PROGRAMFILES(X86)'[39m: [32m'C:\\Program Files (x86)'[39m,
+    PROGRAMW6432: [32m'C:\\Program Files'[39m,
+    PROMPT: [32m'$P$G'[39m,
+    PSMODULEPATH: [32m'C:\\Users\\Lenovo\\Documents\\PowerShell\\Modules;C:\\Program Files\\PowerShell\\Modules;c:\\program files\\powershell\\7\\Modules;C:\\Program Files\\WindowsPowerShell\\Modules;C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\Modules'[39m,
+    PUBLIC: [32m'C:\\Users\\Public'[39m,
+    SESSIONNAME: [32m'Console'[39m,
+    SSR: [32m''[39m,
+    SYSTEMDRIVE: [32m'C:'[39m,
+    SYSTEMROOT: [32m'C:\\WINDOWS'[39m,
+    TEMP: [32m'C:\\Users\\Lenovo\\AppData\\Local\\Temp'[39m,
+    TERM_PRODUCT: [32m'Trae'[39m,
+    TERM_PROGRAM: [32m'vscode'[39m,
+    TERM_PROGRAM_VERSION: [32m'1.100.3'[39m,
+    TEST: [32m'true'[39m,
+    TINYPOOL_WORKER_ID: [32m'1'[39m,
+    TMP: [32m'C:\\Users\\Lenovo\\AppData\\Local\\Temp'[39m,
+    TRAE_AI_SHELL_ID: [32m'6'[39m,
+    USERDOMAIN: [32m'DESKTOP-J595T7P'[39m,
+    USERDOMAIN_ROAMINGPROFILE: [32m'DESKTOP-J595T7P'[39m,
+    USERNAME: [32m'Lenovo'[39m,
+    USERPROFILE: [32m'C:\\Users\\Lenovo'[39m,
+    VITEST: [32m'true'[39m,
+    VITEST_MODE: [32m'RUN'[39m,
+    VITEST_POOL_ID: [32m'1'[39m,
+    VITEST_WORKER_ID: [32m'1'[39m,
+    VITE_APP_NAME: [32m'Nawras CRM'[39m,
+    VITE_APP_VERSION: [32m'1.0.0'[39m,
+    VITE_DEV_MODE: [32m'true'[39m,
+    VITE_NODE_ENV: [32m'development'[39m,
+    VITE_OFFLINE_MODE: [32m'true'[39m,
+    VITE_SENTRY_DSN: [32m'your-sentry-dsn-here'[39m,
+    VITE_SUPABASE_ANON_KEY: [32m'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWpxaHFocWhxaHFocWhxaHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3MzI4NzAsImV4cCI6MjA1MTMwODg3MH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'[39m,
+    VITE_SUPABASE_URL: [32m'https://rnqjqhqhqhqhqhqhqhqh.supabase.co'[39m,
+    VSCODE_GIT_ASKPASS_EXTRA_ARGS: [32m''[39m,
+    VSCODE_GIT_ASKPASS_MAIN: [32m'c:\\Users\\Lenovo\\AppData\\Local\\Programs\\Trae\\resources\\app\\extensions\\git\\dist\\askpass-main.js'[39m,
+    VSCODE_GIT_ASKPASS_NODE: [32m'C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Trae\\Trae.exe'[39m,
+    VSCODE_GIT_IPC_HANDLE: [32m'\\\\.\\pipe\\vscode-git-f3eb346485-sock'[39m,
+    VSCODE_INJECTION: [32m'1'[39m,
+    WINDIR: [32m'C:\\WINDOWS'[39m,
+    __PSLOCKDOWNPOLICY: [32m'0'[39m
+  }
+}
+
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould render dashboard title and welcome message[32m 108[2mms[22m[39m
+ [31m×[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould show loading state initially[32m 13[2mms[22m[39m
+[31m   → Unable to find an element with the text: Loading dashboard.... This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"flex flex-col items-center space-y-4"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 h-8 w-8"[31m
+        [36m/>[31m
+        [36m<p[31m
+          [33mclass[31m=[32m"text-sm text-muted-foreground"[31m
+        [36m>[31m
+          [0mLoading dashboard data...[0m
+        [36m</p>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould render stats cards with correct data[32m 51[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould render charts[32m 44[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould render quick actions[32m 49[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould render dashboard stats[32m 37[2mms[22m[39m
+[90mstdout[2m | src/pages/Dashboard.test.tsx[2m > [22m[2mDashboard[2m > [22m[2mdata loading[2m > [22m[2mshould handle data loading errors
+[22m[39m🔄 Falling back to offline mode due to error
+
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mdata loading[2m > [22mshould load dashboard data on mount[32m 21[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mdata loading[2m > [22mshould handle data loading errors[32m 37[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mstatistics calculations[2m > [22mshould calculate total customers correctly[32m 47[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mstatistics calculations[2m > [22mshould calculate active deals correctly[32m 30[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mstatistics calculations[2m > [22mshould calculate revenue correctly[32m 28[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mstatistics calculations[2m > [22mshould calculate conversion rate correctly[32m 34[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mquick actions[2m > [22mshould navigate to customers page when Add Customer is clicked[32m 32[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mquick actions[2m > [22mshould navigate to leads page when Add Lead is clicked[32m 38[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mquick actions[2m > [22mshould navigate to deals page when Create Deal is clicked[32m 18[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mquick actions[2m > [22mshould navigate to proposals page when Create Proposal is clicked[32m 32[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22muser display[2m > [22mshould display user full name when available[32m 17[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22muser display[2m > [22mshould display user email when full_name is not available[32m 25[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22medge cases[2m > [22mshould handle empty data gracefully[32m 23[2mms[22m[39m
+ [32m✓[39m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22medge cases[2m > [22mshould handle missing user gracefully[32m 25[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m19 passed[39m[22m[90m (20)[39m
+[2m   Start at [22m 15:38:50
+[2m   Duration [22m 3.17s[2m (transform 334ms, setup 134ms, collect 753ms, tests 715ms, environment 840ms, prepare 417ms)[22m
+
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/pages/Dashboard.test.tsx[2m > [22mDashboard[2m > [22mrendering[2m > [22mshould show loading state initially
+[31m[1mTestingLibraryElementError[22m: Unable to find an element with the text: Loading dashboard.... This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"flex flex-col items-center space-y-4"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 h-8 w-8"[31m
+        [36m/>[31m
+        [36m<p[31m
+          [33mclass[31m=[32m"text-sm text-muted-foreground"[31m
+        [36m>[31m
+          [0mLoading dashboard data...[0m
+        [36m</p>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+[90m [2m❯[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2m❯[22m src/pages/Dashboard.test.tsx:[2m145:21[22m[39m
+    [90m143| [39m    [34mit[39m([32m'should show loading state initially'[39m[33m,[39m () [33m=>[39m {
+    [90m144| [39m      [34mrender[39m([33m<[39m[33mDashboard[39m [33m/[39m[33m>[39m)
+    [90m145| [39m      expect(screen.getByText('Loading dashboard...')).toBeInTheDocume…
+    [90m   | [39m                    [31m^[39m
+    [90m146| [39m    })
+    [90m147| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
