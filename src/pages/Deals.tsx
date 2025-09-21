@@ -15,6 +15,7 @@ import type { Database } from '../lib/database.types'
 import { offlineDataService } from '../services/offlineDataService'
 import { devConfig } from '../config/development'
 import { EnhancedPipeline } from '../components/deals/EnhancedPipeline'
+import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 
 type Deal = Database['public']['Tables']['deals']['Row']
 type DealInsert = Database['public']['Tables']['deals']['Insert']
@@ -59,10 +60,11 @@ export default function Deals() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔄 Deals page - Loading data:', { offlineMode: isOfflineMode, devConfig })
+      protectFromExtensionInterference()
+      const offline = isOfflineMode()
+      console.log('🔄 Deals page - Loading data:', { offlineMode: offline })
       
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for deals data')
         const dealsData = await offlineDataService.getDeals()
         const customersData = await offlineDataService.getCustomers()
@@ -93,11 +95,15 @@ export default function Deals() {
       
 
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-        const dealsData = await offlineDataService.getDeals()
-        const customersData = await offlineDataService.getCustomers()
-        setDeals(dealsData)
-        setCustomers(customersData)
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+        if (handleSupabaseError(supabaseError)) {
+          const dealsData = await offlineDataService.getDeals()
+          const customersData = await offlineDataService.getCustomers()
+          setDeals(dealsData)
+          setCustomers(customersData)
+        } else {
+          throw supabaseError
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -150,10 +156,11 @@ export default function Deals() {
     setLoading(true)
 
     try {
-      const isOfflineMode = devConfig.offlineMode
-      console.log('💾 Deals page - Saving deal:', { offlineMode: isOfflineMode, formData })
+      protectFromExtensionInterference()
+      const offline = isOfflineMode()
+      console.log('💾 Deals page - Saving deal:', { offlineMode: offline, formData })
       
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for deal operations')
         
         if (showEditModal && selectedDeal) {
@@ -239,38 +246,42 @@ export default function Deals() {
           toast.success('Deal added successfully')
         }
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
         
-        if (showEditModal && selectedDeal) {
-          const updateData = { ...formData, updated_at: new Date().toISOString() }
-          const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
-          updateDeal(selectedDeal.id, updatedDeal)
-          toast.success('Deal updated successfully')
-        } else {
-          const insertData = { 
-            title: formData.title || '',
-            customer_id: formData.customer_id || null,
-            value: formData.value || 0,
-            probability: formData.probability || 0,
-            stage: formData.stage || 'prospecting',
-            expected_close_date: formData.expected_close_date || null,
-            description: formData.description || null,
-            source: 'Other',
-            responsible_person: formData.responsible_person || 'Mr. Ali',
-            competitor_info: formData.competitor_info || null,
-            decision_maker_contact: formData.decision_maker_contact || null,
-            deal_source: formData.deal_source || null,
-            deal_type: formData.deal_type || 'new',
-            lead_id: null,
-            assigned_to: null,
-            notes: formData.description || null,
-            created_by: user.id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+        if (handleSupabaseError(supabaseError)) {
+          if (showEditModal && selectedDeal) {
+            const updateData = { ...formData, updated_at: new Date().toISOString() }
+            const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
+            updateDeal(selectedDeal.id, updatedDeal)
+            toast.success('Deal updated successfully')
+          } else {
+            const insertData = { 
+              title: formData.title || '',
+              customer_id: formData.customer_id || null,
+              value: formData.value || 0,
+              probability: formData.probability || 0,
+              stage: formData.stage || 'prospecting',
+              expected_close_date: formData.expected_close_date || null,
+              description: formData.description || null,
+              source: 'Other',
+              responsible_person: formData.responsible_person || 'Mr. Ali',
+              competitor_info: formData.competitor_info || null,
+              decision_maker_contact: formData.decision_maker_contact || null,
+              deal_source: formData.deal_source || null,
+              deal_type: formData.deal_type || 'new',
+              lead_id: null,
+              assigned_to: null,
+              notes: formData.description || null,
+              created_by: user.id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+            const newDeal = await offlineDataService.createDeal(insertData)
+            addDeal(newDeal)
+            toast.success('Deal added successfully')
           }
-          const newDeal = await offlineDataService.createDeal(insertData)
-          addDeal(newDeal)
-          toast.success('Deal added successfully')
+        } else {
+          throw supabaseError
         }
       }
       
@@ -291,11 +302,12 @@ export default function Deals() {
 
     try {
       setLoading(true)
+      protectFromExtensionInterference()
       
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🗑️ Deals page - Deleting deal:', { offlineMode: isOfflineMode, dealId: deal.id })
+      const offline = isOfflineMode()
+      console.log('🗑️ Deals page - Deleting deal:', { offlineMode: offline, dealId: deal.id })
       
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for deal deletion')
         await offlineDataService.deleteDeal(deal.id)
         removeDeal(deal.id)
@@ -314,10 +326,14 @@ export default function Deals() {
         removeDeal(deal.id)
         toast.success('Deal deleted successfully')
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-        await offlineDataService.deleteDeal(deal.id)
-        removeDeal(deal.id)
-        toast.success('Deal deleted successfully')
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+        if (handleSupabaseError(supabaseError)) {
+          await offlineDataService.deleteDeal(deal.id)
+          removeDeal(deal.id)
+          toast.success('Deal deleted successfully')
+        } else {
+          throw supabaseError
+        }
       }
     } catch (error) {
       console.error('Error deleting deal:', error)
@@ -536,7 +552,10 @@ export default function Deals() {
               try {
                 setLoading(true)
                 
-                if (devConfig.OFFLINE_MODE) {
+                protectFromExtensionInterference()
+                const offline = isOfflineMode()
+                
+                if (offline) {
                   console.log('📱 Using offline mode for deal stage update')
                   const updateData = { stage: newStage, updated_at: new Date().toISOString() }
                   const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
@@ -559,11 +578,15 @@ export default function Deals() {
                   updateDeal(dealId, data)
                   toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
                 } catch (supabaseError) {
-                  console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-                  const updateData = { stage: newStage, updated_at: new Date().toISOString() }
-                  const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
-                  updateDeal(dealId, updatedDeal)
-                  toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
+                  console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+                  if (handleSupabaseError(supabaseError)) {
+                    const updateData = { stage: newStage, updated_at: new Date().toISOString() }
+                    const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
+                    updateDeal(dealId, updatedDeal)
+                    toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
+                  } else {
+                    throw supabaseError
+                  }
                 }
               } catch (error) {
                 console.error('Error updating deal stage:', error)
@@ -581,7 +604,10 @@ export default function Deals() {
                     if (!confirm(`Are you sure you want to delete ${dealIds.length} deal(s)?`)) return
                     
                     for (const dealId of dealIds) {
-                      if (devConfig.OFFLINE_MODE) {
+                      protectFromExtensionInterference()
+                      const offline = isOfflineMode()
+                      
+                      if (offline) {
                         await offlineDataService.deleteDeal(dealId)
                       } else {
                         try {
@@ -591,8 +617,12 @@ export default function Deals() {
                             .eq('id', dealId)
                           if (error) throw error
                         } catch (supabaseError) {
-                          console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-                          await offlineDataService.deleteDeal(dealId)
+                          console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+                          if (handleSupabaseError(supabaseError)) {
+                            await offlineDataService.deleteDeal(dealId)
+                          } else {
+                            throw supabaseError
+                          }
                         }
                       }
                       removeDeal(dealId)

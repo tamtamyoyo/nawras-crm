@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
 import { devConfig } from '../config/development'
 import { getStandardTemplate, createProposalFromStandardTemplate } from '../lib/standardTemplate'
+import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 import { Database } from '@/lib/database.types'
 
 type Proposal = Database['public']['Tables']['proposals']['Row']
@@ -40,11 +41,12 @@ export default function ProformaInvoices() {
   const [selectedProformaInvoice, setSelectedProformaInvoice] = useState<Proposal | null>(null)
 
   const loadProformaInvoices = useCallback(async () => {
-    const isOfflineMode = devConfig.offlineMode
-    console.log('📋 Loading proforma invoices data...', { offlineMode: isOfflineMode, devConfig })
+    protectFromExtensionInterference()
+    const offline = isOfflineMode()
+    console.log('📋 Loading proforma invoices data...', { offlineMode: offline })
     
     try {
-      if (isOfflineMode) {
+      if (offline) {
         // Load from offline storage
         const offlineProformaInvoices = await offlineDataService.getProposals()
         if (offlineProformaInvoices) {
@@ -70,13 +72,17 @@ export default function ProformaInvoices() {
     } catch (error) {
       console.error('Error loading proforma invoices from Supabase:', error)
       
-      // Fallback to offline data
-      const offlineProformaInvoices = await offlineDataService.getProposals()
-      if (offlineProformaInvoices) {
-        setProformaInvoices(offlineProformaInvoices)
+      // Check if should fallback to offline data
+      if (handleSupabaseError(error)) {
+        const offlineProformaInvoices = await offlineDataService.getProposals()
+        if (offlineProformaInvoices) {
+          setProformaInvoices(offlineProformaInvoices)
+        } else {
+          // Use mock data if no offline data
+          setProformaInvoices(getMockProformaInvoices())
+        }
       } else {
-        // Use mock data if no offline data
-        setProformaInvoices(getMockProformaInvoices())
+        throw error
       }
     }
   }, [])
@@ -164,11 +170,12 @@ export default function ProformaInvoices() {
   const handleDeleteProformaInvoice = async (proformaInvoiceId: string) => {
     if (!confirm('Are you sure you want to delete this proforma invoice?')) return
 
-    const isOfflineMode = devConfig.offlineMode
-    console.log('🗑️ Deleting proforma invoice...', { offlineMode: isOfflineMode, proformaInvoiceId })
+    protectFromExtensionInterference()
+    const offline = isOfflineMode()
+    console.log('🗑️ Deleting proforma invoice...', { offlineMode: offline, proformaInvoiceId })
 
     try {
-      if (isOfflineMode) {
+      if (offline) {
         // Delete from offline storage
         const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
         await offlineDataService.updateProposals(updatedProformaInvoices)
@@ -191,16 +198,24 @@ export default function ProformaInvoices() {
     } catch (error) {
       console.error('Error deleting proforma invoice:', error)
       
-      // Fallback to offline deletion
-      try {
-        const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
-        await offlineDataService.updateProposals(updatedProformaInvoices)
-        setProformaInvoices(updatedProformaInvoices)
-        toast({
-          title: "Success",
-          description: "Proposal deleted offline"
-        })
-      } catch (offlineError) {
+      // Check if should fallback to offline deletion
+      if (handleSupabaseError(error)) {
+        try {
+          const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
+          await offlineDataService.updateProposals(updatedProformaInvoices)
+          setProformaInvoices(updatedProformaInvoices)
+          toast({
+            title: "Success",
+            description: "Proposal deleted offline"
+          })
+        } catch (offlineError) {
+          toast({
+            title: "Error",
+            description: "Failed to delete proposal",
+            variant: "destructive"
+          })
+        }
+      } else {
         toast({
           title: "Error",
           description: "Failed to delete proposal",
@@ -213,30 +228,69 @@ export default function ProformaInvoices() {
 
 
   const handleSendProformaInvoice = async (proformaInvoiceId: string) => {
+    protectFromExtensionInterference()
+    const offline = isOfflineMode()
+    
     try {
-      const { error } = await supabase
-        .from('proposals')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', proformaInvoiceId)
+      if (offline) {
+        // Update offline storage
+        const updatedProformaInvoices = proformaInvoices.map(p => 
+          p.id === proformaInvoiceId 
+            ? { ...p, status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+            : p
+        )
+        await offlineDataService.updateProposals(updatedProformaInvoices)
+        setProformaInvoices(updatedProformaInvoices)
+      } else {
+        const { error } = await supabase
+          .from('proposals')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', proformaInvoiceId)
 
-      if (error) throw error
+        if (error) throw error
 
-      await loadProformaInvoices()
+        await loadProformaInvoices()
+      }
+      
       toast({
         title: "Success",
         description: "Proposal sent successfully"
       })
     } catch (error) {
       console.error('Error sending proforma invoice:', error)
-      toast({
-        title: "Error",
-        description: "Failed to send proposal",
-        variant: "destructive"
-      })
+      
+      // Check if should fallback to offline update
+      if (handleSupabaseError(error)) {
+        try {
+          const updatedProformaInvoices = proformaInvoices.map(p => 
+            p.id === proformaInvoiceId 
+              ? { ...p, status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+              : p
+          )
+          await offlineDataService.updateProposals(updatedProformaInvoices)
+          setProformaInvoices(updatedProformaInvoices)
+          toast({
+            title: "Success",
+            description: "Proposal sent offline"
+          })
+        } catch (offlineError) {
+          toast({
+            title: "Error",
+            description: "Failed to send proposal",
+            variant: "destructive"
+          })
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to send proposal",
+          variant: "destructive"
+        })
+      }
     }
   }
 

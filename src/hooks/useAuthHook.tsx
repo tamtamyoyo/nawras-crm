@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { AuthContext, UserProfile, AuthContextType } from './auth-context';
+import { AuthContext, UserProfile } from './auth-context';
 import { supabase } from '../lib/supabase-client';
 import { devConfig } from '../config/development';
-import { toast } from 'sonner';
+import { isOfflineMode } from '../utils/offlineMode';
+import { protectFromExtensionInterference } from '../utils/extensionProtection';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -21,8 +22,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if we're in offline mode
-  const isOfflineMode = devConfig.offlineMode;
+  // Check if we're in offline mode using centralized detection
+  const offlineModeActive = isOfflineMode();
 
   const createFallbackProfile = useCallback((userId: string, email: string): UserProfile => {
     logDev('Creating fallback profile for:', email);
@@ -40,94 +41,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  const createUserProfile = useCallback(async (userId: string, email: string, fullName?: string): Promise<UserProfile | null> => {
-    try {
-      logDev('Creating user profile for:', email);
-      const profileData = {
-        id: userId,
-        email: email,
-        full_name: fullName || email.split('@')[0] || 'User',
-        avatar_url: null,
-        phone: null,
-        company: 'Nawras CRM',
-        bio: null,
-        role: 'sales_rep' as const
-      };
 
-      const { data, error } = await supabase
-        .from('users')
-        .insert([profileData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Failed to create user profile:', error.message);
-        return createFallbackProfile(userId, email);
-      }
-
-      logDev('✅ User profile created successfully:', data.email);
-      return data;
-    } catch (error) {
-      console.error('❌ Exception creating user profile:', error);
-      return createFallbackProfile(userId, email);
-    }
-  }, [createFallbackProfile]);
-
-  // Connection state management to prevent repeated failed requests
-  const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
-  const [lastConnectionError, setLastConnectionError] = useState<number>(0);
-  const CONNECTION_RETRY_COOLDOWN = 30000; // 30 seconds cooldown after connection errors
-
-  // Circuit breaker state
-  const [circuitBreakerState, setCircuitBreakerState] = useState<'closed' | 'open' | 'half-open'>('closed');
-  const [failureCount, setFailureCount] = useState(0);
-  const [lastFailureTime, setLastFailureTime] = useState(0);
-  const FAILURE_THRESHOLD = 3;
-  const CIRCUIT_TIMEOUT = 60000; // 1 minute
 
   const fetchUserProfile = useCallback(async (userId: string): Promise<void> => {
     try {
-      logDev('Fetching user profile for:', userId);
+      logDev('Creating user profile from auth data for:', userId);
       
-      // Check if we're in offline mode
-      if (isOfflineMode) {
-        logDev('Offline mode: using fallback profile');
-        if (user?.email) {
-          const fallbackProfile = createFallbackProfile(userId, user.email);
-          setProfile(fallbackProfile);
-        }
-        setLoading(false);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          logDev('User profile not found, creating new profile');
-          const userEmail = user?.email || 'unknown@example.com';
-          const newProfile = await createUserProfile(userId, userEmail, user?.user_metadata?.full_name);
-          setProfile(newProfile);
-        } else {
-          logDev('❌ Failed to fetch user profile:', error.message);
-          // Use fallback profile on any error
-          if (user?.email) {
-            const fallbackProfile = createFallbackProfile(userId, user.email);
-            setProfile(fallbackProfile);
-          }
-        }
-      } else {
-        logDev('✅ User profile fetched successfully:', data?.email);
-        setProfile(data);
+      // Always use fallback profile since we don't have a users table
+      if (user?.email) {
+        const fallbackProfile = createFallbackProfile(userId, user.email);
+        setProfile(fallbackProfile);
       }
       
       setLoading(false);
     } catch (error) {
-      logDev('❌ Failed to fetch user profile:', error instanceof Error ? error.message : 'Unknown error');
+      logDev('❌ Failed to create user profile:', error instanceof Error ? error.message : 'Unknown error');
       // Use fallback profile on any error
       if (user?.email) {
         const fallbackProfile = createFallbackProfile(userId, user.email);
@@ -135,12 +63,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       setLoading(false);
     }
-  }, [user, createUserProfile, createFallbackProfile, isOfflineMode]);
+  }, [user, createFallbackProfile]);
 
   useEffect(() => {
     const isTestEnvironment = typeof window !== 'undefined' && (import.meta.env.MODE === 'test' || import.meta.env.VITEST === 'true');
     
-    if (isOfflineMode && !isTestEnvironment) {
+    if (offlineModeActive && !isTestEnvironment) {
       logDev('🔧 Initializing offline mode');
       const offlineSession = localStorage.getItem('offline_session');
       if (offlineSession) {
@@ -235,7 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         subscription.unsubscribe();
       }
     };
-  }, [fetchUserProfile, createFallbackProfile]);
+  }, [fetchUserProfile, createFallbackProfile, isOfflineMode]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -243,7 +171,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('🔐 Attempting to sign in with:', email);
       
       const isTestEnvironment = typeof window !== 'undefined' && (import.meta.env.MODE === 'test' || import.meta.env.VITEST === 'true');
-      if (isOfflineMode && !isTestEnvironment) {
+      protectFromExtensionInterference();
+      
+      if (offlineModeActive && !isTestEnvironment) {
         logDev('🔧 Using offline mock authentication');
         
         const validCredentials = [
@@ -270,6 +200,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                       email === 'dev@nawras-crm.com' ? 'Development User' : 
                       email.split('@')[0]
           },
+          app_metadata: {},
+          aud: 'authenticated',
           created_at: new Date().toISOString()
         };
         
@@ -277,6 +209,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           access_token: 'offline-token',
           refresh_token: 'offline-refresh',
           expires_in: 3600,
+          token_type: 'bearer',
           user: mockUserData
         };
         
@@ -301,8 +234,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         localStorage.setItem('offline_session', JSON.stringify(offlineSession));
         
-        setUser(mockUserData as User);
-        setSession(mockSessionData as Session);
+        setUser(mockUserData as unknown as User);
+        setSession(mockSessionData as unknown as Session);
         setProfile(mockProfileData);
         setLoading(false);
         
@@ -355,7 +288,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(null);
       
       const isTestEnvironment = typeof window !== 'undefined' && (import.meta.env.MODE === 'test' || import.meta.env.VITEST === 'true');
-      if (isOfflineMode && !isTestEnvironment) {
+      if (offlineModeActive && !isTestEnvironment) {
         logDev('🔧 Clearing offline session');
         localStorage.removeItem('offline_session');
         setLoading(false);
@@ -392,18 +325,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!user) return { error: 'No user logged in' };
     
     try {
-      const { error } = await supabase
-        .from('users')
-        .update(updates)
-        .eq('id', user.id);
-      
-      if (error) {
-        console.error('❌ Profile update error:', error.message);
-        return { error: error.message };
-      }
-      
+      // Update profile locally since we don't have a users table
       setProfile(prev => prev ? { ...prev, ...updates } : null);
-      console.log('✅ Profile updated successfully');
+      console.log('✅ Profile updated locally');
       return { error: undefined };
     } catch (error) {
       console.error('❌ Profile update exception:', error);
@@ -414,28 +338,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const refreshProfile = async () => {
-    if (!user) return { error: 'No user logged in' };
+    if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) {
-        console.error('❌ Profile refresh error:', error.message);
-        return { error: error.message };
+      // Refresh profile from auth data since we don't have a users table
+      if (user?.email) {
+        const fallbackProfile = createFallbackProfile(user.id, user.email);
+        setProfile(fallbackProfile);
       }
-      
-      setProfile(data);
-      console.log('✅ Profile refreshed successfully');
-      return { error: undefined };
+      console.log('✅ Profile refreshed from auth data');
     } catch (error) {
       console.error('❌ Profile refresh exception:', error);
-      return { 
-        error: error instanceof Error ? error.message : 'Profile refresh failed'
-      };
     }
   };
 

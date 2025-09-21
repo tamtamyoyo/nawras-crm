@@ -10,7 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/Alert'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Mail, Lock, User, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
-import { devConfig } from '../config/development'
+import { isOfflineMode } from '../utils/offlineMode'
+import { handleSupabaseError } from '../utils/errorHandling'
+import { protectFromExtensionInterference } from '../utils/extensionProtection'
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -44,7 +46,9 @@ function Register() {
     setLoading(true)
 
     try {
-      if (devConfig.OFFLINE_MODE) {
+      protectFromExtensionInterference()
+      
+      if (isOfflineMode()) {
         // Handle offline mode - registration is not available offline
         setError('Registration is not available in offline mode. Please try again when online.')
         setLoading(false)
@@ -70,8 +74,13 @@ function Register() {
         }
       } catch (supabaseError) {
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        devConfig.OFFLINE_MODE = true
-        setError('Registration is not available in offline mode. Please try again when online.')
+        const shouldFallback = handleSupabaseError(supabaseError, 'user registration')
+        
+        if (shouldFallback) {
+          setError('Registration is not available in offline mode. Please try again when online.')
+        } else {
+          setError('Registration failed. Please try again.')
+        }
       }
     } catch {
       setError('An unexpected error occurred')

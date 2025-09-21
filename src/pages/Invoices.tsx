@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -11,18 +10,23 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Eye, Trash2, Send, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, TestTube } from 'lucide-react'
+import { Plus, Eye, Trash2, Send, Clock, CheckCircle, XCircle, TestTube, Receipt, AlertCircle, DollarSign } from 'lucide-react'
 import { runComprehensiveTests } from '../utils/test-runner'
 import { addDemoData } from '../utils/demo-data'
 import { InvoicesTable } from '@/components/invoices/invoices-table'
 import { BatchDownloadModal } from '@/components/invoices/BatchDownloadModal'
+import { InvoiceTemplate } from '@/components/invoices/InvoiceTemplate'
+import { LogoUpload } from '@/components/invoices/LogoUpload'
 import { supabase } from '@/lib/supabase-client'
 import { useStore } from '@/store/useStore'
 import { useAuth } from '../hooks/useAuthHook'
-import type { Database } from '@/lib/database.types'
+import { Database, Json } from '@/lib/database.types'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+import { isOfflineMode } from '../utils/offlineMode'
+import { handleSupabaseError } from '../utils/errorHandling'
+import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { PAYMENT_TERMS } from '../lib/standardTemplate'
+import { InvoiceItem } from '@/types/invoice'
 
 type Invoice = Database['public']['Tables']['invoices']['Row']
 type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
@@ -37,23 +41,11 @@ const INVOICE_STATUS = [
   { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-100 text-gray-800', icon: XCircle },
 ]
 
-
-
-interface InvoiceItem {
-  description: string
-  quantity: number
-  rate: number
-  amount: number
-}
-
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1, 'Invoice number is required'),
   deal_id: z.string().min(1, 'Deal is required'),
   status: z.string().min(1, 'Status is required'),
   payment_terms: z.string().min(1, 'Payment terms are required'),
-  payment_terms_details: z.string().min(1, 'Payment terms details are required'),
-  shipping_terms: z.string().min(1, 'Shipping terms are required'),
-  estimated_lead_time: z.string().min(1, 'Estimated lead time is required'),
   due_date: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
@@ -61,7 +53,9 @@ const invoiceSchema = z.object({
   tax_amount: z.number().min(0, 'Tax amount must be positive'),
   total_amount: z.number().min(0, 'Total amount must be positive'),
   tax_rate: z.number().min(0, 'Tax rate must be positive').max(100, 'Tax rate cannot exceed 100%'),
-  responsible_person: z.string().min(1, 'Responsible person is required'),
+  responsible_person: z.enum(['Mr. Ali', 'Mr. Mustafa', 'Mr. Taha', 'Mr. Mohammed'], {
+    required_error: 'Responsible person is required'
+  }),
   billing_address: z.string().optional(),
   purchase_order_number: z.string().optional(),
   payment_method: z.string().optional()
@@ -85,9 +79,6 @@ export default function Invoices() {
     status: 'draft',
     due_date: '',
     payment_terms: 'net_30',
-    payment_terms_details: '',
-    shipping_terms: '',
-    estimated_lead_time: '',
     notes: ''
   })
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
@@ -95,6 +86,7 @@ export default function Invoices() {
   ])
   const [taxRate, setTaxRate] = useState(0)
   const [isRunningTests, setIsRunningTests] = useState(false)
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null)
 
   const { invoices, setInvoices, addInvoice, updateInvoice, removeInvoice, deals, setDeals, customers, setCustomers, loading, setLoading } = useStore()
   const { user } = useAuth()
@@ -106,9 +98,6 @@ export default function Invoices() {
       deal_id: '',
       status: 'draft',
       payment_terms: 'net_30',
-      payment_terms_details: '',
-      shipping_terms: '',
-      estimated_lead_time: '',
       due_date: '',
       notes: '',
       amount: 0,
@@ -124,10 +113,11 @@ export default function Invoices() {
 
   const loadData = useCallback(async () => {
     try {
+      protectFromExtensionInterference()
       setLoading(true)
-      console.log('📋 Loading Invoices data...', { offlineMode: devConfig.offlineMode })
+      console.log('📋 Loading Invoices data...', { offlineMode: isOfflineMode() })
       
-      if (devConfig.offlineMode) {
+      if (isOfflineMode()) {
         console.log('📋 Loading from offline storage')
         // Load from offline service
         const invoicesData = await offlineDataService.getInvoices()
@@ -136,7 +126,7 @@ export default function Invoices() {
         
         setInvoices(invoicesData)
         setDeals(dealsData)
-        setCustomers(customersData)
+        setCustomers(customersData as Database['public']['Tables']['customers']['Row'][])
         return
       }
       
@@ -170,11 +160,12 @@ export default function Invoices() {
         if (customersError) throw customersError
         setCustomers(customersData || [])
       } catch (supabaseError: unknown) {
-        const err = supabaseError as Error;
+
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
         
         // Handle specific 400 errors that might be caused by browser extensions
-        if (supabaseError?.message?.includes('400') || supabaseError?.status === 400) {
+        const error = supabaseError as { message?: string; status?: number }
+        if (error?.message?.includes('400') || error?.status === 400) {
           console.warn('⚠️ Detected 400 error - possibly caused by browser extension interference')
           toast({
             title: 'Connection Issue Detected',
@@ -183,7 +174,12 @@ export default function Invoices() {
           })
         }
         
-        devConfig.offlineMode = true
+        // Use centralized error handling to determine fallback
+        const shouldFallback = handleSupabaseError(supabaseError, 'invoice data loading')
+        
+        if (!shouldFallback) {
+          throw supabaseError
+        }
         
         const invoicesData = await offlineDataService.getInvoices()
         const dealsData = await offlineDataService.getDeals()
@@ -272,7 +268,7 @@ export default function Invoices() {
         total_amount: data.total_amount || 0,
         status: (data.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled') || 'draft',
         due_date: data.due_date || new Date().toISOString(),
-        items: invoiceItems,
+        items: JSON.stringify(invoiceItems) as Json,
         notes: data.notes,
         payment_terms: (data.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt') || 'net_30',
         tax_rate: taxRate,
@@ -284,7 +280,7 @@ export default function Invoices() {
         payment_method: data.payment_method
       }
 
-      if (devConfig.offlineMode) {
+      if (isOfflineMode()) {
         if (showEditModal && selectedInvoice) {
           // Update existing invoice offline
           const updateData = { ...selectedInvoice, ...invoiceData, status: invoiceData.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', payment_terms: invoiceData.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt', updated_at: new Date().toISOString() }
@@ -351,31 +347,35 @@ export default function Invoices() {
         }
       } catch (supabaseError) {
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        devConfig.offlineMode = true
         
-        if (showEditModal && selectedInvoice) {
-          const updateData = { ...selectedInvoice, ...invoiceData, status: invoiceData.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', payment_terms: invoiceData.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt', updated_at: new Date().toISOString() }
-          await offlineDataService.updateInvoice(selectedInvoice.id, updateData)
-          const updatedInvoices = await offlineDataService.getInvoices()
-          setInvoices(updatedInvoices)
-          updateInvoice(selectedInvoice.id, updateData)
-        } else {
-          const newInvoiceData = { 
-            ...invoiceData, 
-            id: Date.now().toString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+        try {
+          if (showEditModal && selectedInvoice) {
+            const updateData = { ...selectedInvoice, ...invoiceData, status: invoiceData.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', payment_terms: invoiceData.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt', updated_at: new Date().toISOString() }
+            await offlineDataService.updateInvoice(selectedInvoice.id, updateData)
+            const updatedInvoices = await offlineDataService.getInvoices()
+            setInvoices(updatedInvoices)
+            updateInvoice(selectedInvoice.id, updateData)
+          } else {
+            const newInvoiceData = { 
+              ...invoiceData, 
+              id: Date.now().toString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+            await offlineDataService.createInvoice(newInvoiceData)
+            const updatedInvoices = await offlineDataService.getInvoices()
+            setInvoices(updatedInvoices)
+            addInvoice(newInvoiceData)
           }
-          await offlineDataService.createInvoice(newInvoiceData)
-          const updatedInvoices = await offlineDataService.getInvoices()
-          setInvoices(updatedInvoices)
-          addInvoice(newInvoiceData)
+          
+          toast({
+            title: 'Success',
+            description: showEditModal ? 'Invoice updated successfully (offline)' : 'Invoice created successfully (offline)'
+          })
+        } catch (offlineError) {
+          console.error('Offline operation failed:', offlineError)
+          throw offlineError
         }
-        
-        toast({
-          title: 'Success',
-          description: showEditModal ? 'Invoice updated successfully (offline)' : 'Invoice created successfully (offline)'
-        })
       }
 
       resetForm()
@@ -397,7 +397,7 @@ export default function Invoices() {
     try {
       setLoading(true)
       
-      if (devConfig.offlineMode) {
+      if (isOfflineMode()) {
         await offlineDataService.deleteInvoice(invoice.id)
         const updatedInvoices = await offlineDataService.getInvoices()
         setInvoices(updatedInvoices)
@@ -423,16 +423,20 @@ export default function Invoices() {
         })
       } catch (supabaseError) {
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        devConfig.offlineMode = true
         
-        await offlineDataService.deleteInvoice(invoice.id)
-        const updatedInvoices = await offlineDataService.getInvoices()
-        setInvoices(updatedInvoices)
-        removeInvoice(invoice.id)
-        toast({
-          title: 'Success',
-          description: 'Invoice deleted successfully (offline)'
-        })
+        try {
+          await offlineDataService.deleteInvoice(invoice.id)
+          const updatedInvoices = await offlineDataService.getInvoices()
+          setInvoices(updatedInvoices)
+          removeInvoice(invoice.id)
+          toast({
+            title: 'Success',
+            description: 'Invoice deleted successfully (offline)'
+          })
+        } catch (offlineError) {
+          console.error('Offline delete failed:', offlineError)
+          throw offlineError
+        }
       }
     } catch (error) {
       console.error('Error deleting invoice:', error)
@@ -450,7 +454,7 @@ export default function Invoices() {
     try {
       setLoading(true)
       
-      if (devConfig.offlineMode) {
+      if (isOfflineMode()) {
         const updatedInvoice = { ...invoice, status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', updated_at: new Date().toISOString() }
         await offlineDataService.updateInvoice(invoice.id, updatedInvoice)
         const updatedInvoices = await offlineDataService.getInvoices()
@@ -480,17 +484,21 @@ export default function Invoices() {
         })
       } catch (supabaseError) {
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        devConfig.offlineMode = true
         
-        const updatedInvoice = { ...invoice, status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', updated_at: new Date().toISOString() }
-        await offlineDataService.updateInvoice(invoice.id, updatedInvoice)
-        const updatedInvoices = await offlineDataService.getInvoices()
-        setInvoices(updatedInvoices)
-        updateInvoice(invoice.id, updatedInvoice)
-        toast({
-          title: 'Success',
-          description: `Commercial invoice status updated to ${newStatus} (offline)`
-        })
+        try {
+          const updatedInvoice = { ...invoice, status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', updated_at: new Date().toISOString() }
+          await offlineDataService.updateInvoice(invoice.id, updatedInvoice)
+          const updatedInvoices = await offlineDataService.getInvoices()
+          setInvoices(updatedInvoices)
+          updateInvoice(invoice.id, updatedInvoice)
+          toast({
+            title: 'Success',
+            description: `Invoice status updated to ${newStatus} (offline)`
+          })
+        } catch (offlineError) {
+          console.error('Offline status update failed:', offlineError)
+          throw offlineError
+        }
       }
     } catch (error) {
       console.error('Error updating invoice status:', error)
@@ -510,9 +518,6 @@ export default function Invoices() {
       deal_id: '',
       status: 'draft',
       payment_terms: 'net_30',
-      payment_terms_details: '',
-      shipping_terms: '',
-      estimated_lead_time: '',
       due_date: '',
       notes: '',
       amount: 0,
@@ -534,9 +539,6 @@ export default function Invoices() {
       status: 'draft',
       due_date: '',
       payment_terms: 'net_30',
-      payment_terms_details: '',
-      shipping_terms: '',
-      estimated_lead_time: '',
       notes: ''
     })
     setInvoiceItems([{ description: '', quantity: 1, rate: 0, amount: 0 }])
@@ -562,9 +564,6 @@ export default function Invoices() {
       deal_id: invoice.deal_id || '',
       status: invoice.status,
       payment_terms: invoice.payment_terms,
-      payment_terms_details: invoice.payment_terms_details || '',
-      shipping_terms: invoice.shipping_terms || '',
-      estimated_lead_time: invoice.estimated_lead_time || '',
       due_date: invoice.due_date || '',
       notes: invoice.notes || '',
       amount: invoice.amount,
@@ -585,9 +584,6 @@ export default function Invoices() {
       status: invoice.status,
       due_date: invoice.due_date,
       payment_terms: invoice.payment_terms,
-      payment_terms_details: invoice.payment_terms_details,
-      shipping_terms: invoice.shipping_terms,
-      estimated_lead_time: invoice.estimated_lead_time,
       notes: invoice.notes
     })
     
@@ -595,7 +591,7 @@ export default function Invoices() {
       let items = [{ description: '', quantity: 1, rate: 0, amount: 0 }]
       if (invoice.items) {
         if (typeof invoice.items === 'string') {
-          items = JSON.parse(invoice.items)
+          items = JSON.parse(invoice.items as string) as InvoiceItem[]
         } else if (Array.isArray(invoice.items)) {
           items = invoice.items
         }
@@ -621,9 +617,7 @@ export default function Invoices() {
 
 
 
-  const getStatusConfig = (status: string) => {
-    return INVOICE_STATUS.find(s => s.value === status) || INVOICE_STATUS[0]
-  }
+  // Removed unused getStatusConfig function
 
   const isOverdue = (invoice: Invoice) => {
     if (invoice.status === 'paid' || !invoice.due_date) return false
@@ -897,73 +891,7 @@ export default function Invoices() {
                 </div>
                 
                 {/* New Required Fields */}
-                <div className="grid grid-cols-1 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="payment_terms_details"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Payment Terms Details *</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="e.g., 50% advance payment to begin processing, 50% upon completion before shipping"
-                            rows={2}
-                            onChange={(e) => {
-                              field.onChange(e.target.value)
-                              setFormData({ ...formData, payment_terms_details: e.target.value })
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="shipping_terms"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shipping Terms (Incoterms®) *</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., FOB Shanghai"
-                            onChange={(e) => {
-                              field.onChange(e.target.value)
-                              setFormData({ ...formData, shipping_terms: e.target.value })
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="estimated_lead_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Estimated Lead Time *</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., 20-25 days after receiving advance payment"
-                            onChange={(e) => {
-                              field.onChange(e.target.value)
-                              setFormData({ ...formData, estimated_lead_time: e.target.value })
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
@@ -1159,6 +1087,17 @@ export default function Invoices() {
                   />
                 </div>
                 
+                {/* Company Logo Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company Logo
+                  </label>
+                  <LogoUpload
+                    onLogoChange={setCompanyLogo}
+                    currentLogo={companyLogo}
+                  />
+                </div>
+                
                 {/* Invoice Items */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -1297,121 +1236,39 @@ export default function Invoices() {
 
       {/* View Invoice Modal */}
       <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>Commercial Invoice {selectedInvoice?.invoice_number}</DialogTitle>
-              <Badge variant={
-                selectedInvoice?.status === 'paid' ? 'default' :
-                selectedInvoice?.status === 'sent' ? 'secondary' :
-                selectedInvoice?.status === 'overdue' ? 'destructive' :
-                'outline'
-              }>
-                {selectedInvoice && getStatusConfig(selectedInvoice.status).label}
-              </Badge>
-            </div>
-            <DialogDescription>
-              View commercial invoice details and items.
-            </DialogDescription>
-          </DialogHeader>
-              
-              {/* Invoice Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Commercial Invoice Information</h3>
-                  <div className="space-y-1 text-sm">
-                    <div>Commercial Invoice #: {selectedInvoice?.invoice_number}</div>
-                    <div>Created: {selectedInvoice?.created_at ? new Date(selectedInvoice.created_at).toLocaleDateString() : 'N/A'}</div>
-                    {selectedInvoice?.due_date && (
-                      <div>Due Date: {new Date(selectedInvoice.due_date).toLocaleDateString()}</div>
-                    )}
-                    <div>Payment Terms: {PAYMENT_TERMS.find(t => t.value === selectedInvoice?.payment_terms)?.label}</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Deal & Customer</h3>
-                  <div className="space-y-1 text-sm">
-                    {(() => {
-                      const deal = deals.find(d => d.id === selectedInvoice?.deal_id)
-                      const customer = deal ? customers.find(c => c.id === deal.customer_id) : null
-                      return (
-                        <>
-                          <div>Deal: {deal?.title || 'N/A'}</div>
-                          <div>Customer: {customer?.name || 'N/A'}</div>
-                          {customer?.email && <div>Email: {customer.email}</div>}
-                          {customer?.phone && <div>Phone: {customer.phone}</div>}
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Invoice Items */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Items</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border border-gray-200 rounded-lg">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        try {
-                          const items = selectedInvoice?.items ? JSON.parse(selectedInvoice.items as string) : []
-                          return items.map((item: InvoiceItem, index: number) => (
-                            <tr key={index} className="border-t border-gray-200">
-                              <td className="px-4 py-2 text-sm">{item.description}</td>
-                              <td className="px-4 py-2 text-sm text-right">{item.quantity}</td>
-                              <td className="px-4 py-2 text-sm text-right">${item.rate.toFixed(2)}</td>
-                              <td className="px-4 py-2 text-sm text-right">${item.amount.toFixed(2)}</td>
-                            </tr>
-                          ))
-                        } catch {
-                          return (
-                            <tr>
-                              <td colSpan={4} className="px-4 py-2 text-sm text-gray-500 text-center">No items found</td>
-                            </tr>
-                          )
-                        }
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              
-              {/* Totals */}
-              <div className="flex justify-end mb-6">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
-                    <span>${selectedInvoice?.amount?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Tax ({selectedInvoice?.tax_rate || 0}%):</span>
-                    <span>${selectedInvoice?.tax_amount?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-semibold border-t pt-2">
-                    <span>Total:</span>
-                    <span>${selectedInvoice?.total_amount?.toFixed(2) || '0.00'}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {selectedInvoice?.notes && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Notes</h3>
-                  <div className="bg-gray-50 p-3 rounded-lg border">
-                    <p className="text-sm text-gray-700">{selectedInvoice.notes}</p>
-                  </div>
-                </div>
-              )}
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-0">
+          {selectedInvoice && (() => {
+            const deal = deals.find(d => d.id === selectedInvoice.deal_id)
+            const customer = deal ? customers.find(c => c.id === deal.customer_id) : null
+            const items = (() => {
+              try {
+                return selectedInvoice.items ? JSON.parse(selectedInvoice.items as string) as InvoiceItem[] : []
+              } catch {
+                return []
+              }
+            })()
+            const paymentTermsLabel = PAYMENT_TERMS.find(t => t.value === selectedInvoice.payment_terms)?.label
+            
+            return (
+              <InvoiceTemplate
+                invoiceNumber={selectedInvoice.invoice_number}
+                invoiceDate={selectedInvoice.created_at ? new Date(selectedInvoice.created_at).toLocaleDateString() : undefined}
+                dueDate={selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString() : undefined}
+                status={selectedInvoice.status}
+                customerName={customer?.name}
+                customerEmail={customer?.email}
+                customerPhone={customer?.phone}
+                dealTitle={deal?.title}
+                items={items}
+                subtotal={selectedInvoice.amount || 0}
+                taxRate={selectedInvoice.tax_rate || 0}
+                taxAmount={selectedInvoice.tax_amount || 0}
+                totalAmount={selectedInvoice.total_amount || 0}
+                notes={selectedInvoice.notes}
+                paymentTerms={paymentTermsLabel}
+              />
+            )
+          })()}
         </DialogContent>
       </Dialog>
 

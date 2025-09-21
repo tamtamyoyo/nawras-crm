@@ -11,6 +11,7 @@ import { offlineDataService } from '../services/offlineDataService'
 import { devConfig } from '../config/development'
 import type { Database } from '../lib/database.types'
 import { toast } from 'sonner'
+import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 
 import { useStore } from '../store/useStore'
 import { cn } from '../lib/utils'
@@ -175,7 +176,9 @@ export default function Analytics() {
   }, [generateAdvancedChartData])
 
   const fetchAnalyticsData = useCallback(async () => {
-    console.log('📊 Loading Analytics data...', { offlineMode: devConfig.offlineMode })
+    protectFromExtensionInterference()
+    const offline = isOfflineMode()
+    console.log('📊 Loading Analytics data...', { offlineMode: offline })
     setLoading(true)
     try {
       // Calculate date range
@@ -187,7 +190,7 @@ export default function Analytics() {
       let clients: Customer[] | null = null
       let events: Event[] | null = null
 
-      if (devConfig.offlineMode) {
+      if (offline) {
         // Use offline data
         const allDeals = await offlineDataService.getDeals()
         const allCustomers = await offlineDataService.getCustomers()
@@ -227,26 +230,30 @@ export default function Analytics() {
           // Events functionality removed
           events = []
         } catch (supabaseError) {
-          console.warn('Supabase error, falling back to offline mode:', supabaseError)
-          devConfig.offlineMode = true
+          console.warn('Supabase error, checking if should fallback to offline mode:', supabaseError)
           
-          // Use offline data as fallback
-          const allDeals = await offlineDataService.getDeals()
-          const allCustomers = await offlineDataService.getCustomers()
-          const allEvents = [] // Mock events data for offline mode
-          
-          // Filter by date range
-          deals = allDeals.filter(deal => {
-            const dealDate = new Date(deal.created_at)
-            return dealDate >= startDate && dealDate <= endDate
-          })
-          
-          clients = allCustomers.filter(customer => {
-            const customerDate = new Date(customer.created_at)
-            return customerDate >= startDate && customerDate <= endDate
-          })
-          
-          events = allEvents
+          // Check if should fallback to offline data
+          if (handleSupabaseError(supabaseError)) {
+            // Use offline data as fallback
+            const allDeals = await offlineDataService.getDeals()
+            const allCustomers = await offlineDataService.getCustomers()
+            const allEvents = [] // Mock events data for offline mode
+            
+            // Filter by date range
+            deals = allDeals.filter(deal => {
+              const dealDate = new Date(deal.created_at)
+              return dealDate >= startDate && dealDate <= endDate
+            })
+            
+            clients = allCustomers.filter(customer => {
+              const customerDate = new Date(customer.created_at)
+              return customerDate >= startDate && customerDate <= endDate
+            })
+            
+            events = allEvents
+          } else {
+            throw supabaseError
+          }
         }
       }
 

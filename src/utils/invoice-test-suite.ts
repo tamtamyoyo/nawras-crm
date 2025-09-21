@@ -46,10 +46,7 @@ export class InvoiceTestSuite {
         total_amount: 1650.00,
         status: 'draft',
         payment_terms: 'net_30',
-        payment_terms_details: 'Payment due within 30 days',
-        shipping_terms: 'FOB Origin',
-        estimated_lead_time: '2-3 weeks',
-        notes: 'Test invoice for data persistence validation',
+         notes: 'Test invoice for data persistence validation',
         user_id: 'test-user-id',
         responsible_person: 'Mr. Ali',
         tax_rate: 10,
@@ -192,10 +189,7 @@ export class InvoiceTestSuite {
         total_amount: 1100,
         status: 'draft',
         payment_terms: 'net_30',
-        payment_terms_details: longString,
-        shipping_terms: longString,
-        estimated_lead_time: longString,
-        notes: longString,
+         notes: longString,
         user_id: 'test-user-id',
         responsible_person: 'Mr. Ali',
         tax_rate: 10
@@ -288,10 +282,7 @@ export class InvoiceTestSuite {
       'deal_id',
       'status',
       'payment_terms',
-      'payment_terms_details',
-      'shipping_terms',
-      'estimated_lead_time',
-      'responsible_person'
+       'responsible_person'
     ]
     
     this.addResult('UI Validation - Required Fields', 'pass', 

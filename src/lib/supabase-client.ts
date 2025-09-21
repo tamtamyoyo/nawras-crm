@@ -1,16 +1,20 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof window !== 'undefined' && (window as Record<string, unknown>).VITE_SUPABASE_URL as string)
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof window !== 'undefined' && (window as Record<string, unknown>).VITE_SUPABASE_ANON_KEY as string)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof window !== 'undefined' && (window as Record<string, string>).VITE_SUPABASE_URL)
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof window !== 'undefined' && (window as Record<string, string>).VITE_SUPABASE_ANON_KEY)
 
 // Check if Supabase configuration is valid
 const isValidSupabaseConfig = (
   supabaseUrl && 
   supabaseAnonKey && 
   supabaseUrl !== 'https://your-project-id.supabase.co' &&
+  supabaseUrl !== 'your_supabase_project_url' &&
   supabaseAnonKey !== 'your-supabase-anon-key-here' &&
-  !supabaseUrl.includes('rnqjqhqhqhqhqhqhqhqh')
+  supabaseAnonKey !== 'your_supabase_anon_key' &&
+  !supabaseUrl.includes('rnqjqhqhqhqhqhqhqhqh') &&
+  supabaseUrl.startsWith('https://') &&
+  supabaseUrl.includes('.supabase.co')
 )
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -32,10 +36,19 @@ function createSupabaseClient(): SupabaseClient<Database> {
     return supabaseInstance
   }
 
-  // Create Supabase client with fallback values and optimized settings
+  // Validate URLs before creating client to prevent validation errors
+  const validUrl = (supabaseUrl && supabaseUrl.startsWith('https://') && supabaseUrl.includes('.supabase.co')) 
+    ? supabaseUrl 
+    : 'https://demo-project.supabase.co'
+  
+  const validKey = (supabaseAnonKey && supabaseAnonKey.length > 20 && !supabaseAnonKey.includes('your_')) 
+    ? supabaseAnonKey 
+    : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+
+  // Create Supabase client with validated values and optimized settings
   supabaseInstance = createClient<Database>(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder-key',
+    validUrl,
+    validKey,
     {
       db: {
         schema: 'public'
@@ -51,17 +64,29 @@ function createSupabaseClient(): SupabaseClient<Database> {
           'X-Client-Info': 'nawras-crm@1.0.0'
         },
         fetch: async (url, options = {}) => {
-          // Fix browser extension interference that adds malformed 'columns=' parameter
-          if (typeof url === 'string' && url.includes('columns=') && url.includes('select=')) {
-            // Remove the malformed columns parameter that browser extensions might add
-            const cleanUrl = url.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
-              return suffix === '&' ? '&' : ''
-            })
-            // Only log in development mode to reduce console noise
-            if (import.meta.env.DEV) {
-              console.warn('🛡️ Fixed malformed URL caused by browser extension:', { original: url, fixed: cleanUrl })
+          // Fix browser extension interference and malformed URLs
+          if (typeof url === 'string') {
+            let cleanUrl = url
+            
+            // Fix malformed URLs where &select=* is appended incorrectly
+            if (cleanUrl.includes('&select=*') && !cleanUrl.includes('?')) {
+              cleanUrl = cleanUrl.replace('&select=*', '?select=*')
             }
-            url = cleanUrl
+            
+            // Remove malformed columns parameter that browser extensions might add
+            if (cleanUrl.includes('columns=') && cleanUrl.includes('select=')) {
+              cleanUrl = cleanUrl.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
+                return suffix === '&' ? '&' : ''
+              })
+            }
+            
+            // Fix any remaining malformed query parameters
+            cleanUrl = cleanUrl.replace(/([^?])&/, '$1?')
+            
+            if (cleanUrl !== url) {
+              console.warn('🛡️ Fixed malformed URL:', { original: url, fixed: cleanUrl })
+              url = cleanUrl
+            }
           }
           
           try {
@@ -116,5 +141,5 @@ export type ProposalUpdate = Tables['proposals']['Update']
 export type Deal = Tables['deals']['Row']
 export type Customer = Tables['customers']['Row']
 export type Lead = Tables['leads']['Row']
-export type User = Tables['users']['Row']
+// Removed User type export since we don't have a users table
 export type Invoice = Tables['invoices']['Row']

@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { runComprehensiveTests } from '../utils/test-runner'
 import { addDemoData, clearDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '../components/export-fields/ExportFieldsForm'
+import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 import type { Database } from '../lib/database.types'
 
 
@@ -49,12 +50,15 @@ export default function Customers() {
     console.log('🔄 Starting loadCustomers function');
     setLoading(true);
     
+    // Protect from browser extension interference
+    protectFromExtensionInterference();
+    
     try {
       // Check if we're in offline mode
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Customers] Loading data - offlineMode:', isOfflineMode)
+      const offlineMode = isOfflineMode()
+      console.log('🔧 [Customers] Loading data - offlineMode:', offlineMode)
       
-      if (isOfflineMode) {
+      if (offlineMode) {
         console.log('📱 Loading customers from offline service')
         const customersData = await offlineDataService.getCustomers()
         console.log('✅ Customers loaded from offline service:', customersData);
@@ -77,14 +81,20 @@ export default function Customers() {
     } catch (err) {
       console.error('💥 Error in loadCustomers:', err);
       
-      // Fallback to offline mode if Supabase fails
-      try {
-        console.log('🔄 Falling back to offline mode due to error')
-        const fallbackData = await offlineDataService.getCustomers()
-        setCustomers(fallbackData);
-        toast.warning('Using offline data due to connection issues')
-      } catch (offlineError) {
-        console.error('Offline fallback failed:', offlineError)
+      // Use enhanced error handling
+      const shouldFallback = handleSupabaseError(err, 'customer loading');
+      
+      if (shouldFallback) {
+        try {
+          console.log('🔄 Falling back to offline mode due to error')
+          const fallbackData = await offlineDataService.getCustomers()
+          setCustomers(fallbackData);
+          toast.warning('Using offline data due to connection issues')
+        } catch (offlineError) {
+          console.error('Offline fallback failed:', offlineError)
+          toast.error('Failed to load customers. Please try again.');
+        }
+      } else {
         toast.error('Failed to load customers. Please try again.');
       }
     } finally {
@@ -113,11 +123,14 @@ export default function Customers() {
     try {
       console.log('💾 Starting customer save operation...');
       
-      // Check if we're in offline mode
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Customers] Saving data - offlineMode:', isOfflineMode)
+      // Protect from browser extension interference
+      protectFromExtensionInterference();
       
-      if (isOfflineMode) {
+      // Check if we're in offline mode
+      const offlineMode = isOfflineMode()
+      console.log('🔧 [Customers] Saving data - offlineMode:', offlineMode)
+      
+      if (offlineMode) {
         if (showEditModal && selectedCustomer) {
           // Update existing customer in offline storage
           console.log('✏️ Updating customer in offline storage...');
@@ -203,9 +216,12 @@ export default function Customers() {
     } catch (error) {
       console.error('Error saving customer:', error)
       
-      // Fallback to offline mode if Supabase fails
-      try {
-        console.log('🔄 Falling back to offline mode for save operation')
+      // Use enhanced error handling
+      const shouldFallback = handleSupabaseError(error, 'customer saving');
+      
+      if (shouldFallback) {
+        try {
+          console.log('🔄 Falling back to offline mode for save operation')
         if (showEditModal && selectedCustomer) {
           const updatedCustomer = await offlineDataService.updateCustomer(selectedCustomer.id, {
             ...formData,
@@ -239,9 +255,12 @@ export default function Customers() {
           addCustomer(newCustomer);
           toast.warning('Customer added using offline storage')
         }
-        resetForm()
-      } catch (offlineError) {
-        console.error('Offline fallback failed:', offlineError)
+          resetForm()
+        } catch (offlineError) {
+          console.error('Offline fallback failed:', offlineError)
+          toast.error('Failed to save customer')
+        }
+      } else {
         toast.error('Failed to save customer')
       }
     } finally {
@@ -256,11 +275,14 @@ export default function Customers() {
     try {
       setLoading(true)
       
-      // Check if we're in offline mode
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Customers] Deleting data - offlineMode:', isOfflineMode)
+      // Protect from browser extension interference
+      protectFromExtensionInterference();
       
-      if (isOfflineMode) {
+      // Check if we're in offline mode
+      const offlineMode = isOfflineMode()
+      console.log('🔧 [Customers] Deleting data - offlineMode:', offlineMode)
+      
+      if (offlineMode) {
         console.log('🗑️ Deleting customer from offline storage...');
         await offlineDataService.deleteCustomer(customer.id);
         removeCustomer(customer.id)
@@ -283,14 +305,20 @@ export default function Customers() {
     } catch (error) {
       console.error('Error deleting customer:', error)
       
-      // Fallback to offline mode if Supabase fails
-      try {
-        console.log('🔄 Falling back to offline mode for delete operation')
-        await offlineDataService.deleteCustomer(customer.id);
-        removeCustomer(customer.id)
-        toast.warning('Customer deleted using offline storage')
-      } catch (offlineError) {
-        console.error('Offline fallback failed:', offlineError)
+      // Use enhanced error handling
+      const shouldFallback = handleSupabaseError(error, 'customer deletion');
+      
+      if (shouldFallback) {
+        try {
+          console.log('🔄 Falling back to offline mode for delete operation')
+          await offlineDataService.deleteCustomer(customer.id);
+          removeCustomer(customer.id)
+          toast.warning('Customer deleted using offline storage')
+        } catch (offlineError) {
+          console.error('Offline fallback failed:', offlineError)
+          toast.error('Failed to delete customer')
+        }
+      } else {
         toast.error('Failed to delete customer')
       }
     } finally {

@@ -18,6 +18,7 @@ import { devConfig } from '../config/development'
 import { runComprehensiveTests } from '../utils/test-runner'
 import { addDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '@/components/ExportFieldsForm'
+import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 
 import { Database } from '@/lib/database.types'
 
@@ -78,11 +79,12 @@ export default function Leads() {
   const loadLeads = useCallback(async () => {
     try {
       setLoading(true)
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Leads] Loading data...', { offlineMode: isOfflineMode, devConfig })
+      protectFromExtensionInterference()
+      const offline = isOfflineMode()
+      console.log('🔧 [Leads] Loading data...', { offlineMode: offline })
       
       // Check if we're in offline mode
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Loading leads from offline storage')
         const data = await offlineDataService.getLeads()
         setLeads(data || [])
@@ -101,9 +103,13 @@ export default function Leads() {
         console.log('🔧 [Leads] Supabase response:', { leadsCount: data?.length || 0, data })
         setLeads(data || [])
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-        const data = await offlineDataService.getLeads()
-        setLeads(data || [])
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+        if (handleSupabaseError(supabaseError)) {
+          const data = await offlineDataService.getLeads()
+          setLeads(data || [])
+        } else {
+          throw supabaseError
+        }
       }
     } catch (error) {
       console.error('Error loading leads:', error)
@@ -173,12 +179,13 @@ export default function Leads() {
   const handleSubmit = async (data: LeadFormData) => {
     try {
       setLoading(true)
+      protectFromExtensionInterference()
       
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Leads] Saving data...', { offlineMode: isOfflineMode })
+      const offline = isOfflineMode()
+      console.log('🔧 [Leads] Saving data...', { offlineMode: offline })
       
       // Check if we're in offline mode
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for lead operations')
         
         if (editingLead) {
@@ -313,9 +320,13 @@ export default function Leads() {
           })
         }
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-        // Fallback to offline mode
-        await handleOfflineOperation(data, editingLead)
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+        if (handleSupabaseError(supabaseError)) {
+          // Fallback to offline mode
+          await handleOfflineOperation(data, editingLead)
+        } else {
+          throw supabaseError
+        }
       }
 
       // Reset form
@@ -338,12 +349,13 @@ export default function Leads() {
 
     try {
       setLoading(true)
+      protectFromExtensionInterference()
       
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Leads] Deleting data...', { offlineMode: isOfflineMode })
+      const offline = isOfflineMode()
+      console.log('🔧 [Leads] Deleting data...', { offlineMode: offline })
       
       // Check if we're in offline mode
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for lead deletion')
         await offlineDataService.deleteLead(lead.id)
         setLeads(leads.filter(l => l.id !== lead.id))
@@ -368,13 +380,17 @@ export default function Leads() {
           description: "Lead deleted successfully"
         })
       } catch (supabaseError) {
-        console.warn('Supabase failed, falling back to offline mode:', supabaseError)
-        await offlineDataService.deleteLead(lead.id)
-        setLeads(leads.filter(l => l.id !== lead.id))
-        toast({
-          title: "Success",
-          description: "Lead deleted successfully"
-        })
+        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
+        if (handleSupabaseError(supabaseError)) {
+          await offlineDataService.deleteLead(lead.id)
+          setLeads(leads.filter(l => l.id !== lead.id))
+          toast({
+            title: "Success",
+            description: "Lead deleted successfully"
+          })
+        } else {
+          throw supabaseError
+        }
       }
     } catch (error) {
       console.error('Error deleting lead:', error)
@@ -391,11 +407,12 @@ export default function Leads() {
   const handleConvertToCustomer = async (lead: Lead) => {
     try {
       setLoading(true)
+      protectFromExtensionInterference()
       
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Leads] Converting lead to customer...', { offlineMode: isOfflineMode })
+      const offline = isOfflineMode()
+      console.log('🔧 [Leads] Converting lead to customer...', { offlineMode: offline })
       
-      if (isOfflineMode) {
+      if (offline) {
         console.log('📱 Using offline mode for lead conversion')
         // In offline mode, just update the lead status
         const updateData: Partial<Lead> = { status: 'closed_won' }

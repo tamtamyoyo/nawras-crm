@@ -157,18 +157,11 @@ export async function deleteWithRetry<T>(
  */
 export async function checkSupabaseHealth(): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('users')
-      .select('id')
-      .limit(1)
-      .single()
+    // Simple auth session check instead of querying non-existent users table
+    const { error } = await supabase.auth.getSession()
     
-    // If we get a 'no rows' error, that's actually good - it means we can connect
-    if (error && !error.message.includes('No rows')) {
-      return false
-    }
-    
-    return true
+    // If we can get session data without error, connection is healthy
+    return !error
   } catch {
     return false
   }

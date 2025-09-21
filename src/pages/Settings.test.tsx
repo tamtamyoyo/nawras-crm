@@ -8,12 +8,17 @@ import { supabase } from '../lib/supabase-client'
 // Mock dependencies
 vi.mock('../hooks/useAuthHook')
 vi.mock('@/hooks/use-toast')
-vi.mock('../lib/supabase')
+vi.mock('../lib/supabase-client')
 
 const mockUser = {
   id: 'user-1',
   email: 'test@example.com',
-  created_at: '2024-01-01T00:00:00Z'
+  created_at: '2024-01-01T00:00:00Z',
+  aud: 'authenticated',
+  app_metadata: {},
+  user_metadata: {},
+  role: 'authenticated',
+  updated_at: '2024-01-01T00:00:00Z'
 }
 
 const mockProfile = {
@@ -25,7 +30,8 @@ const mockProfile = {
   bio: 'Test bio',
   avatar_url: null,
   created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z'
+  updated_at: '2024-01-01T00:00:00Z',
+  user_id: 'user-1'
 }
 
 const mockToast = vi.fn()
@@ -120,9 +126,7 @@ describe('Settings', () => {
     fireEvent.click(saveButton)
     
     await waitFor(() => {
-      expect(mockSupabaseFrom).toHaveBeenCalledWith('users')
-      expect(mockSupabaseUpdate).toHaveBeenCalled()
-      expect(mockSupabaseEq).toHaveBeenCalledWith('id', 'user-1')
+      // No longer calling users table since we removed it
       expect(mockRefreshProfile).toHaveBeenCalled()
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Profile updated',

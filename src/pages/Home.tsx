@@ -3,7 +3,9 @@ import { useAuth } from '../hooks/useAuthHook';
 import { useStore } from '@/store/useStore';
 import { supabase } from '@/lib/supabase-client';
 import * as offlineDataService from '@/services/offlineDataService';
-import { devConfig } from '@/config/dev-config';
+import { isOfflineMode } from '../utils/offlineMode'
+import { handleSupabaseError } from '../utils/errorHandling'
+import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { toast } from 'sonner';
 import {
   LineChart,
@@ -29,22 +31,42 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (devConfig.OFFLINE_MODE) {
+        protectFromExtensionInterference()
+        
+        if (isOfflineMode()) {
           await Promise.all([
             offlineDataService.getDeals(),
             offlineDataService.getLeads(),
             offlineDataService.getCustomers()
           ]);
         } else {
-          await Promise.all([
-            supabase.from('deals').select('*').order('created_at', { ascending: false }).limit(10),
-            supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(10),
-            supabase.from('customers').select('*').order('created_at', { ascending: false }).limit(10)
-          ]);
+          try {
+            await Promise.all([
+              supabase.from('deals').select('*').order('created_at', { ascending: false }).limit(10),
+              supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(10),
+              supabase.from('customers').select('*').order('created_at', { ascending: false }).limit(10)
+            ]);
+          } catch (supabaseError) {
+            console.warn('Supabase error, checking fallback:', supabaseError)
+            const shouldFallback = handleSupabaseError(supabaseError, 'dashboard data loading')
+            
+            if (shouldFallback) {
+              // Fallback to offline data
+              await Promise.all([
+                offlineDataService.getDeals(),
+                offlineDataService.getLeads(),
+                offlineDataService.getCustomers()
+              ]);
+              toast.info('Loading data from offline storage')
+            } else {
+              throw supabaseError
+            }
+          }
         }
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
+        toast.error('Failed to load dashboard data')
         setIsLoading(false);
       }
     };

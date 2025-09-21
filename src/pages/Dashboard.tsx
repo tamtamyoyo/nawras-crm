@@ -3,7 +3,9 @@ import { useAuth } from '../hooks/useAuthHook'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+import { isOfflineMode } from '../utils/offlineMode'
+import { handleSupabaseError } from '../utils/errorHandling'
+import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +48,8 @@ export default function Dashboard() {
 
   const loadDashboardData = useCallback(async (isRefresh = false) => {
     try {
+      protectFromExtensionInterference()
+      
       if (isRefresh) {
         setRefreshing(true)
       } else {
@@ -53,10 +57,10 @@ export default function Dashboard() {
       }
       
       // Check if we're in offline mode
-      const isOfflineMode = devConfig.offlineMode
-      console.log('🔧 [Dashboard] Loading data - offlineMode:', isOfflineMode, 'devConfig:', devConfig)
+      const offlineMode = isOfflineMode()
+      console.log('🔧 [Dashboard] Loading data - offlineMode:', offlineMode)
       
-      if (isOfflineMode) {
+      if (offlineMode) {
         console.log('📱 Loading dashboard data from offline service')
         
         // Load data from offline service
@@ -103,25 +107,31 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       
-      // Fallback to offline mode if Supabase fails
-      try {
-        console.log('🔄 Falling back to offline mode due to error')
-        const [customersData, dealsData, leadsData, proposalsData] = await Promise.all([
-          await offlineDataService.getCustomers(),
-          await offlineDataService.getDeals(),
-          await offlineDataService.getLeads(),
-          await offlineDataService.getProposals()
-        ])
+      // Use centralized error handling to determine fallback
+      const shouldFallback = handleSupabaseError(error, 'dashboard data loading')
+      
+      if (shouldFallback) {
+        try {
+          console.log('🔄 Falling back to offline mode due to error')
+          const [customersData, dealsData, leadsData, proposalsData] = await Promise.all([
+            await offlineDataService.getCustomers(),
+            await offlineDataService.getDeals(),
+            await offlineDataService.getLeads(),
+            await offlineDataService.getProposals()
+          ])
 
-        setCustomers(customersData)
-        setDeals(dealsData)
-        setLeads(leadsData)
-        setProposals(proposalsData)
-        generateChartData(dealsData, leadsData)
-        
-        toast.warning('Using offline data due to connection issues')
-      } catch (offlineError) {
-        console.error('Offline fallback failed:', offlineError)
+          setCustomers(customersData)
+          setDeals(dealsData)
+          setLeads(leadsData)
+          setProposals(proposalsData)
+          generateChartData(dealsData, leadsData)
+          
+          toast.warning('Using offline data due to connection issues')
+        } catch (offlineError) {
+          console.error('Offline fallback failed:', offlineError)
+          toast.error('Failed to load dashboard data')
+        }
+      } else {
         toast.error('Failed to load dashboard data')
       }
     } finally {
