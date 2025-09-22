@@ -1,18 +1,20 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { DataTable, DataTableColumnHeader } from "@/components/ui/data-table"
-import { Building, User, Calendar, Eye, Edit, Trash2, Send, Download } from "lucide-react"
-import { Database } from "@/lib/database.types"
-import { generateProposalPDF } from "@/utils/pdf-generator"
+import { DataTableColumnHeader } from "@/components/ui/data-table"
+import { EnhancedDataTable } from "@/components/ui/enhanced-data-table"
+import { Building, Calendar, Download, Edit, Eye, Send, Trash2, User } from "lucide-react"
 import { toast } from "sonner"
+import { generateProposalPDF } from "@/utils/pdf-generator"
+import type { Database } from "@/lib/database.types"
+import type { Customer, Deal } from "@/services/offlineDataService"
 
 type Proposal = Database['public']['Tables']['proposals']['Row']
 
 interface ProposalsTableProps {
   data: Proposal[]
-  deals: Record<string, unknown>[]
-  customers: Record<string, unknown>[]
+  deals: Deal[]
+  customers: Customer[]
   onView: (proposal: Proposal) => void
   onEdit: (proposal: Proposal) => void
   onDelete: (proposal: Proposal) => void
@@ -203,7 +205,7 @@ export function ProposalsTable({
   ]
 
   return (
-    <DataTable
+    <EnhancedDataTable
       columns={columns}
       data={data}
       searchKey="title"

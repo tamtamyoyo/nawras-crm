@@ -194,7 +194,7 @@ export default function Dashboard() {
   // Calculate proposal statistics
   const totalProposals = proposals.length
   const acceptedProposals = proposals.filter(proposal => proposal.status === 'accepted').length
-  const pendingProposals = proposals.filter(proposal => proposal.status === 'pending').length
+  const pendingProposals = proposals.filter(proposal => proposal.status === 'draft').length
   const totalProposalValue = proposals.reduce((sum, proposal) => {
     try {
       const content = typeof proposal.content === 'string' ? JSON.parse(proposal.content) : proposal.content
@@ -305,7 +305,6 @@ export default function Dashboard() {
     return (
       <PageLoadingOverlay 
         message="Loading dashboard data..."
-        progress={75}
       />
     )
   }

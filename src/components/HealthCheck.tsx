@@ -13,13 +13,13 @@ interface HealthCheckProps {
 }
 
 export const HealthCheck: React.FC<HealthCheckProps> = ({ autoRefresh: propAutoRefresh = true, refreshInterval = 30000 }) => {
-  const [healthData, setHealthData] = useState<{ status: string; database: { status: string; responseTime?: number }; api: { status: string; responseTime?: number }; cache: { status: string; responseTime?: number } } | null>(null);
+  const [healthData, setHealthData] = useState<{ overall: 'healthy' | 'unhealthy' | 'degraded'; services: { service: string; status: 'healthy' | 'unhealthy' | 'degraded'; timestamp: string; responseTime?: number; error?: string; details?: Record<string, unknown> }[]; timestamp: string } | null>(null);
   const [performanceData, setPerformanceData] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(propAutoRefresh);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [alerts, setAlerts] = useState<{ id: string; severity: string; message: string; value: number; threshold: number; timestamp: Date }[]>([]);
-  const [alertStats, setAlertStats] = useState<{ total: number; critical: number; high: number; medium: number; low: number } | null>(null);
+  const [alertStats, setAlertStats] = useState<{ total: number; active: number; bySeverity: Record<'low' | 'medium' | 'high' | 'critical', number>; last24Hours: number } | null>(null);
 
   const fetchHealthData = async () => {
     setLoading(true);
@@ -172,63 +172,43 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ autoRefresh: propAutoR
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Overall Status</span>
                 <div className="flex items-center gap-2">
-                  {getStatusIcon(healthData.status)}
-                  <Badge className={getStatusColor(healthData.status)}>
-                    {healthData.status.toUpperCase()}
+                  {getStatusIcon(healthData.overall)}
+                  <Badge className={getStatusColor(healthData.overall)}>
+                    {healthData.overall.toUpperCase()}
                   </Badge>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Database className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">Database</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(healthData.database.status)}
-                    <Badge className={getStatusColor(healthData.database.status)}>
-                      {healthData.database.status}
-                    </Badge>
-                  </div>
-                  {healthData.database.responseTime && (
-                    <p className="text-xs text-gray-600">
-                      Response: {healthData.database.responseTime}ms
-                    </p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">Application</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(healthData.application.status)}
-                    <Badge className={getStatusColor(healthData.application.status)}>
-                      {healthData.application.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    Uptime: {Math.round(healthData.application.uptime / 1000)}s
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium">Performance</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(healthData.performance.status)}
-                    <Badge className={getStatusColor(healthData.performance.status)}>
-                      {healthData.performance.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    Score: {healthData.performance.score}/100
-                  </p>
-                </div>
+                {healthData.services.map((service) => {
+                  const getServiceIcon = (serviceName: string) => {
+                    switch (serviceName) {
+                      case 'database': return <Database className="h-4 w-4 text-blue-600" />;
+                      case 'application': return <Activity className="h-4 w-4 text-green-600" />;
+                      default: return <Zap className="h-4 w-4 text-purple-600" />;
+                    }
+                  };
+                  
+                  return (
+                    <div key={service.service} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {getServiceIcon(service.service)}
+                        <span className="text-sm font-medium capitalize">{service.service}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(service.status)}
+                        <Badge className={getStatusColor(service.status)}>
+                          {service.status}
+                        </Badge>
+                      </div>
+                      {service.responseTime && (
+                        <p className="text-xs text-gray-600">
+                          Response: {service.responseTime}ms
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (

@@ -228,14 +228,11 @@ export const ALERT_THRESHOLDS = {
 } as const;
 
 // Check if metrics exceed thresholds
-export const checkAlertThresholds = (metrics: ReturnType<typeof collectPerformanceMetrics>) => {
+export const checkAlertThresholds = (metrics: PerformanceMetrics) => {
   const alerts: string[] = [];
   
-  if (metrics.memory) {
-    const memoryUsagePercent = (metrics.memory.used / metrics.memory.total) * 100;
-    if (memoryUsagePercent > ALERT_THRESHOLDS.MEMORY_USAGE_PERCENT) {
-      alerts.push(`High memory usage: ${memoryUsagePercent.toFixed(1)}%`);
-    }
+  if (metrics.memoryUsage > ALERT_THRESHOLDS.MEMORY_USAGE_PERCENT) {
+    alerts.push(`High memory usage: ${metrics.memoryUsage.toFixed(1)}%`);
   }
   
   return alerts;

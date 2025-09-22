@@ -1,4 +1,3 @@
-import { devConfig } from '../config/development';
 import { Database } from '@/lib/database.types';
 
 // Use Database types for consistency
@@ -19,6 +18,7 @@ export interface Customer {
   created_by: string | null
   created_at: string
   updated_at: string
+  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
   // Export-specific fields
   export_license_number: string | null
   export_license_expiry: string | null
@@ -66,15 +66,19 @@ export interface ProposalContent {
 export interface Proposal {
   id: string;
   title: string;
-  customer_id: string;
-  customer_name?: string;
+  customer_id: string | null;
+  deal_id: string | null;
   status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected';
-  total_amount: number;
   source: string | null;
-  content?: ProposalContent;
-  created_by: string;
+  content: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
+  valid_until: string | null;
+  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed';
+  proposal_type: string | null;
+  validity_period: number | null;
+  delivery_method: string | null;
 }
 
 export interface InvoiceItem {
@@ -131,16 +135,17 @@ const mockCustomers: Customer[] = [
     created_by: 'user1',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
+    responsible_person: 'Mr. Ali',
     // Export-specific fields
-    export_license_number: null,
-    export_license_expiry: null,
-    customs_broker: null,
-    preferred_currency: null,
-    payment_terms_export: null,
-    credit_limit_usd: null,
-    export_documentation_language: null,
-    special_handling_requirements: null,
-    compliance_notes: null
+    export_license_number: 'EXP-2024-001',
+    export_license_expiry: '2025-12-31',
+    customs_broker: 'Global Customs LLC',
+    preferred_currency: 'USD',
+    payment_terms_export: 'NET 30',
+    credit_limit_usd: 100000,
+    export_documentation_language: 'English',
+    special_handling_requirements: 'Temperature controlled',
+    compliance_notes: 'All documents verified'
   },
   {
     id: '2',
@@ -156,11 +161,12 @@ const mockCustomers: Customer[] = [
     created_by: 'user1',
     created_at: '2024-01-16T09:30:00Z',
     updated_at: '2024-01-16T09:30:00Z',
+    responsible_person: 'Mr. Mustafa',
     // Export-specific fields
     export_license_number: null,
     export_license_expiry: null,
     customs_broker: null,
-    preferred_currency: null,
+    preferred_currency: 'USD',
     payment_terms_export: null,
     credit_limit_usd: null,
     export_documentation_language: null,
@@ -229,7 +235,12 @@ const MOCK_DEALS: Deal[] = [
     notes: 'Proposal sent, awaiting feedback',
     created_by: null,
     created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z'
+    updated_at: '2024-01-15T10:00:00Z',
+    responsible_person: 'Mr. Ali',
+    competitor_info: null,
+    decision_maker_contact: null,
+    deal_source: 'Website',
+    deal_type: 'Enterprise'
   },
   {
     id: 'deal-2',
@@ -247,7 +258,12 @@ const MOCK_DEALS: Deal[] = [
     notes: 'In negotiation phase',
     created_by: null,
     created_at: '2024-01-16T09:30:00Z',
-    updated_at: '2024-01-16T09:30:00Z'
+    updated_at: '2024-01-16T09:30:00Z',
+    responsible_person: 'Mr. Mustafa',
+    competitor_info: null,
+    decision_maker_contact: null,
+    deal_source: 'Referral',
+    deal_type: 'Small Business'
   }
 ];
 
@@ -256,14 +272,18 @@ const MOCK_PROPOSALS: Proposal[] = [
     id: 'prop-1',
     title: 'CRM Implementation Proposal',
     customer_id: 'cust-1',
-    customer_name: 'Ahmed Al-Rashid',
+    deal_id: 'deal-1',
     status: 'sent',
-    total_amount: 45000,
     source: 'Website',
-    content: { sections: ['Overview', 'Implementation', 'Pricing'] },
+    content: 'Complete CRM implementation proposal with overview, implementation plan, and pricing details.',
     created_by: 'offline-user',
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    valid_until: '2024-12-31T23:59:59Z',
+    responsible_person: 'Mr. Ali',
+    proposal_type: 'standard',
+    validity_period: 30,
+    delivery_method: 'email'
   }
 ];
 

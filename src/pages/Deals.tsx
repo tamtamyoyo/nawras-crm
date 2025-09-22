@@ -3,22 +3,22 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Handshake, Plus, DollarSign, Trash2, TestTube } from 'lucide-react'
-import { runComprehensiveTests } from '../utils/test-runner'
+import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData, clearDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '../components/ExportFieldsForm'
 
 import { supabase } from '../lib/supabase-client'
 import { useStore } from '../store/useStore'
+import type { Deal as OfflineDeal } from '../services/offlineDataService'
 import { useAuth } from '../hooks/useAuthHook'
 import { toast } from 'sonner'
 import type { Database } from '../lib/database.types'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 import { EnhancedPipeline } from '../components/deals/EnhancedPipeline'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 
 type Deal = Database['public']['Tables']['deals']['Row']
-type DealInsert = Database['public']['Tables']['deals']['Insert']
 
 
 const DEAL_STAGES = [
@@ -36,7 +36,7 @@ export default function Deals() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [selectedDealForExport, setSelectedDealForExport] = useState<Deal | null>(null)
-  const [formData, setFormData] = useState<Partial<DealInsert>>({
+  const [formData, setFormData] = useState<Partial<Deal>>({
     title: '',
     customer_id: '',
     value: 0,
@@ -202,7 +202,7 @@ export default function Deals() {
       try {
         if (showEditModal && selectedDeal) {
           const updateData = { ...formData, updated_at: new Date().toISOString() }
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('deals')
             .update(updateData)
             .eq('id', selectedDeal.id)
@@ -234,7 +234,7 @@ export default function Deals() {
             created_by: user.id
           }
           
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('deals')
             .insert([insertData])
             .select()
@@ -457,7 +457,7 @@ export default function Deals() {
                   }
                   if (confirm('Are you sure you want to clear all demo data? This action cannot be undone.')) {
                     try {
-                      await clearDemoData(user.id)
+                      await clearDemoData()
                       await loadData()
                       toast.success('Demo data cleared successfully!')
                     } catch {
@@ -557,7 +557,7 @@ export default function Deals() {
                 
                 if (offline) {
                   console.log('📱 Using offline mode for deal stage update')
-                  const updateData = { stage: newStage, updated_at: new Date().toISOString() }
+                  const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
                   const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
                   updateDeal(dealId, updatedDeal)
                   toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
@@ -565,8 +565,8 @@ export default function Deals() {
                 }
                 
                 try {
-                  const updateData = { stage: newStage, updated_at: new Date().toISOString() }
-                  const { data, error } = await supabase
+                  const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
+                  const { data, error } = await (supabase as any)
                     .from('deals')
                     .update(updateData)
                     .eq('id', dealId)
@@ -580,7 +580,7 @@ export default function Deals() {
                 } catch (supabaseError) {
                   console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
                   if (handleSupabaseError(supabaseError)) {
-                    const updateData = { stage: newStage, updated_at: new Date().toISOString() }
+                    const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
                     const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
                     updateDeal(dealId, updatedDeal)
                     toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)

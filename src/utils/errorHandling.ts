@@ -3,7 +3,7 @@
  */
 
 import { toast } from 'sonner';
-import { devConfig } from '../config/development';
+
 
 /**
  * Handles Supabase errors with consistent fallback behavior
@@ -41,7 +41,7 @@ export function handleSupabaseError(error: any, context: string = 'Operation'): 
  * @param data - Optional data to log
  */
 export function logDev(message: string, data?: any): void {
-  if (devConfig.enableAuthLogs) {
+  if (false) { // Dev logging disabled
     if (data) {
       console.log(message, data);
     } else {

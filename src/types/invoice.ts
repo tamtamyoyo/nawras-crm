@@ -1,4 +1,5 @@
 import { Database } from '../lib/database.types';
+import { PDFCustomizationOptions } from '../utils/pdf-generator';
 
 export interface InvoiceItem {
   description: string;
@@ -32,3 +33,6 @@ export type InvoiceInsertWithItems = Omit<InvoiceInsert, 'items'> & {
 export type InvoiceUpdateWithItems = Omit<InvoiceUpdate, 'items'> & {
   items?: InvoiceItem[];
 };
+
+// Re-export PDFCustomizationOptions for convenience
+export type { PDFCustomizationOptions };

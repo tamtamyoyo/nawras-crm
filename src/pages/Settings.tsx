@@ -39,7 +39,7 @@ import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { runComprehensiveTests } from '../utils/test-runner'
+import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData } from '../utils/demo-data'
 
 import { HealthCheck } from '../components/HealthCheck'

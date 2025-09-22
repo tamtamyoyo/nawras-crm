@@ -37,7 +37,7 @@ import {
   calculateDeliveryDate
 } from '../../lib/standardTemplate'
 
-interface ProposalSection {
+export interface ProposalSection {
   id: string
   type: 'text' | 'table' | 'list' | 'image' | 'pricing' | 'timeline'
   title: string
@@ -46,7 +46,7 @@ interface ProposalSection {
   required: boolean
 }
 
-interface ProposalTemplate {
+export interface ProposalTemplate {
   id: string
   name: string
   description: string
@@ -203,10 +203,14 @@ export function ProposalTemplate({
 }: ProposalTemplateProps) {
   const [template, setTemplate] = useState<ProposalTemplate>(propTemplate || DEFAULT_TEMPLATE)
   const [previewMode, setPreviewMode] = useState(false)
-  const [variables, setVariables] = useState<Record<string, string>>(template.variables as Record<string, string>)
+  const [variables, setVariables] = useState<Record<string, string>>(
+    Object.fromEntries(
+      Object.entries(template.variables).map(([key, value]) => [key, String(value || '')])
+    )
+  )
   
   // Form validation
-  const { errors, validateSingleField: validateField, validateAll: validateForm, clearErrors } = useFormValidation(proposalSchema)
+  const { errors, validateAll: validateForm } = useFormValidation(proposalSchema)
   const [formData, setFormData] = useState({
     title: template.name || '',
     customer_id: '',
@@ -222,10 +226,10 @@ export function ProposalTemplate({
       // Auto-populate variables from deal and customer data
       const autoVariables = {
         ...variables,
-        customer_name: customerData?.name || customerData?.company || 'Valued Client',
-        invoice_number: dealData?.id || '001',
-        deal_value: dealData?.value || 0,
-        sales_rep_name: dealData?.assigned_to || 'Sales Representative',
+        customer_name: String(customerData?.name || customerData?.company || 'Valued Client'),
+        invoice_number: String(dealData?.id || '001'),
+        deal_value: String(dealData?.value || 0),
+        sales_rep_name: String(dealData?.assigned_to || 'Sales Representative'),
         current_date: new Date().toLocaleDateString(),
         valid_until_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
       }
@@ -333,9 +337,7 @@ export function ProposalTemplate({
     }
     
     // Validate the form
-    const validationResult = validateForm(currentFormData)
-    
-    if (!validationResult.isValid) {
+    if (!validateForm()) {
       toast.error('Please fix the validation errors before saving')
       return
     }
@@ -348,7 +350,6 @@ export function ProposalTemplate({
     if (onSave) {
       onSave({ ...template, variables })
       toast.success('Template saved successfully')
-      clearErrors()
     }
   }
 
@@ -365,9 +366,7 @@ export function ProposalTemplate({
     }
     
     // Validate the form
-    const validationResult = validateForm(currentFormData)
-    
-    if (!validationResult.isValid) {
+    if (!validateForm()) {
       toast.error('Please fix the validation errors before generating proforma invoice')
       return
     }
@@ -383,13 +382,12 @@ export function ProposalTemplate({
         sections: template.sections.map(section => ({
           ...section,
           content: typeof section.content === 'object' && section.content.text
-            ? { ...section.content, text: replaceVariables(section.content.text) }
+            ? { ...section.content, text: replaceVariables(String(section.content.text || '')) }
             : section.content
         }))
       }
       onGenerate(processedTemplate)
       toast.success('Proforma invoice generated successfully')
-      clearErrors()
     }
   }
 
@@ -403,10 +401,21 @@ export function ProposalTemplate({
         proposal: {
           id: template.id,
           title: variables.invoice_number ? `Proforma Invoice ${variables.invoice_number}` : template.name,
-          description: template.description || '',
-          status: 'draft',
-          content: template.sections,
-          variables: variables,
+          deal_id: formData.deal_id || 'temp-deal-id',
+          customer_id: formData.customer_id || 'temp-customer-id',
+          content: JSON.stringify(template.sections),
+          status: 'draft' as const,
+          valid_until: formData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          source: 'template',
+          created_by: 'system',
+          updated_by: 'system',
+          total_amount: calculateTotal(),
+          currency: 'USD',
+          payment_terms: formData.terms || '30 days',
+          delivery_method: 'standard',
+          responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+          proposal_type: 'proforma_invoice',
+          validity_period: 30,
           created_at: template.createdAt?.toISOString() || new Date().toISOString(),
           updated_at: template.updatedAt?.toISOString() || new Date().toISOString()
         },
@@ -414,13 +423,67 @@ export function ProposalTemplate({
           id: 'customer-1',
           name: variables.customer_name || 'Valued Client',
           email: variables.customer_email || '',
-          company: variables.customer_name || 'Valued Client'
+          phone: '',
+          company: variables.customer_name || 'Valued Client',
+          address: '',
+          status: 'active' as const,
+          source: 'template',
+          tags: [],
+          notes: '',
+          created_by: 'system',
+          updated_by: 'system',
+          last_contact_date: null,
+          next_follow_up_date: null,
+          lead_score: 0,
+          lifecycle_stage: 'customer',
+          industry: null,
+          company_size: null,
+          annual_revenue: null,
+          website: null,
+          social_media_profiles: null,
+          preferred_contact_method: 'email',
+          timezone: null,
+          language_preference: 'en',
+          marketing_consent: false,
+          data_processing_consent: false,
+          compliance_notes: '',
+          responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+          export_license_number: null,
+          export_license_expiry: null,
+          customs_broker: null,
+          shipping_terms: null,
+          payment_terms: null,
+          credit_limit: null,
+          currency_preference: 'USD',
+          vat_number: null,
+          preferred_currency: 'USD',
+          payment_terms_export: null,
+          credit_limit_usd: null,
+          export_documentation_language: 'en',
+          special_handling_requirements: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         deal: {
           id: 'deal-1',
           title: variables.invoice_number ? `Proforma Invoice ${variables.invoice_number}` : template.name,
           value: calculateTotal(),
-          customer_id: 'customer-1'
+          customer_id: 'customer-1',
+          lead_id: null,
+          stage: 'proposal' as const,
+          probability: 50,
+          expected_close_date: formData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          description: template.description || '',
+          source: 'template',
+          assigned_to: 'system',
+          created_by: 'system',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+          competitor_info: null,
+          decision_maker_contact: null,
+          deal_source: 'template',
+          deal_type: 'new'
         }
       }
       
@@ -429,11 +492,15 @@ export function ProposalTemplate({
         template: 'modern',
         colorScheme: {
           primary: template.styling?.primaryColor || '#0088FE',
-          secondary: template.styling?.secondaryColor || '#00C49F'
+          secondary: template.styling?.secondaryColor || '#00C49F',
+          accent: '#FF8042'
         },
         branding: {
           companyName: 'Nawras CRM',
-          logo: null
+          address: '',
+          phone: '',
+          email: '',
+          website: ''
         }
       })
       
@@ -489,14 +556,14 @@ export function ProposalTemplate({
                   {((section.content as { items?: Record<string, unknown>[] }).items || []).map((item: Record<string, unknown>, index: number) => (
                     <tr key={index}>
                       <td className="border border-gray-300 px-4 py-2">
-                        {previewMode ? replaceVariables(item.description) : item.description}
+                        {previewMode ? replaceVariables(String(item.description || '')) : String(item.description || '')}
                       </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">{item.quantity}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-right">{String(item.quantity || '')}</td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
-                        {previewMode ? replaceVariables(item.rate) : item.rate}
+                        {previewMode ? replaceVariables(String(item.rate || '')) : String(item.rate || '')}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right font-semibold">
-                        {previewMode ? replaceVariables(item.total) : item.total}
+                        {previewMode ? replaceVariables(String(item.total || '')) : String(item.total || '')}
                       </td>
                     </tr>
                   ))}
@@ -526,13 +593,13 @@ export function ProposalTemplate({
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold">
-                    {previewMode ? replaceVariables(String(phase.name || '')) : phase.name}
+                    {previewMode ? replaceVariables(String(phase.name || '')) : String(phase.name || '')}
                   </h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    Duration: {previewMode ? replaceVariables(String(phase.duration || '')) : phase.duration}
+                    Duration: {previewMode ? replaceVariables(String(phase.duration || '')) : String(phase.duration || '')}
                   </p>
                   <p className="text-sm mt-2">
-                    {previewMode ? replaceVariables(String(phase.deliverables || '')) : phase.deliverables}
+                    {previewMode ? replaceVariables(String(phase.deliverables || '')) : String(phase.deliverables || '')}
                   </p>
                 </div>
               </div>
@@ -607,7 +674,7 @@ export function ProposalTemplate({
                     onChange={(e) => {
                       setVariables(prev => ({ ...prev, customer_name: e.target.value }))
                       setFormData(prev => ({ ...prev, customer_id: e.target.value }))
-                      validateField('customer_id', e.target.value)
+                      // Field validation removed
                     }}
                     placeholder="Enter customer name"
                     className={errors.customer_id ? 'border-red-500' : ''}
@@ -624,7 +691,7 @@ export function ProposalTemplate({
                     onChange={(e) => {
                       setVariables(prev => ({ ...prev, proforma_title: e.target.value }))
                       setFormData(prev => ({ ...prev, content: e.target.value }))
-                      validateField('content', e.target.value)
+                      // Field validation removed
                     }}
                     placeholder="Enter proforma invoice title"
                     className={errors.content ? 'border-red-500' : ''}
@@ -641,7 +708,7 @@ export function ProposalTemplate({
                     value={formData.valid_until}
                     onChange={(e) => {
                       setFormData(prev => ({ ...prev, valid_until: e.target.value }))
-                      validateField('valid_until', e.target.value)
+                      // Field validation removed
                     }}
                     className={errors.valid_until ? 'border-red-500' : ''}
                   />
@@ -888,7 +955,7 @@ export function ProposalTemplate({
                     onChange={(e) => {
                       handleTemplateChange('name', e.target.value)
                       setFormData(prev => ({ ...prev, title: e.target.value }))
-                      validateField('title', e.target.value)
+                      // Field validation removed
                     }}
                     placeholder="Enter template name"
                     className={errors.title ? 'border-red-500' : ''}

@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   ColumnDef,
+  Column,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -95,7 +96,7 @@ export function DataTable<TData, TValue>({
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
-  column: Record<string, unknown>
+  column: Column<TData, TValue>
   title: string
 }
 

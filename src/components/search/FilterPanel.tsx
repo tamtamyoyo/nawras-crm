@@ -93,7 +93,7 @@ export function FilterPanel({
               )}
             </div>
             <Select
-              value={value || ''}
+              value={(value as string) || ''}
               onValueChange={(newValue) => handleFilterChange(filter.id, newValue || undefined)}
             >
               <SelectTrigger>
@@ -219,7 +219,7 @@ export function FilterPanel({
         )
 
       case 'number-range': {
-        const rangeValue = value || { min: '', max: '' }
+        const rangeValue = (value as { min?: string; max?: string }) || { min: '', max: '' }
         return (
           <div key={filter.id} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -242,7 +242,7 @@ export function FilterPanel({
               <Input
                 type="number"
                 placeholder="Min"
-                value={rangeValue.min}
+                value={rangeValue.min || ''}
                 onChange={(e) => handleFilterChange(filter.id, {
                   ...rangeValue,
                   min: e.target.value
@@ -252,7 +252,7 @@ export function FilterPanel({
               <Input
                 type="number"
                 placeholder="Max"
-                value={rangeValue.max}
+                value={rangeValue.max || ''}
                 onChange={(e) => handleFilterChange(filter.id, {
                   ...rangeValue,
                   max: e.target.value
@@ -286,7 +286,7 @@ export function FilterPanel({
             <Input
               type="text"
               placeholder={filter.placeholder || `Enter ${filter.label.toLowerCase()}`}
-              value={value || ''}
+              value={(value as string) || ''}
               onChange={(e) => handleFilterChange(filter.id, e.target.value || undefined)}
             />
           </div>

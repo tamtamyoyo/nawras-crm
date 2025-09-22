@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ProposalTemplate } from '../components/proposals/ProposalTemplate'
 import { supabase } from '../lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 import { getStandardTemplate, createProposalFromStandardTemplate } from '../lib/standardTemplate'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 import { Database } from '@/lib/database.types'
@@ -50,7 +50,7 @@ export default function ProformaInvoices() {
         // Load from offline storage
         const offlineProformaInvoices = await offlineDataService.getProposals()
         if (offlineProformaInvoices) {
-          setProformaInvoices(offlineProformaInvoices)
+          setProformaInvoices(offlineProformaInvoices as any)
         } else {
           setProformaInvoices(getMockProformaInvoices())
         }
@@ -66,7 +66,7 @@ export default function ProformaInvoices() {
 
         if (data) {
           console.log('✅ Supabase response for proforma invoices:', { count: data.length, data })
-          setProformaInvoices(data)
+          setProformaInvoices(data as any)
         }
       }
     } catch (error) {
@@ -111,38 +111,38 @@ export default function ProformaInvoices() {
     {
       id: '1',
       title: 'Website Redesign Proposal',
-      description: 'Complete website redesign and development',
       status: 'sent' as const,
       deal_id: 'deal-1',
       customer_id: 'customer-1',
-      total_amount: 15000,
+
       valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      responsible_person: 'user-1',
-      content: null,
-      variables: null,
-      viewed_at: null,
-      responded_at: null
+      responsible_person: 'Mr. Ali',
+      content: '',
+      source: 'manual',
+      created_by: 'user-1',
+      proposal_type: 'standard',
+      validity_period: 30,
+      delivery_method: 'email'
     },
     {
       id: '2',
       title: 'Marketing Campaign Proposal',
-      description: 'Digital marketing campaign for Q1',
       status: 'viewed' as const,
-      deal_id: null,
+      deal_id: 'deal-2',
       customer_id: 'customer-2',
-      total_amount: 8500,
+
       valid_until: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      viewed_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      responsible_person: 'user-1',
-      content: null,
-      variables: null,
-      responded_at: null
+      responsible_person: 'Mr. Ali',
+      content: '',
+      source: 'manual',
+      created_by: 'user-1',
+      proposal_type: 'standard',
+      validity_period: 15,
+      delivery_method: 'email'
     }
   ]
 
@@ -177,8 +177,8 @@ export default function ProformaInvoices() {
     try {
       if (offline) {
         // Delete from offline storage
+        await offlineDataService.deleteProposal(proformaInvoiceId)
         const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
-        await offlineDataService.updateProposals(updatedProformaInvoices)
         setProformaInvoices(updatedProformaInvoices)
       } else {
         const { error } = await supabase
@@ -201,8 +201,8 @@ export default function ProformaInvoices() {
       // Check if should fallback to offline deletion
       if (handleSupabaseError(error)) {
         try {
+          await offlineDataService.deleteProposal(proformaInvoiceId)
           const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
-          await offlineDataService.updateProposals(updatedProformaInvoices)
           setProformaInvoices(updatedProformaInvoices)
           toast({
             title: "Success",
@@ -234,22 +234,22 @@ export default function ProformaInvoices() {
     try {
       if (offline) {
         // Update offline storage
-        const updatedProformaInvoices = proformaInvoices.map(p => 
-          p.id === proformaInvoiceId 
-            ? { ...p, status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-            : p
-        )
-        await offlineDataService.updateProposals(updatedProformaInvoices)
-        setProformaInvoices(updatedProformaInvoices)
+        const proposalToUpdate = proformaInvoices.find(p => p.id === proformaInvoiceId)
+        if (proposalToUpdate) {
+          const updates = { status: 'sent' as const, updated_at: new Date().toISOString() }
+          await offlineDataService.updateProposal(proformaInvoiceId, updates)
+          setProformaInvoices(proformaInvoices.map(p => 
+            p.id === proformaInvoiceId ? { ...p, ...updates } : p
+          ))
+        }
       } else {
-        const { error } = await supabase
-          .from('proposals')
-          .update({
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', proformaInvoiceId)
+        const { error } = await (supabase as any)
+         .from('proposals')
+         .update({
+           status: 'sent' as const,
+           updated_at: new Date().toISOString()
+         })
+         .eq('id', proformaInvoiceId)
 
         if (error) throw error
 
@@ -268,10 +268,16 @@ export default function ProformaInvoices() {
         try {
           const updatedProformaInvoices = proformaInvoices.map(p => 
             p.id === proformaInvoiceId 
-              ? { ...p, status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+              ? { ...p, status: 'sent' as const, updated_at: new Date().toISOString() }
               : p
           )
-          await offlineDataService.updateProposals(updatedProformaInvoices)
+          const updatedProposal = updatedProformaInvoices.find(p => p.id === proformaInvoiceId)
+          if (updatedProposal) {
+            await offlineDataService.updateProposal(proformaInvoiceId, {
+              status: 'sent' as const,
+              updated_at: new Date().toISOString()
+            })
+          }
           setProformaInvoices(updatedProformaInvoices)
           toast({
             title: "Success",
@@ -296,7 +302,7 @@ export default function ProformaInvoices() {
 
   const filteredProformaInvoices = proformaInvoices.filter(proformaInvoice => {
     const matchesSearch = proformaInvoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         proformaInvoice.description.toLowerCase().includes(searchTerm.toLowerCase())
+                         ((proformaInvoice as any).description || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || proformaInvoice.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -384,7 +390,7 @@ export default function ProformaInvoices() {
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Total Value</p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  ${proformaInvoices.reduce((sum, p) => sum + (p.total_amount || 0), 0).toLocaleString()}
+                  ${proformaInvoices.reduce((sum, p) => sum + ((p as any).total_amount || 0), 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -455,7 +461,7 @@ export default function ProformaInvoices() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Value:</span>
-                      <span className="font-medium">${(proformaInvoice.total_amount || 0).toLocaleString()}</span>
+                      <span className="font-medium">${((proformaInvoice as any).total_amount || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Valid Until:</span>
@@ -528,7 +534,7 @@ export default function ProformaInvoices() {
             dealData={selectedProformaInvoice}
             onSave={async (template) => {
               try {
-                const isOfflineMode = devConfig.offlineMode
+                const offline = isOfflineMode()
                 const proformaInvoiceData = {
                   id: selectedProformaInvoice?.id || `proforma-invoice-${Date.now()}`,
                   title: template.name,
@@ -545,20 +551,27 @@ export default function ProformaInvoices() {
                   responsible_person: 'user-1',
                   sent_at: null,
                   viewed_at: null,
-                  responded_at: null
+                  responded_at: null,
+                  source: 'manual',
+                  created_by: 'user-1',
+                  proposal_type: 'proforma',
+                  validity_period: 30,
+                  delivery_method: 'email'
                 }
 
-                if (isOfflineMode) {
+                if (offline) {
                   // Save to offline storage
-                  const updatedProformaInvoices = selectedProformaInvoice 
-                    ? proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } : p)
-                    : [...proformaInvoices, proformaInvoiceData]
-                  await offlineDataService.updateProposals(updatedProformaInvoices)
-                  setProformaInvoices(updatedProformaInvoices)
+                  if (selectedProformaInvoice) {
+                    await offlineDataService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
+                    setProformaInvoices(proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } as any : p))
+                  } else {
+                    const newProposal = await offlineDataService.createProposal(proformaInvoiceData as any)
+                    setProformaInvoices([...proformaInvoices, newProposal as any])
+                  }
                 } else {
                   // Save to Supabase
                   if (selectedProformaInvoice) {
-                    const { error } = await supabase
+                    const { error } = await (supabase as any)
                       .from('proposals')
                       .update({
                         title: proformaInvoiceData.title,
@@ -570,7 +583,7 @@ export default function ProformaInvoices() {
                       .eq('id', selectedProformaInvoice.id)
                     if (error) throw error
                   } else {
-                    const { error } = await supabase
+                    const { error } = await (supabase as any)
                       .from('proposals')
                       .insert({
                         title: proformaInvoiceData.title,
@@ -582,7 +595,12 @@ export default function ProformaInvoices() {
                         variables: proformaInvoiceData.variables,
                         total_amount: proformaInvoiceData.total_amount,
                         valid_until: proformaInvoiceData.valid_until,
-                        responsible_person: proformaInvoiceData.responsible_person
+                        responsible_person: proformaInvoiceData.responsible_person,
+                        source: 'manual',
+                        created_by: 'user-1',
+                        proposal_type: 'proforma',
+                        validity_period: 30,
+                        delivery_method: 'email'
                       })
                     if (error) throw error
                   }
@@ -605,7 +623,7 @@ export default function ProformaInvoices() {
             }}
             onGenerate={async (template) => {
               try {
-                const isOfflineMode = devConfig.offlineMode
+                const offline = isOfflineMode()
                 const proformaInvoiceData = {
                   id: selectedProformaInvoice?.id || `proforma-invoice-${Date.now()}`,
                   title: template.name,
@@ -622,20 +640,27 @@ export default function ProformaInvoices() {
                   sent_at: new Date().toISOString(),
                   responsible_person: 'user-1',
                   viewed_at: null,
-                  responded_at: null
+                  responded_at: null,
+                  source: 'manual',
+                  created_by: 'user-1',
+                  proposal_type: 'proforma',
+                  validity_period: 30,
+                  delivery_method: 'email'
                 }
 
-                if (isOfflineMode) {
+                if (offline) {
                   // Save to offline storage
-                  const updatedProformaInvoices = selectedProformaInvoice 
-                    ? proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } : p)
-                    : [...proformaInvoices, proformaInvoiceData]
-                  await offlineDataService.updateProposals(updatedProformaInvoices)
-                  setProformaInvoices(updatedProformaInvoices)
+                  if (selectedProformaInvoice) {
+                    await offlineDataService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
+                    setProformaInvoices(proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } as any : p))
+                  } else {
+                    const newProposal = await offlineDataService.createProposal(proformaInvoiceData as any)
+                    setProformaInvoices([...proformaInvoices, newProposal as any])
+                  }
                 } else {
                   // Save to Supabase
                   if (selectedProformaInvoice) {
-                    const { error } = await supabase
+                    const { error } = await (supabase as any)
                       .from('proposals')
                       .update({
                         title: proformaInvoiceData.title,
@@ -649,7 +674,7 @@ export default function ProformaInvoices() {
                       .eq('id', selectedProformaInvoice.id)
                     if (error) throw error
                   } else {
-                    const { error } = await supabase
+                    const { error } = await (supabase as any)
                       .from('proposals')
                       .insert({
                         title: proformaInvoiceData.title,
@@ -662,7 +687,12 @@ export default function ProformaInvoices() {
                         total_amount: proformaInvoiceData.total_amount,
                         valid_until: proformaInvoiceData.valid_until,
                         sent_at: proformaInvoiceData.sent_at,
-                        responsible_person: proformaInvoiceData.responsible_person
+                        responsible_person: proformaInvoiceData.responsible_person,
+                        source: 'manual',
+                        created_by: 'user-1',
+                        proposal_type: 'proforma',
+                        validity_period: 30,
+                        delivery_method: 'email'
                       })
                     if (error) throw error
                   }

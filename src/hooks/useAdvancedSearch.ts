@@ -321,13 +321,14 @@ export function useAdvancedSearch(): UseAdvancedSearchReturn {
       const paginatedResults = allResults.slice(offset, offset + limit)
       const hasMore = allResults.length > offset + limit
 
-      setState({
-        results: offset === 0 ? paginatedResults : prev => [...prev.results, ...paginatedResults],
+      setState(prev => ({
+        ...prev,
+        results: offset === 0 ? paginatedResults : [...prev.results, ...paginatedResults],
         loading: false,
         error: null,
         totalCount,
         hasMore
-      })
+      }))
     } catch (error) {
       console.error('Search error:', error)
       setState(prev => ({

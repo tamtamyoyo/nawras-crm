@@ -1,17 +1,10 @@
 // Comprehensive test runner for Nawras CRM
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase-client'
 import { addDemoData, clearDemoData } from '@/utils/demo-data'
 import type { Database } from '@/lib/database.types'
 
-// Create a properly typed supabase client for testing
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Use untyped client to avoid 'never' type issues in demo mode
+const testClient = supabase as any
 
 export interface TestResult {
   section: string
@@ -77,7 +70,7 @@ class CRMTestRunner {
         responsible_person: 'Mr. Ali'
       }
 
-      const { data: customer, error: createError } = await supabase
+      const { data: customer, error: createError } = await testClient
         .from('customers')
         .insert([testCustomer])
         .select()
@@ -91,7 +84,7 @@ class CRMTestRunner {
       this.addResult('Customer Management', 'Customer Creation', 'pass', 'Successfully created test customer', customer)
 
       // Test customer update
-      const { error: updateError } = await supabase
+      const { error: updateError } = await testClient
         .from('customers')
         .update({ status: 'active' as const, notes: 'Updated test customer' })
         .eq('id', customer.id)
@@ -103,7 +96,7 @@ class CRMTestRunner {
       }
 
       // Test customer retrieval
-      const { data: retrievedCustomer, error: retrieveError } = await supabase
+      const { data: retrievedCustomer, error: retrieveError } = await testClient
         .from('customers')
         .select('*')
         .eq('id', customer.id)
@@ -118,7 +111,7 @@ class CRMTestRunner {
       }
 
       // Test customer search
-      const { data: searchResults, error: searchError } = await supabase
+      const { data: searchResults, error: searchError } = await testClient
         .from('customers')
         .select('*')
         .ilike('name', '%Test Customer%')
@@ -132,7 +125,7 @@ class CRMTestRunner {
       }
 
       // Test customer deletion
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await testClient
         .from('customers')
         .delete()
         .eq('id', customer.id)
@@ -165,7 +158,7 @@ class CRMTestRunner {
         responsible_person: 'Mr. Ali'
       }
 
-      const { data: customer, error: customerError } = await supabase
+      const { data: customer, error: customerError } = await testClient
         .from('customers')
         .insert([testCustomer])
         .select()
@@ -185,7 +178,7 @@ class CRMTestRunner {
         responsible_person: 'Mr. Ali'
       }
 
-      const { data: lead, error: createError } = await supabase
+      const { data: lead, error: createError } = await testClient
         .from('leads')
         .insert([testLead])
         .select()
@@ -201,7 +194,7 @@ class CRMTestRunner {
       // Test lead status progression
       const statuses = ['qualified', 'converted', 'lost'] as const
       for (const status of statuses) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await testClient
           .from('leads')
           .update({ status })
           .eq('id', lead.id)
@@ -214,8 +207,8 @@ class CRMTestRunner {
       }
 
       // Cleanup
-      await supabase.from('leads').delete().eq('id', lead.id)
-      await supabase.from('customers').delete().eq('id', customer.id)
+      await testClient.from('leads').delete().eq('id', lead.id)
+      await testClient.from('customers').delete().eq('id', customer.id)
 
     } catch (error) {
       this.addResult('Lead Management', 'General Error', 'fail', `Unexpected error: ${error}`, error)
@@ -239,7 +232,7 @@ class CRMTestRunner {
         responsible_person: 'Mr. Ali'
       }
 
-      const { data: customer, error: customerError } = await supabase
+      const { data: customer, error: customerError } = await testClient
         .from('customers')
         .insert([testCustomer])
         .select()
@@ -263,11 +256,11 @@ class CRMTestRunner {
         responsible_person: 'Mr. Ali'
       }
 
-      const { data: deal, error: createError } = await supabase
+      const { data: deal, error: createError } = await testClient
         .from('deals')
         .insert([testDeal])
         .select()
-        .single() as { data: Database['public']['Tables']['deals']['Row'] | null, error: any }
+        .single()
 
       if (createError || !deal) {
         this.addResult('Deal Pipeline', 'Deal Creation', 'fail', `Failed to create deal: ${createError?.message || 'No deal returned'}`, createError)
@@ -279,7 +272,7 @@ class CRMTestRunner {
       // Test deal stage progression
       const stages = ['qualification', 'proposal', 'negotiation', 'closed_won'] as const
       for (const stage of stages) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await testClient
           .from('deals')
           .update({ stage })
           .eq('id', deal.id)
@@ -292,7 +285,7 @@ class CRMTestRunner {
       }
 
       // Test deal value calculation
-      const { data: updatedDeal } = await supabase
+      const { data: updatedDeal } = await testClient
         .from('deals')
         .select('*')
         .eq('id', deal.id)
@@ -306,10 +299,10 @@ class CRMTestRunner {
 
       // Cleanup
       if (deal?.id) {
-        await supabase.from('deals').delete().eq('id', deal.id)
+        await testClient.from('deals').delete().eq('id', deal.id)
       }
       if (customer?.id) {
-        await supabase.from('customers').delete().eq('id', customer.id)
+        await testClient.from('customers').delete().eq('id', customer.id)
       }
 
     } catch (error) {
@@ -326,7 +319,7 @@ class CRMTestRunner {
       const tables = ['customers', 'leads', 'deals', 'proposals', 'invoices']
       
       for (const table of tables) {
-        const { error } = await supabase
+        const { error } = await testClient
           .from(table)
           .select('*')
           .limit(1)
@@ -339,7 +332,7 @@ class CRMTestRunner {
       }
 
       // Test foreign key relationships
-      const { error: relationError } = await supabase
+      const { error: relationError } = await testClient
         .from('customers')
         .select(`
           *,
@@ -378,7 +371,7 @@ class CRMTestRunner {
       }
 
       // Test RLS (Row Level Security) by trying to access data
-      const { data: customers, error: rlsError } = await supabase
+      const { data: customers, error: rlsError } = await testClient
         .from('customers')
         .select('*')
         .limit(5)
@@ -402,7 +395,7 @@ class CRMTestRunner {
 
     try {
       // Clear any existing test data first
-      await clearDemoData(this.userId)
+      await clearDemoData()
       
       // Run individual test suites
       await this.testDatabaseSchema()

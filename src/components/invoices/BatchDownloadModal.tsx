@@ -72,7 +72,11 @@ export function BatchDownloadModal({
             source: inv.source,
             created_by: inv.created_by,
             created_at: inv.created_at,
-            updated_at: inv.updated_at
+            updated_at: inv.updated_at,
+            responsible_person: 'Mr. Ali' as const,
+            billing_address: null,
+            purchase_order_number: null,
+            payment_method: 'bank_transfer'
           },
           customer: {
             id: inv.customer?.id || inv.customer_id,
@@ -88,6 +92,7 @@ export function BatchDownloadModal({
             created_by: null,
             created_at: inv.created_at,
             updated_at: inv.updated_at,
+            responsible_person: 'Mr. Ali' as const,
             export_license_number: null,
             export_license_expiry: null,
             customs_broker: null,
@@ -112,13 +117,17 @@ export function BatchDownloadModal({
             assigned_to: null,
             created_by: null,
             created_at: inv.created_at,
-            updated_at: inv.updated_at
+            updated_at: inv.updated_at,
+            responsible_person: 'Mr. Ali' as const,
+            competitor_info: null,
+            decision_maker_contact: null,
+            deal_source: null,
+            deal_type: null
           }
         }));
 
       await generateBatchInvoices(selectedInvoiceData, {
-        format: exportFormat,
-        folderName: `invoices_batch_${new Date().toISOString().split('T')[0]}`
+        format: exportFormat
       });
 
       setDownloadStatus('Download complete!');

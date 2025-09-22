@@ -1,8 +1,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof window !== 'undefined' && (window as Record<string, string>).VITE_SUPABASE_URL)
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof window !== 'undefined' && (window as Record<string, string>).VITE_SUPABASE_ANON_KEY)
+const supabaseUrl = (typeof window !== 'undefined' && (window as any).VITE_SUPABASE_URL) || 
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 
+  (globalThis as any).VITE_SUPABASE_URL
+const supabaseAnonKey = (typeof window !== 'undefined' && (window as any).VITE_SUPABASE_ANON_KEY) || 
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || 
+  (globalThis as any).VITE_SUPABASE_ANON_KEY
 
 // Check if Supabase configuration is valid
 const isValidSupabaseConfig = (
@@ -65,26 +69,32 @@ function createSupabaseClient(): SupabaseClient<Database> {
         },
         fetch: async (url, options = {}) => {
           // Ensure API key is included in headers
-          const headers = {
+          const headers: Record<string, string> = {
             'apikey': validKey,
             'Authorization': `Bearer ${validKey}`,
             'Content-Type': 'application/json',
-            ...((options.headers as Record<string, string>) || {})
+            ...((options as RequestInit)?.headers as Record<string, string> || {})
           }
           
-          const updatedOptions = {
+          const updatedOptions: RequestInit = {
             ...options,
             headers
           }
           
-          // Remove malformed columns parameter that browser extensions might add
-          if (typeof url === 'string' && url.includes('columns=') && url.includes('select=')) {
-            let cleanUrl = url.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
-              return suffix === '&' ? '&' : ''
-            })
+          // Fix malformed URL query parameters (double question marks)
+          if (typeof url === 'string' && url.includes('?') && url.includes('select=')) {
+            // Fix URLs with double question marks like "?select=*?order=" -> "?select=*&order="
+            let cleanUrl = url.replace(/\?([^?]+)\?/g, '?$1&')
+            
+            // Remove malformed columns parameter that browser extensions might add
+            if (cleanUrl.includes('columns=')) {
+              cleanUrl = cleanUrl.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
+                return suffix === '&' ? '&' : ''
+              })
+            }
             
             if (cleanUrl !== url) {
-              console.warn('🛡️ Removed malformed columns parameter:', { original: url, fixed: cleanUrl })
+              console.warn('🛡️ Fixed malformed URL:', { original: url, fixed: cleanUrl })
               url = cleanUrl
             }
           }
@@ -128,7 +138,7 @@ function createSupabaseClient(): SupabaseClient<Database> {
 }
 
 // Export typed client using singleton pattern
-export const supabase = createSupabaseClient()
+export const supabase: SupabaseClient<Database> = createSupabaseClient()
 
 // Export configuration status for use in components
 export const isSupabaseConfigured = isValidSupabaseConfig

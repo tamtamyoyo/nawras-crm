@@ -8,7 +8,7 @@ import { BarChart3, TrendingUp, DollarSign, Users, Target, Download, Filter, Set
 
 import { supabase } from '../lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 import type { Database } from '../lib/database.types'
 import { toast } from 'sonner'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
@@ -24,10 +24,12 @@ type Customer = Database['public']['Tables']['customers']['Row']
 
 interface CustomWidget {
   id: string
-  type: string
   title: string
+  type: 'bar' | 'line' | 'pie' | 'area' | 'metric'
   dataSource: string
-  config: Record<string, unknown>
+  filters?: Record<string, unknown>
+  size: 'small' | 'medium' | 'large'
+  position: { x: number; y: number }
 }
 
 
@@ -58,7 +60,11 @@ export default function Analytics() {
   const [activeTab, setActiveTab] = useState('overview')
   const [dateRange, setDateRange] = useState('30')
   const [selectedMetrics, setSelectedMetrics] = useState(['revenue', 'deals', 'customers', 'conversion'])
-  const [customFilters, setCustomFilters] = useState({})
+  const [customFilters, setCustomFilters] = useState<{
+    stage?: string
+    source?: string
+    minRevenue?: string
+  }>({})
   const [showDashboardBuilder, setShowDashboardBuilder] = useState(false)
   const [customWidgets, setCustomWidgets] = useState<CustomWidget[]>([])
 
@@ -93,7 +99,7 @@ export default function Analytics() {
       date.setDate(date.getDate() - (daysBack - i - 1))
       const dayDeals = deals.filter(deal => {
         const dealDate = new Date(deal.created_at)
-        return dealDate.toDateString() === date.toDateString() && deal.status === 'won'
+        return dealDate.toDateString() === date.toDateString() && deal.stage === 'closed_won'
       })
       return {
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -105,11 +111,12 @@ export default function Analytics() {
     // Deals by stage
     const stageData = [
       { stage: 'Lead', count: leads?.length || 0, value: 0 },
-      { stage: 'Qualified', count: deals.filter(d => d.status === 'qualified').length, value: deals.filter(d => d.status === 'qualified').reduce((sum, d) => sum + (d.value || 0), 0) },
-      { stage: 'Proposal', count: deals.filter(d => d.status === 'proposal').length, value: deals.filter(d => d.status === 'proposal').reduce((sum, d) => sum + (d.value || 0), 0) },
-      { stage: 'Negotiation', count: deals.filter(d => d.status === 'negotiation').length, value: deals.filter(d => d.status === 'negotiation').reduce((sum, d) => sum + (d.value || 0), 0) },
-      { stage: 'Won', count: deals.filter(d => d.status === 'won').length, value: deals.filter(d => d.status === 'won').reduce((sum, d) => sum + (d.value || 0), 0) },
-      { stage: 'Lost', count: deals.filter(d => d.status === 'lost').length, value: 0 }
+      { stage: 'Prospecting', count: deals.filter(d => d.stage === 'prospecting').length, value: deals.filter(d => d.stage === 'prospecting').reduce((sum, d) => sum + (d.value || 0), 0) },
+       { stage: 'Qualification', count: deals.filter(d => d.stage === 'qualification').length, value: deals.filter(d => d.stage === 'qualification').reduce((sum, d) => sum + (d.value || 0), 0) },
+      { stage: 'Proposal', count: deals.filter(d => d.stage === 'proposal').length, value: deals.filter(d => d.stage === 'proposal').reduce((sum, d) => sum + (d.value || 0), 0) },
+      { stage: 'Negotiation', count: deals.filter(d => d.stage === 'negotiation').length, value: deals.filter(d => d.stage === 'negotiation').reduce((sum, d) => sum + (d.value || 0), 0) },
+      { stage: 'Won', count: deals.filter(d => d.stage === 'closed_won').length, value: deals.filter(d => d.stage === 'closed_won').reduce((sum, d) => sum + (d.value || 0), 0) },
+      { stage: 'Lost', count: deals.filter(d => d.stage === 'closed_lost').length, value: 0 }
     ]
     
     // Leads by source
@@ -477,11 +484,13 @@ export default function Analytics() {
         {showDashboardBuilder && (
           <div className="mb-6">
             <DashboardBuilder 
-              onWidgetsChange={setCustomWidgets}
-              availableData={{
-                deals: deals,
-                revenue: chartData.revenueOverTime,
-                performance: chartData.performanceMetrics
+              data={{
+                deals: deals || [],
+                revenue: chartData.revenueOverTime || [],
+                performance: chartData.performanceMetrics || []
+              }}
+              onSave={(config) => {
+                setCustomWidgets(config.widgets || [])
               }}
             />
           </div>
@@ -496,11 +505,14 @@ export default function Analytics() {
                 <CustomWidget
                   key={widget.id || index}
                   config={widget}
-                  data={widget.dataSource === 'deals' ? deals : chartData.revenueOverTime}
-                  onConfigChange={(newConfig) => {
+                  data={widget.dataSource === 'deals' ? deals || [] : chartData.revenueOverTime || []}
+                  onUpdate={(newConfig) => {
                     const updatedWidgets = [...customWidgets]
                     updatedWidgets[index] = newConfig
                     setCustomWidgets(updatedWidgets)
+                  }}
+                  onRemove={(id) => {
+                    setCustomWidgets(prev => prev.filter(w => w.id !== id))
                   }}
                 />
               ))}
@@ -674,7 +686,6 @@ export default function Analytics() {
                   showGrid: true,
                   showLegend: false,
                   showTooltip: true,
-                  layout: 'horizontal',
                   height: 320
                 }}
               />

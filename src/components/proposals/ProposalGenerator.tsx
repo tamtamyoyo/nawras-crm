@@ -17,23 +17,50 @@ import { generateProposalPDF } from '@/utils/pdf-generator'
 interface Deal {
   id: string
   title: string
-  description: string
+  customer_id: string | null
+  lead_id: string | null
   value: number
-  stage: string
+  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
   probability: number
-  expected_close_date: string
-  customer_id: string
-  assigned_to: string
+  expected_close_date: string | null
+  description: string | null
+  source: string | null
+  assigned_to: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+  competitor_info: string | null
+  decision_maker_contact: string | null
+  deal_source: string | null
+  deal_type: string | null
 }
 
 interface Customer {
   id: string
   name: string
-  company: string
-  email: string
-  phone: string
-  address: string
-  industry: string
+  email: string | null
+  phone: string | null
+  company: string | null
+  address: string | null
+  status: 'active' | 'inactive' | 'prospect'
+  source: string | null
+  tags: string[] | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+  // Export-specific fields
+  export_license_number: string | null
+  export_license_expiry: string | null
+  customs_broker: string | null
+  preferred_currency: string | null
+  payment_terms_export: string | null
+  credit_limit_usd: number | null
+  export_documentation_language: string | null
+  special_handling_requirements: string | null
+  compliance_notes: string | null
 }
 
 interface LineItem {
@@ -86,6 +113,7 @@ interface GeneratedContent {
   solution_overview?: string
   pricing?: PricingData
   review?: ReviewData
+  [key: string]: unknown
 }
 
 interface ProposalData {
@@ -212,7 +240,7 @@ export function ProposalGenerator({
         customer_email: customer.email,
         customer_phone: customer.phone,
         customer_address: customer.address,
-        customer_industry: customer.industry,
+        customer_industry: customer.company || 'Not specified',
         deal_title: deal.title,
         deal_description: deal.description,
         deal_value: deal.value,
@@ -333,7 +361,7 @@ export function ProposalGenerator({
     const dealTitle = customVariables.deal_title || 'this project'
     const industry = customVariables.customer_industry || 'your industry'
     
-    return `This proposal outlines our comprehensive solution for ${customerName} to address their ${dealTitle.toLowerCase()} requirements. Our approach leverages industry-leading practices in ${industry} to deliver measurable results and exceptional value.
+    return `This proposal outlines our comprehensive solution for ${customerName} to address their ${String(dealTitle).toLowerCase()} requirements. Our approach leverages industry-leading practices in ${industry} to deliver measurable results and exceptional value.
 
 Key benefits include:
 • Streamlined operations and improved efficiency
@@ -501,7 +529,7 @@ We are excited about the opportunity to partner with ${customVariables.customer_
   }
 
   const generateLineItems = () => {
-    const baseValue = customVariables.deal_value || 10000
+    const baseValue = Number(customVariables.deal_value) || 10000
     return [
       {
         description: 'Discovery and Analysis Phase',
@@ -537,7 +565,7 @@ We are excited about the opportunity to partner with ${customVariables.customer_
   }
 
   const generatePricingOptions = () => {
-    const baseValue = customVariables.deal_value || 10000
+    const baseValue = Number(customVariables.deal_value) || 10000
     return [
       {
         name: 'Standard Package',
@@ -781,13 +809,13 @@ We are excited about the opportunity to partner with ${customVariables.customer_
 
   const handleGenerate = () => {
     if (onGenerate) {
-      onGenerate({ ...proposal, content: generatedContent })
+      onGenerate({ ...proposal, content: generatedContent as Record<string, unknown> })
       toast.success('Proposal generated and ready to send')
     }
   }
 
   const exportProposal = () => {
-    const dataStr = JSON.stringify({ ...proposal, content: generatedContent }, null, 2)
+    const dataStr = JSON.stringify({ ...proposal, content: Object.values(generatedContent).join('\n\n') }, null, 2)
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
     const exportFileDefaultName = `${proposal.title.replace(/\s+/g, '_')}_proposal.json`
     
@@ -838,8 +866,22 @@ We are excited about the opportunity to partner with ${customVariables.customer_
 
       const proposalData = {
         proposal: {
-          ...proposal,
-          content: Object.values(generatedContent).join('\n\n')
+          id: proposal.id || '',
+          title: proposal.title,
+          deal_id: proposal.dealId || '',
+          customer_id: proposal.customerId,
+          content: Object.values(generatedContent).join('\n\n'),
+          status: proposal.status as 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected',
+          valid_until: proposal.validUntil.toISOString().split('T')[0],
+          source: 'generator',
+          created_by: 'system',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          currency: 'USD',
+          delivery_method: 'email',
+          responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+          proposal_type: 'standard',
+          validity_period: 30
         },
         deal,
         customer,
@@ -852,7 +894,11 @@ We are excited about the opportunity to partner with ${customVariables.customer_
       generateProposalPDF(proposalData, {
         template: 'modern',
         branding: {
-          companyName: 'Nawras CRM'
+          companyName: 'Nawras CRM',
+          address: '123 Business Street, City, State 12345',
+          phone: '+1 (555) 123-4567',
+          email: 'info@nawrascrm.com',
+          website: 'www.nawrascrm.com'
         }
       })
       

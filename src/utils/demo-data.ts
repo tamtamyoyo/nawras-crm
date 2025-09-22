@@ -1,7 +1,7 @@
 // Demo data for comprehensive testing of Nawras CRM
 import { toast } from 'sonner'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 
 export interface DemoCustomer {
   name: string
@@ -252,7 +252,7 @@ export const addDemoData = async (userId: string) => {
     console.log('🚀 Starting demo data insertion...')
     
     // Check if we're in offline mode
-    if (devConfig.OFFLINE_MODE) {
+    if (true) { // Offline mode enabled for demo
       console.log('📱 Using offline mode - adding data to local storage')
       
       // Add customers first
@@ -264,7 +264,7 @@ export const addDemoData = async (userId: string) => {
       
       const customers = []
       for (const customer of customerInserts) {
-        const newCustomer = await offlineDataService.createCustomer(customer)
+        const newCustomer = await offlineDataService.createCustomer(customer as any)
         customers.push(newCustomer)
       }
       console.log(`✅ Added ${customers.length} customers`)
@@ -286,7 +286,7 @@ export const addDemoData = async (userId: string) => {
           notes: lead.notes,
           customer_id: customerMap.get(lead.customer_name),
           created_by: userId
-        })
+        } as any)
         leads.push(newLead)
       }
       console.log(`✅ Added ${leads.length} leads`)
@@ -303,7 +303,7 @@ export const addDemoData = async (userId: string) => {
           notes: deal.notes,
           customer_id: customerMap.get(deal.customer_name),
           created_by: userId
-        })
+        } as any)
         deals.push(newDeal)
       }
       console.log(`✅ Added ${deals.length} deals`)
@@ -316,10 +316,10 @@ export const addDemoData = async (userId: string) => {
           title: proposal.title,
           status: proposal.status,
           total_amount: proposal.total_amount,
-          content: proposal.content,
+          content: proposal.content as any,
           customer_id: customerMap.get(proposal.customer_name),
           created_by: userId
-        })
+        } as any)
         proposals.push(newProposal)
       }
       console.log(`✅ Added ${proposals.length} proposals`)
@@ -335,7 +335,7 @@ export const addDemoData = async (userId: string) => {
           due_date: invoice.due_date,
           customer_id: customerMap.get(invoice.customer_name),
           created_by: userId
-        })
+        } as any)
         invoices.push(newInvoice)
       }
       console.log(`✅ Added ${invoices.length} invoices`)
@@ -369,7 +369,7 @@ export const clearDemoData = async () => {
     console.log('🧹 Clearing demo data...')
     
     // Check if we're in offline mode
-    if (devConfig.OFFLINE_MODE) {
+    if (true) { // Offline mode enabled for demo
       console.log('📱 Using offline mode - clearing local storage data')
       
       // Clear all data from local storage

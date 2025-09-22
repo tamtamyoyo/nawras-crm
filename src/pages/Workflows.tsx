@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { WorkflowBuilder } from '@/components/workflows/WorkflowBuilder'
 import { WorkflowExecutions } from '@/components/workflows/WorkflowExecutions'
 import { WorkflowEngineProvider } from '@/components/workflows/WorkflowEngine'
-import { useAuthHook } from '@/hooks/useAuthHook'
+import { useAuth } from '@/hooks/useAuthHook'
 import { useWorkflowEngine } from '@/hooks/useWorkflowEngine'
 import { toast } from '@/hooks/use-toast'
 import { supabase } from "@/lib/supabase-client";
@@ -35,14 +35,15 @@ interface WorkflowExecution {
 }
 
 const Workflows: React.FC = () => {
-  const { user, isAuthenticated } = useAuthHook()
+  const { user, loading: authLoading } = useAuth()
+  const isAuthenticated = !!user && !authLoading
   const { executeWorkflow } = useWorkflowEngine()
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [executions, setExecutions] = useState<WorkflowExecution[]>([])
-  const [isBuilderOpen, setIsBuilderOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | undefined>()
   const [activeTab, setActiveTab] = useState('workflows')
-  const [loading, setLoading] = useState(true)
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {

@@ -338,7 +338,7 @@ export const cacheUtils = {
   ) => {
     return async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> => {
       const key = keyGenerator(...args)
-      return apiCache.get(key, () => fn(...args), { ttl })
+      return apiCache.get(key, () => fn(...args), { ttl }) as Promise<Awaited<ReturnType<T>>>
     }
   }
 }

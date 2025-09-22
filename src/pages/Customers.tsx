@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Users, Plus, Search, Edit, Trash2, Mail, Phone, Building, MapPin, TestTube, Globe } from 'lucide-react'
 import { supabase } from '../lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 import { useStore } from '../store/useStore'
 import { useAuth } from '../hooks/useAuthHook'
 import { toast } from 'sonner'
-import { runComprehensiveTests } from '../utils/test-runner'
+import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData, clearDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '../components/export-fields/ExportFieldsForm'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
@@ -177,7 +177,7 @@ export default function Customers() {
         if (showEditModal && selectedCustomer) {
           // Update existing customer
           console.log('✏️ Updating customer in Supabase...');
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('customers')
             .update({
               ...formData,
@@ -195,7 +195,7 @@ export default function Customers() {
         } else {
           // Create new customer
           console.log('➕ Creating new customer in Supabase...');
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('customers')
             .insert({
               ...formData,
@@ -291,7 +291,7 @@ export default function Customers() {
       } else {
         console.log('🗑️ Deleting customer from Supabase...');
         
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('customers')
           .delete()
           .eq('id', customer.id);
@@ -473,7 +473,7 @@ export default function Customers() {
               
               if (confirm('Are you sure you want to clear all demo data?')) {
                 try {
-                  await clearDemoData(user.id)
+                  await clearDemoData()
                   await loadCustomers()
                 } catch (error) {
                   console.error('Clear data error:', error)
@@ -774,7 +774,7 @@ export default function Customers() {
                   </label>
                   <select
                     value={formData.responsible_person || 'Mr. Ali'}
-                    onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     data-testid="customer-responsible-person-select"
                     required

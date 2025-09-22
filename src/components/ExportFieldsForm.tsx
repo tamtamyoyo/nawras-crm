@@ -72,10 +72,6 @@ export function ExportFieldsForm({ customerId, leadId, onSave, onCancel }: Expor
     incoterm_ids: []
   })
 
-  useEffect(() => {
-    loadData()
-  }, [entityId, loadData])
-
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
@@ -111,6 +107,10 @@ export function ExportFieldsForm({ customerId, leadId, onSave, onCancel }: Expor
       setLoading(false)
     }
   }, [entityId])
+
+  useEffect(() => {
+    loadData()
+  }, [entityId, loadData])
 
   const handleSave = async () => {
     setSaving(true)
@@ -148,7 +148,7 @@ export function ExportFieldsForm({ customerId, leadId, onSave, onCancel }: Expor
 
   interface SelectOption {
     id: string
-    [key: string]: unknown
+    [key: string]: any
   }
 
   const renderMultiSelectSection = (

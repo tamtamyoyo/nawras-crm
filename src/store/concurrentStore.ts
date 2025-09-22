@@ -13,11 +13,11 @@ type Proposal = Database['public']['Tables']['proposals']['Row'];
 type Invoice = Database['public']['Tables']['invoices']['Row'];
 
 // Update types for partial updates
-type CustomerUpdate = Partial<Omit<Customer, 'id' | 'created_at' | 'updated_at'>>;
-type LeadUpdate = Partial<Omit<Lead, 'id' | 'created_at' | 'updated_at'>>;
-type DealUpdate = Partial<Omit<Deal, 'id' | 'created_at' | 'updated_at'>>;
-type ProposalUpdate = Partial<Omit<Proposal, 'id' | 'created_at' | 'updated_at'>>;
-type InvoiceUpdate = Partial<Omit<Invoice, 'id' | 'created_at' | 'updated_at'>>;
+type CustomerUpdate = Partial<Omit<Customer, 'id' | 'created_at' | 'updated_at'>> & { version?: number };
+type LeadUpdate = Partial<Omit<Lead, 'id' | 'created_at' | 'updated_at'>> & { version?: number };
+type DealUpdate = Partial<Omit<Deal, 'id' | 'created_at' | 'updated_at'>> & { version?: number };
+type ProposalUpdate = Partial<Omit<Proposal, 'id' | 'created_at' | 'updated_at'>> & { version?: number };
+type InvoiceUpdate = Partial<Omit<Invoice, 'id' | 'created_at' | 'updated_at'>> & { version?: number };
 
 // Create types for new entities
 type CustomerCreate = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
@@ -157,7 +157,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          customers: state.customers.map(c => c.id === id ? updated : c),
+          customers: state.customers.map(c => c.id === id ? updated as any : c),
           customersState: {
             isLoading: false,
             error: null,
@@ -176,7 +176,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           set(state => ({
             conflictResolutions: new Map(state.conflictResolutions.set(conflictId, {
               id: conflictId,
-              localData: updates,
+              localData: updates as any,
               remoteData: err.remoteData || {},
               timestamp: new Date().toISOString(),
               resolved: false
@@ -184,7 +184,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           }));
           
           ConcurrentDbService.showConflictResolution(
-            updates,
+            { ...updates, version: expectedVersion } as any,
             err.remoteData || {},
             () => get().resolveConflict(conflictId, 'merge')
           );
@@ -236,7 +236,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          leads: state.leads.map(l => l.id === id ? updated : l),
+          leads: state.leads.map(l => l.id === id ? updated : l) as any,
           leadsState: {
             isLoading: false,
             error: null,
@@ -254,7 +254,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           set(state => ({
             conflictResolutions: new Map(state.conflictResolutions.set(conflictId, {
               id: conflictId,
-              localData: updates,
+              localData: updates as any,
               remoteData: err.remoteData || {},
               timestamp: new Date().toISOString(),
               resolved: false
@@ -262,7 +262,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           }));
           
           ConcurrentDbService.showConflictResolution(
-            updates,
+            { ...updates, version: expectedVersion } as any,
             err.remoteData || {},
             () => get().resolveConflict(conflictId, 'merge')
           );
@@ -311,7 +311,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          deals: state.deals.map(d => d.id === id ? updated : d),
+          deals: state.deals.map(d => d.id === id ? updated : d) as any,
           dealsState: {
             isLoading: false,
             error: null,
@@ -329,7 +329,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           set(state => ({
             conflictResolutions: new Map(state.conflictResolutions.set(conflictId, {
               id: conflictId,
-              localData: updates,
+              localData: updates as any,
               remoteData: err.remoteData || {},
               timestamp: new Date().toISOString(),
               resolved: false
@@ -337,7 +337,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           }));
           
           ConcurrentDbService.showConflictResolution(
-            updates,
+            { ...updates, version: expectedVersion } as any,
             err.remoteData || {},
             () => get().resolveConflict(conflictId, 'merge')
           );
@@ -386,7 +386,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          proposals: state.proposals.map(p => p.id === id ? updated : p),
+          proposals: state.proposals.map(p => p.id === id ? updated : p) as any,
           proposalsState: {
             isLoading: false,
             error: null,
@@ -404,7 +404,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           set(state => ({
             conflictResolutions: new Map(state.conflictResolutions.set(conflictId, {
               id: conflictId,
-              localData: updates,
+              localData: updates as any,
               remoteData: err.remoteData || {},
               timestamp: new Date().toISOString(),
               resolved: false
@@ -412,7 +412,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           }));
           
           ConcurrentDbService.showConflictResolution(
-            updates,
+            { ...updates, version: expectedVersion } as any,
             err.remoteData || {},
             () => get().resolveConflict(conflictId, 'merge')
           );
@@ -461,7 +461,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          invoices: state.invoices.map(i => i.id === id ? updated : i),
+          invoices: state.invoices.map(i => i.id === id ? updated : i) as any,
           invoicesState: {
             isLoading: false,
             error: null,
@@ -479,7 +479,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           set(state => ({
             conflictResolutions: new Map(state.conflictResolutions.set(conflictId, {
               id: conflictId,
-              localData: updates,
+              localData: updates as any,
               remoteData: err.remoteData || {},
               timestamp: new Date().toISOString(),
               resolved: false
@@ -487,12 +487,13 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           }));
           
           ConcurrentDbService.showConflictResolution(
-            updates,
+            { ...updates, version: expectedVersion } as any,
             err.remoteData || {},
             () => get().resolveConflict(conflictId, 'merge')
           );
         } else {
-          set(() => ({
+          set((state) => ({
+            ...state,
             invoicesState: {
               isLoading: false,
               error: err.message || 'Unknown error occurred',
@@ -523,7 +524,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          customers: [...state.customers, created]
+          customers: [...state.customers, created as any]
         }));
         
         toast.success('Customer created successfully');
@@ -546,7 +547,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         );
         
         set(state => ({
-          leads: [...state.leads, created]
+          leads: [...state.leads, created as any]
         }));
         
         toast.success('Lead created successfully');
@@ -565,7 +566,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         const created = await ConcurrentDbService.createSafely('deals', data);
         
         set(state => ({
-          deals: [...state.deals, created]
+          deals: [...state.deals, created as any]
         }));
         
         toast.success('Deal created successfully');
@@ -584,7 +585,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         const created = await ConcurrentDbService.createSafely('proposals', data);
         
         set(state => ({
-          proposals: [...state.proposals, created]
+          proposals: [...state.proposals, created as any]
         }));
         
         toast.success('Proposal created successfully');
@@ -603,7 +604,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
         const created = await ConcurrentDbService.createSafely('invoices', data);
         
         set(state => ({
-          invoices: [...state.invoices, created]
+          invoices: [...state.invoices, created as any]
         }));
         
         toast.success('Invoice created successfully');
@@ -642,7 +643,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           
           return {
             conflictResolutions: newConflicts,
-            [entityKey]: entities.map(entity => entity.id === id ? resolved : entity)
+            [entityKey]: entities.map(entity => (entity as any).id === id ? resolved : entity)
           };
         });
         
@@ -679,7 +680,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
       set(state => ({
         realtimeSubscriptions: new Map([
           ...state.realtimeSubscriptions,
-          ...tables.map((table, index) => [table, subscriptions[index]])
+          ...tables.map((table, index) => [table, subscriptions[index]] as [string, RealtimeSubscription])
         ])
       }));
       
@@ -691,7 +692,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
       };
     },
     
-    handleRealtimeUpdate: (table: string, payload: Record<string, unknown>) => {
+    handleRealtimeUpdate: (table: string, payload: any) => {
       const { eventType, new: newRecord, old: oldRecord } = payload;
       
       set(state => {
@@ -706,12 +707,12 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           case 'UPDATE':
             return {
               [entityKey]: entities.map(entity => 
-                entity.id === newRecord.id ? newRecord : entity
+                (entity as any).id === (newRecord as any).id ? newRecord : entity
               )
             };
           case 'DELETE':
             return {
-              [entityKey]: entities.filter(entity => entity.id !== oldRecord.id)
+              [entityKey]: entities.filter(entity => (entity as any).id !== (oldRecord as any).id)
             };
           default:
             return state;
@@ -724,11 +725,11 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
       return get().operationLocks.has(key);
     },
     
-    getEntityVersion: (table: string, id: string) => {
+    getEntityVersion: (table: string, id: string): any => {
       const entityKey = table as keyof Pick<ConcurrentStoreState, 'customers' | 'leads' | 'deals' | 'proposals' | 'invoices'>;
       const entities = get()[entityKey] as Record<string, unknown>[];
-      const entity = entities.find(e => e.id === id);
-      return entity?.version || null;
+      const entity = entities.find(e => (e as any).id === id);
+      return (entity as any)?.version || null;
     },
     
     refreshEntity: async (table: string, id: string) => {
@@ -747,7 +748,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
           
           return {
             [entityKey]: entities.map(entity => 
-              entity.id === id ? data : entity
+              (entity as any).id === id ? data : entity
             )
           };
         });

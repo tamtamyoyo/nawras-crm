@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuthHook';
 import { useStore } from '@/store/useStore';
 import { supabase } from '@/lib/supabase-client';
-import * as offlineDataService from '@/services/offlineDataService';
+import { offlineDataService } from '@/services/offlineDataService';
 import { isOfflineMode } from '../utils/offlineMode'
 import { handleSupabaseError } from '../utils/errorHandling'
 import { protectFromExtensionInterference } from '../utils/extensionProtection'
@@ -24,7 +24,7 @@ import {
 } from 'recharts';
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, profile } = useAuth();
   const { deals, leads, customers } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -90,8 +90,8 @@ export default function Home() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        {isAuthenticated && user && (
-          <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+        {user && profile && (
+          <p className="text-gray-600 mt-2">Welcome back, {profile.full_name || user?.email}!</p>
         )}
       </div>
 

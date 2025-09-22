@@ -52,7 +52,7 @@ class OperationLock {
 // Enhanced database service with concurrency control
 export class ConcurrentDbService {
   // Optimistic locking update with conflict detection
-  static async updateWithOptimisticLocking<T extends VersionedRecord>(
+  static async updateWithOptimisticLocking<T = any>(
     table: string,
     id: string,
     updates: Partial<T>,
@@ -74,8 +74,12 @@ export class ConcurrentDbService {
           throw fetchError;
         }
         
-        // Check for version conflict
-        if (currentRecord.version !== expectedVersion) {
+        if (!currentRecord) {
+            throw new Error('Record not found');
+          }
+          
+          // Check for version conflict
+          if ((currentRecord as any).version !== expectedVersion) {
           const conflictError = new Error('Record was modified by another user') as ConflictError;
           conflictError.code = 'CONFLICT';
           conflictError.localData = { ...updates, version: expectedVersion };
@@ -84,14 +88,14 @@ export class ConcurrentDbService {
         }
         
         // Perform the update
-        const { data, error } = await supabase
-          .from(table)
-          .update({
-            ...updates,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id)
-          .eq('version', expectedVersion)
+        const { data, error } = await (supabase as any)
+            .from(table)
+            .update({
+              ...updates,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .eq('version', expectedVersion)
           .select()
           .single();
         
@@ -145,7 +149,7 @@ export class ConcurrentDbService {
           version: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .select()
         .single();
       
@@ -277,7 +281,7 @@ export class ConcurrentDbService {
         const localTime = (localData as Record<string, unknown>).updated_at;
         const remoteTime = (remoteData as Record<string, unknown>).updated_at;
         
-        if (localTime && remoteTime && new Date(localTime) > new Date(remoteTime)) {
+        if (localTime && remoteTime && new Date(localTime as string) > new Date(remoteTime as string)) {
           return { ...remoteData, ...localData };
         }
         return remoteData;

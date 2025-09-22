@@ -85,7 +85,7 @@ export function AdvancedFilters({
             <Input
               id={field.key}
               placeholder={field.placeholder}
-              value={value || ''}
+              value={(value as string) || ''}
               onChange={(e) => handleValueChange(field.key, e.target.value)}
             />
           </div>
@@ -124,7 +124,7 @@ export function AdvancedFilters({
           <div key={field.key} className="space-y-2">
             <Label>{field.label}</Label>
             <Select
-              value={value || ''}
+              value={(value as string) || ''}
               onValueChange={(newValue) => handleValueChange(field.key, newValue)}
             >
               <SelectTrigger>
@@ -149,7 +149,7 @@ export function AdvancedFilters({
             <Input
               id={field.key}
               type="date"
-              value={value ? new Date(value).toISOString().split('T')[0] : ''}
+              value={value ? new Date(value as string).toISOString().split('T')[0] : ''}
               onChange={(e) => {
                 const newDate = e.target.value ? new Date(e.target.value).toISOString() : undefined
                 handleValueChange(field.key, newDate)
@@ -159,7 +159,7 @@ export function AdvancedFilters({
         )
 
       case 'daterange': {
-        const dateRange = value || {}
+        const dateRange = (value as { from?: string; to?: string }) || {}
         return (
           <div key={field.key} className="space-y-2">
             <Label>{field.label}</Label>
@@ -202,20 +202,20 @@ export function AdvancedFilters({
           <div key={field.key} className="space-y-2">
             <Label htmlFor={field.key}>{field.label}</Label>
             <Input
-              id={field.key}
-              type="number"
-              placeholder={field.placeholder}
-              value={value || ''}
-              min={field.min}
-              max={field.max}
-              step={field.step}
-              onChange={(e) => handleValueChange(field.key, e.target.value ? Number(e.target.value) : undefined)}
-            />
+                id={field.key}
+                type="number"
+                placeholder={field.placeholder}
+                value={(value as string | number) || ''}
+                min={field.min}
+                max={field.max}
+                step={field.step}
+                onChange={(e) => handleValueChange(field.key, e.target.value ? Number(e.target.value) : undefined)}
+              />
           </div>
         )
 
       case 'numberrange': {
-        const numberRange = value || {}
+        const numberRange = (value as { min?: number; max?: number }) || {}
         const min = field.min || 0
         const max = field.max || 1000000
         const currentRange = [numberRange.min || min, numberRange.max || max]
@@ -249,7 +249,7 @@ export function AdvancedFilters({
             <div className="flex items-center space-x-2">
               <Checkbox
                 id={field.key}
-                checked={value || false}
+                checked={(value as boolean) || false}
                 onCheckedChange={(checked) => handleValueChange(field.key, checked)}
               />
               <Label htmlFor={field.key}>{field.label}</Label>
@@ -321,14 +321,16 @@ export function AdvancedFilters({
               displayValue = value.length > 1 ? `${value.length} selected` : value[0]
             } else if (typeof value === 'object' && value !== null) {
               if (field.type === 'daterange') {
-                const from = value.from ? format(new Date(value.from), 'MMM dd') : ''
-                const to = value.to ? format(new Date(value.to), 'MMM dd') : ''
+                const dateRange = value as { from?: string; to?: string }
+                const from = dateRange.from ? format(new Date(dateRange.from), 'MMM dd') : ''
+                const to = dateRange.to ? format(new Date(dateRange.to), 'MMM dd') : ''
                 displayValue = `${from} - ${to}`
               } else if (field.type === 'numberrange') {
-                displayValue = `$${value.min?.toLocaleString()} - $${value.max?.toLocaleString()}`
+                const numberRange = value as { min?: number; max?: number }
+                displayValue = `$${numberRange.min?.toLocaleString()} - $${numberRange.max?.toLocaleString()}`
               }
             } else if (field.type === 'date') {
-              displayValue = format(new Date(value), 'MMM dd, yyyy')
+              displayValue = format(new Date(value as string), 'MMM dd, yyyy')
             } else if (field.type === 'boolean') {
               displayValue = value ? 'Yes' : 'No'
             } else {

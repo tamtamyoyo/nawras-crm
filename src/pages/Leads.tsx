@@ -14,8 +14,8 @@ import { supabase } from '@/lib/supabase-client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '../hooks/useAuthHook'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
-import { runComprehensiveTests } from '../utils/test-runner'
+
+import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '@/components/ExportFieldsForm'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
@@ -268,7 +268,7 @@ export default function Leads() {
             contact_preference: data.contact_preference,
             follow_up_date: data.follow_up_date || null
           }
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('leads')
             .update(updateData)
             .eq('id', editingLead.id)
@@ -303,7 +303,7 @@ export default function Leads() {
             follow_up_date: data.follow_up_date || null,
             created_by: user?.id || null // Use null if no authenticated user
           }
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('leads')
             .insert([insertData])
             .select()
@@ -368,7 +368,7 @@ export default function Leads() {
       
       // Try Supabase first, fallback to offline mode on error
       try {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('leads')
           .delete()
           .eq('id', lead.id)
@@ -436,20 +436,20 @@ export default function Leads() {
         created_by: user?.id || null, // Use null if no authenticated user
         responsible_person: (lead.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali'
       }
-      const { error: customerError } = await supabase
-        .from('customers')
-        .insert([customerData])
-        .select()
-        .single()
+      const { error: customerError } = await (supabase as any)
+          .from('customers')
+          .insert(customerData)
+          .select()
+          .single()
 
       if (customerError) throw customerError
 
       // Update lead status to closed_won (converted)
       const leadUpdateData: Database['public']['Tables']['leads']['Update'] = { status: 'closed_won' }
-      const { error: leadError } = await supabase
-        .from('leads')
-        .update(leadUpdateData)
-        .eq('id', lead.id)
+      const { error: leadError } = await (supabase as any)
+          .from('leads')
+          .update(leadUpdateData)
+          .eq('id', lead.id)
 
       if (leadError) throw leadError
 

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { FilterPanel, FilterConfig, FilterValue } from '@/components/search/FilterPanel'
 import { commonFilters } from '@/components/search/common-filters'
 import { SearchResults } from '@/components/search/SearchResults'
-import { useAdvancedSearch, SearchOptions } from '@/hooks/useAdvancedSearch'
+import { useAdvancedSearch, SearchOptions, SearchResult } from '@/hooks/useAdvancedSearch'
 
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
@@ -22,9 +22,11 @@ import { useNavigate } from 'react-router-dom'
 interface GlobalSearchProps {
   className?: string
   placeholder?: string
-  onResultSelect?: (result: { id: string; type: string; [key: string]: unknown }) => void
+  onResultSelect?: (result: SearchResult) => void
   showFilters?: boolean
   defaultFilters?: FilterValue
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 
@@ -34,7 +36,9 @@ export function GlobalSearch({
   placeholder = "Search across all modules...", 
   onResultSelect,
   showFilters = true,
-  defaultFilters = {}
+  defaultFilters = {},
+  isOpen,
+  onClose
 }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -72,7 +76,7 @@ export function GlobalSearch({
     return () => clearTimeout(timeoutId)
   }, [query, filters, selectedTypes, performSearch, clearResults])
 
-  const handleResultClick = (result: { id: string; type: string; [key: string]: unknown }) => {
+  const handleResultClick = (result: SearchResult) => {
     setShowResults(false)
     setQuery('')
     
@@ -110,7 +114,9 @@ export function GlobalSearch({
   // Filter configurations for the search
   const searchFilters: FilterConfig[] = [
     {
-      ...commonFilters.status,
+      id: 'status',
+      label: 'Status',
+      type: 'select',
       options: [
         { value: 'active', label: 'Active' },
         { value: 'inactive', label: 'Inactive' },
@@ -129,12 +135,43 @@ export function GlobalSearch({
         { value: 'rejected', label: 'Rejected' }
       ]
     },
-    commonFilters.priority,
-    commonFilters.dateRange,
-    commonFilters.valueRange,
-    commonFilters.assignedTo,
-    commonFilters.tags,
-    commonFilters.company
+    {
+      id: 'priority',
+      label: 'Priority',
+      type: 'select',
+      options: [
+        { value: 'high', label: 'High' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'low', label: 'Low' }
+      ]
+    },
+    {
+      id: 'dateRange',
+      label: 'Date Range',
+      type: 'date-range'
+    },
+    {
+      id: 'valueRange',
+      label: 'Value Range',
+      type: 'number-range'
+    },
+    {
+      id: 'assignedTo',
+      label: 'Assigned To',
+      type: 'select',
+      options: []
+    },
+    {
+      id: 'tags',
+      label: 'Tags',
+      type: 'multiselect',
+      options: []
+    },
+    {
+      id: 'company',
+      label: 'Company',
+      type: 'text'
+    }
   ]
 
   return (

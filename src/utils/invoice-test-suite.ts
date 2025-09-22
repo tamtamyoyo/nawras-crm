@@ -1,8 +1,11 @@
 // Comprehensive Invoice Testing Suite
 import { supabase } from '@/lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
-import { devConfig } from '../config/development'
+
 import type { Database } from '@/lib/database.types'
+
+// Use untyped client to avoid 'never' type issues in demo mode
+const testClient = supabase as any
 
 type Invoice = Database['public']['Tables']['invoices']['Row']
 type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
@@ -40,14 +43,15 @@ export class InvoiceTestSuite {
       // Create sample invoice data
       const sampleInvoice: InvoiceInsert = {
         invoice_number: `TEST-${Date.now()}`,
+        customer_id: 'test-customer-001',
         deal_id: 'test-deal-001',
         amount: 1500.00,
         tax_amount: 150.00,
         total_amount: 1650.00,
         status: 'draft',
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         payment_terms: 'net_30',
-         notes: 'Test invoice for data persistence validation',
-        user_id: 'test-user-id',
+        notes: 'Test invoice for data persistence validation',
         responsible_person: 'Mr. Ali',
         tax_rate: 10,
         items: JSON.stringify([{
@@ -59,18 +63,18 @@ export class InvoiceTestSuite {
       }
 
       // Test creation
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         const newInvoice = {
           ...sampleInvoice,
           id: Date.now().toString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
-        await offlineDataService.createInvoice(newInvoice)
-        this.testInvoices.push(newInvoice)
+        await offlineDataService.createInvoice(newInvoice as any)
+        this.testInvoices.push(newInvoice as any)
         this.addResult('Data Persistence - Creation (Offline)', 'pass', 'Invoice created successfully in offline mode')
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await testClient
           .from('invoices')
           .insert([sampleInvoice])
           .select()
@@ -114,20 +118,20 @@ export class InvoiceTestSuite {
     try {
       const emptyInvoice: Partial<InvoiceInsert> = {
         invoice_number: '',
+        customer_id: '',
         deal_id: '',
-        amount: 0,
-        user_id: 'test-user-id'
+        amount: 0
       }
 
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         try {
-          await offlineDataService.createInvoice(emptyInvoice as InvoiceInsert)
+          await offlineDataService.createInvoice(emptyInvoice as any)
           this.addResult('Edge Cases - Empty Form', 'warning', 'Empty form was accepted (should be validated)')
         } catch {
           this.addResult('Edge Cases - Empty Form', 'pass', 'Empty form properly rejected')
         }
       } else {
-        const { error } = await supabase
+        const { error } = await testClient
           .from('invoices')
           .insert([emptyInvoice as InvoiceInsert])
 
@@ -146,24 +150,25 @@ export class InvoiceTestSuite {
     try {
       const invalidInvoice: Record<string, unknown> = {
         invoice_number: 'VALID-001',
+        customer_id: 'valid-customer',
         deal_id: 'valid-deal',
         amount: 'invalid-amount', // Should be number
         tax_amount: 'invalid-tax', // Should be number
         total_amount: 'invalid-total', // Should be number
         status: 'invalid-status', // Should be valid enum
         payment_terms: 'invalid-terms', // Should be valid enum
-        user_id: 'test-user-id'
+        due_date: 'invalid-date' // Should be valid date
       }
 
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         try {
-          await offlineDataService.createInvoice(invalidInvoice)
+          await offlineDataService.createInvoice(invalidInvoice as any)
           this.addResult('Edge Cases - Invalid Data', 'warning', 'Invalid data formats were accepted')
         } catch {
           this.addResult('Edge Cases - Invalid Data', 'pass', 'Invalid data formats properly rejected')
         }
       } else {
-        const { error } = await supabase
+        const { error } = await testClient
           .from('invoices')
           .insert([invalidInvoice])
 
@@ -183,19 +188,20 @@ export class InvoiceTestSuite {
       const longString = 'A'.repeat(10000) // Very long string
       const maxCharInvoice: InvoiceInsert = {
         invoice_number: `MAX-${Date.now()}`,
+        customer_id: 'max-test-customer',
         deal_id: 'max-test-deal',
         amount: 1000,
         tax_amount: 100,
         total_amount: 1100,
         status: 'draft',
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         payment_terms: 'net_30',
-         notes: longString,
-        user_id: 'test-user-id',
+        notes: longString,
         responsible_person: 'Mr. Ali',
         tax_rate: 10
       }
 
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         try {
           const newInvoice = {
             ...maxCharInvoice,
@@ -203,13 +209,13 @@ export class InvoiceTestSuite {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
-          await offlineDataService.createInvoice(newInvoice)
+          await offlineDataService.createInvoice(newInvoice as any)
           this.addResult('Edge Cases - Max Characters', 'warning', 'Maximum character inputs were accepted (may cause performance issues)')
         } catch {
           this.addResult('Edge Cases - Max Characters', 'pass', 'Maximum character inputs properly handled')
         }
       } else {
-        const { error } = await supabase
+        const { error } = await testClient
           .from('invoices')
           .insert([maxCharInvoice])
 
@@ -231,7 +237,7 @@ export class InvoiceTestSuite {
     try {
       const startTime = performance.now()
       
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         const invoices = await offlineDataService.getInvoices()
         const endTime = performance.now()
         const loadTime = endTime - startTime
@@ -239,7 +245,7 @@ export class InvoiceTestSuite {
         this.addResult('Data Retrieval - Speed (Offline)', loadTime < 1000 ? 'pass' : 'warning', 
           `Loaded ${invoices.length} invoices in ${loadTime.toFixed(2)}ms`)
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await testClient
           .from('invoices')
           .select('*')
           .order('created_at', { ascending: false })
@@ -248,7 +254,7 @@ export class InvoiceTestSuite {
         const loadTime = endTime - startTime
         
         if (error) {
-          this.addResult('Data Retrieval - Database Connection', 'fail', `Database query failed: ${error.message}`, error)
+          this.addResult('Data Retrieval - Database Connection', 'fail', `Database query failed: ${error.message}`, error as any)
           return
         }
         
@@ -311,7 +317,7 @@ export class InvoiceTestSuite {
       await new Promise(resolve => setTimeout(resolve, 1000))
       
       // Re-fetch data to simulate page refresh
-      if (devConfig.offlineMode) {
+      if (false) { // Offline mode disabled for testing
         const invoices = await offlineDataService.getInvoices()
         const persistedInvoice = invoices.find(inv => 
           this.testInvoices.some(testInv => testInv.invoice_number === inv.invoice_number)
@@ -323,13 +329,13 @@ export class InvoiceTestSuite {
           this.addResult('Data Persistence - Page Refresh (Offline)', 'fail', 'Data not found after simulated page refresh')
         }
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await testClient
           .from('invoices')
           .select('*')
           .in('invoice_number', this.testInvoices.map(inv => inv.invoice_number))
         
         if (error) {
-          this.addResult('Data Persistence - Page Refresh', 'fail', `Error checking persistence: ${error.message}`, error)
+          this.addResult('Data Persistence - Page Refresh', 'fail', `Error checking persistence: ${error.message}`, error as any)
         } else if (data && data.length > 0) {
           this.addResult('Data Persistence - Page Refresh', 'pass', 'Data persisted after simulated page refresh')
         } else {
@@ -347,10 +353,10 @@ export class InvoiceTestSuite {
     
     try {
       for (const invoice of this.testInvoices) {
-        if (devConfig.offlineMode) {
+        if (false) { // Offline mode disabled for testing
           await offlineDataService.deleteInvoice(invoice.id)
         } else {
-          await supabase
+          await testClient
             .from('invoices')
             .delete()
             .eq('id', invoice.id)

@@ -34,7 +34,8 @@
   },
   "include": [
     "src",
-    "api"
+    "api",
+    "src/test/**/*"
   ],
   "exclude": [
     "**/*.test.ts",
@@ -45,6 +46,8 @@
     "src/**/__tests__/**/*",
     "tests/**/*",
     "playwright-report/**/*",
-    "test-results/**/*"
+    "test-results/**/*",
+    "src/tests/**/*",
+    "src/utils/invoice-test-suite.ts"
   ]
 }

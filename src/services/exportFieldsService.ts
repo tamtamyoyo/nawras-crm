@@ -31,9 +31,12 @@ export class ExportFieldsService {
         updateData.export_license_expiry = data.export_license_expiry;
       }
       
-      const { error: customerError } = await supabase
+      const { error: customerError } = await (supabase as any)
         .from('customers')
-        .update(updateData)
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', customerId);
 
       if (customerError) throw customerError;
@@ -73,6 +76,7 @@ export class ExportFieldsService {
         .single();
 
       if (customerError) throw customerError;
+      if (!customer) throw new Error('Customer not found');
 
       // Load junction table data
       const [hsCodes, ports, certificates, incoterms, markets, categories] = await Promise.all([
@@ -84,21 +88,23 @@ export class ExportFieldsService {
         this.getCustomerProductCategories(customerId)
       ]);
 
+      const customerData = customer as any;
       return {
-        export_license_number: customer?.export_license_number || '',
-        customs_broker: customer?.customs_broker || '',
-        credit_limit_usd: customer?.credit_limit_usd || 0,
-        payment_terms_export: customer?.payment_terms_export || '',
-        preferred_currency: customer?.preferred_currency || 'USD',
-        export_documentation_language: customer?.export_documentation_language || '',
-        special_handling_requirements: '',
-        compliance_notes: '',
-        hs_code_ids: hsCodes.map(h => h.id),
-        export_port_ids: ports.map(p => p.id),
-        certificate_ids: certificates.map(c => c.id),
-        incoterm_ids: incoterms.map(i => i.id),
-        target_market_ids: markets.map(m => m.id),
-        product_category_ids: categories.map(c => c.id)
+        export_license_number: customerData.export_license_number || '',
+        export_license_expiry: customerData.export_license_expiry || '',
+        customs_broker: customerData.customs_broker || '',
+        credit_limit_usd: customerData.credit_limit_usd || 0,
+        payment_terms_export: customerData.payment_terms_export || '',
+        preferred_currency: customerData.preferred_currency || 'USD',
+        export_documentation_language: customerData.export_documentation_language || '',
+        special_handling_requirements: customerData.special_handling_requirements || '',
+        compliance_notes: customerData.compliance_notes || '',
+        hs_code_ids: [],
+        export_port_ids: [],
+        certificate_ids: [],
+        incoterm_ids: [],
+        target_market_ids: [],
+        product_category_ids: []
       };
     } catch (error) {
       console.error('Error loading customer export fields:', error);
@@ -109,17 +115,23 @@ export class ExportFieldsService {
   // HS Codes management
   private static async saveCustomerHSCodes(customerId: string, hsCodeIds: string[]) {
     // Delete existing relationships
-    await supabase.from('customer_hs_codes').delete().eq('customer_id', customerId);
+    await supabase
+      .from('customer_hs_codes')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (hsCodeIds.length > 0) {
-      const records = hsCodeIds.map((hsCodeId, index) => ({
+      const relationships = hsCodeIds.map((hsCodeId, index) => ({
         customer_id: customerId,
         hs_code_id: hsCodeId,
-        is_primary: index === 0,
-        volume_percentage: null
+        is_primary: index === 0
       }));
 
-      const { error } = await supabase.from('customer_hs_codes').insert(records);
+      const { error } = await supabase
+      .from('customer_hs_codes')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }
@@ -144,18 +156,24 @@ export class ExportFieldsService {
 
   // Export Ports management
   private static async saveCustomerExportPorts(customerId: string, portIds: string[]) {
-    await supabase.from('customer_export_ports').delete().eq('customer_id', customerId);
+    // Delete existing relationships
+    await supabase
+      .from('customer_export_ports')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (portIds.length > 0) {
-      const records = portIds.map((portId, index) => ({
+      const relationships = portIds.map((exportPortId, index) => ({
         customer_id: customerId,
-        export_port_id: portId,
-        is_preferred: index === 0,
-        shipping_method: null,
-        transit_time_days: null
+        export_port_id: exportPortId,
+        is_preferred: index === 0
       }));
 
-      const { error } = await supabase.from('customer_export_ports').insert(records);
+      const { error } = await supabase
+      .from('customer_export_ports')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }
@@ -181,20 +199,24 @@ export class ExportFieldsService {
 
   // Certificates management
   private static async saveCustomerCertificates(customerId: string, certificateIds: string[]) {
-    await supabase.from('customer_certificates').delete().eq('customer_id', customerId);
+    // Delete existing relationships
+    await supabase
+      .from('customer_certificates')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (certificateIds.length > 0) {
-      const records = certificateIds.map(certId => ({
+      const relationships = certificateIds.map(certificateId => ({
         customer_id: customerId,
-        certificate_id: certId,
-        certificate_number: null,
-        issue_date: null,
-        expiry_date: null,
-        issuing_body: null,
+        certificate_id: certificateId,
         status: 'pending' as const
       }));
 
-      const { error } = await supabase.from('customer_certificates').insert(records);
+      const { error } = await supabase
+      .from('customer_certificates')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }
@@ -221,16 +243,24 @@ export class ExportFieldsService {
 
   // Incoterms management
   private static async saveCustomerIncoterms(customerId: string, incotermIds: string[]) {
-    await supabase.from('customer_incoterms').delete().eq('customer_id', customerId);
+    // Delete existing relationships
+    await supabase
+      .from('customer_incoterms')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (incotermIds.length > 0) {
-      const records = incotermIds.map((incotermId, index) => ({
+      const relationships = incotermIds.map((incotermId, index) => ({
         customer_id: customerId,
         incoterm_id: incotermId,
         is_preferred: index === 0
       }));
 
-      const { error } = await supabase.from('customer_incoterms').insert(records);
+      const { error } = await supabase
+      .from('customer_incoterms')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }
@@ -256,18 +286,24 @@ export class ExportFieldsService {
 
   // Target Markets management
   private static async saveCustomerTargetMarkets(customerId: string, marketIds: string[]) {
-    await supabase.from('customer_target_markets').delete().eq('customer_id', customerId);
+    // Delete existing relationships
+    await supabase
+      .from('customer_target_markets')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (marketIds.length > 0) {
-      const records = marketIds.map((marketId, index) => ({
+      const relationships = marketIds.map((targetMarketId, index) => ({
         customer_id: customerId,
-        target_market_id: marketId,
-        market_priority: index + 1,
-        annual_volume_target: null,
-        market_entry_date: null
+        target_market_id: targetMarketId,
+        market_priority: index + 1
       }));
 
-      const { error } = await supabase.from('customer_target_markets').insert(records);
+      const { error } = await supabase
+      .from('customer_target_markets')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }
@@ -294,17 +330,24 @@ export class ExportFieldsService {
 
   // Product Categories management
   private static async saveCustomerProductCategories(customerId: string, categoryIds: string[]) {
-    await supabase.from('customer_product_categories').delete().eq('customer_id', customerId);
+    // Delete existing relationships
+    await supabase
+      .from('customer_product_categories')
+      .delete()
+      .eq('customer_id', customerId);
 
+    // Insert new relationships
     if (categoryIds.length > 0) {
-      const records = categoryIds.map((categoryId, index) => ({
+      const relationships = categoryIds.map((productCategoryId, index) => ({
         customer_id: customerId,
-        product_category_id: categoryId,
-        is_primary: index === 0,
-        volume_percentage: null
+        product_category_id: productCategoryId,
+        is_primary: index === 0
       }));
 
-      const { error } = await supabase.from('customer_product_categories').insert(records);
+      const { error } = await supabase
+      .from('customer_product_categories')
+      .insert(relationships as any);
+
       if (error) throw error;
     }
   }

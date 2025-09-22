@@ -1,7 +1,8 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { DataTable, DataTableColumnHeader } from "@/components/ui/data-table"
+import { EnhancedDataTable } from "@/components/ui/enhanced-data-table"
+import { DataTableColumnHeader } from "@/components/ui/data-table"
 import { Building, User, Calendar, Eye, Edit, Trash2, DollarSign, Download } from "lucide-react"
 import { Database } from "@/lib/database.types"
 import { generateInvoicePDF } from "@/utils/pdf-generator"
@@ -214,7 +215,7 @@ export function InvoicesTable({
   ]
 
   return (
-    <DataTable
+    <EnhancedDataTable
       columns={columns}
       data={data}
       searchKey="invoice_number"

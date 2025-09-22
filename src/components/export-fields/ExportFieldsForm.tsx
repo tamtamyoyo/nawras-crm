@@ -42,6 +42,14 @@ export function ExportFieldsForm({ initialData, onSave, onCancel }: ExportFields
     product_category_ids: []
   });
 
+  // Selected items for multi-select (objects with full data)
+  const [selectedHSCodes, setSelectedHSCodes] = useState<HSCode[]>([]);
+  const [selectedExportPorts, setSelectedExportPorts] = useState<ExportPort[]>([]);
+  const [selectedCertificates, setSelectedCertificates] = useState<Certificate[]>([]);
+  const [selectedIncoterms, setSelectedIncoterms] = useState<Incoterm[]>([]);
+  const [selectedTargetMarkets, setSelectedTargetMarkets] = useState<TargetMarket[]>([]);
+  const [selectedProductCategories, setSelectedProductCategories] = useState<ProductCategory[]>([]);
+
   // Reference data
   const [hsCodes, setHSCodes] = useState<HSCode[]>([]);
   const [exportPorts, setExportPorts] = useState<ExportPort[]>([]);
@@ -90,14 +98,50 @@ export function ExportFieldsForm({ initialData, onSave, onCancel }: ExportFields
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleMultiSelect = (field: keyof CustomerExportFormData, item: { id: string; [key: string]: unknown }) => {
-    const currentSelection = Array.isArray(formData[field]) ? formData[field] as { id: string; [key: string]: unknown }[] : [];
+  const handleMultiSelect = (field: keyof CustomerExportFormData, item: { id: string; [key: string]: any }) => {
+    let currentSelection: any[] = [];
+    let setterFunction: (items: any[]) => void;
+    
+    // Get current selection and setter based on field
+    switch (field) {
+      case 'hs_code_ids':
+        currentSelection = selectedHSCodes;
+        setterFunction = setSelectedHSCodes;
+        break;
+      case 'export_port_ids':
+        currentSelection = selectedExportPorts;
+        setterFunction = setSelectedExportPorts;
+        break;
+      case 'certificate_ids':
+        currentSelection = selectedCertificates;
+        setterFunction = setSelectedCertificates;
+        break;
+      case 'incoterm_ids':
+        currentSelection = selectedIncoterms;
+        setterFunction = setSelectedIncoterms;
+        break;
+      case 'target_market_ids':
+        currentSelection = selectedTargetMarkets;
+        setterFunction = setSelectedTargetMarkets;
+        break;
+      case 'product_category_ids':
+        currentSelection = selectedProductCategories;
+        setterFunction = setSelectedProductCategories;
+        break;
+      default:
+        return;
+    }
+    
     const isSelected = currentSelection.some(selected => selected.id === item.id);
     
     if (isSelected) {
-      handleInputChange(field, currentSelection.filter(selected => selected.id !== item.id));
+      const newSelection = currentSelection.filter(selected => selected.id !== item.id);
+      setterFunction(newSelection);
+      handleInputChange(field, newSelection.map(s => s.id));
     } else {
-      handleInputChange(field, [...currentSelection, item]);
+      const newSelection = [...currentSelection, item];
+      setterFunction(newSelection);
+      handleInputChange(field, newSelection.map(s => s.id));
     }
   };
 
@@ -112,54 +156,63 @@ export function ExportFieldsForm({ initialData, onSave, onCancel }: ExportFields
     }
   };
 
-  const renderMultiSelectSection = <T extends { id: string }>(
+  const renderMultiSelectSection = (
     title: string,
-    items: T[],
-    selectedItems: T[],
     field: keyof CustomerExportFormData,
-    displayField: string = 'name'
-  ) => (
-    <div className="space-y-3">
-      <Label className="text-sm font-medium">{title}</Label>
-      <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-2">
-          {items.map(item => {
-            const isSelected = selectedItems.some(selected => selected.id === item.id);
+    options: { id: string; label: string; value: string }[],
+    selectedItems: { id: string; [key: string]: any }[]
+  ) => {
+    let currentSelection: any[] = [];
+    
+    // Get current selection based on field
+    switch (field) {
+      case 'hs_code_ids':
+        currentSelection = selectedHSCodes;
+        break;
+      case 'export_port_ids':
+        currentSelection = selectedExportPorts;
+        break;
+      case 'certificate_ids':
+        currentSelection = selectedCertificates;
+        break;
+      case 'incoterm_ids':
+        currentSelection = selectedIncoterms;
+        break;
+      case 'target_market_ids':
+        currentSelection = selectedTargetMarkets;
+        break;
+      case 'product_category_ids':
+        currentSelection = selectedProductCategories;
+        break;
+      default:
+        currentSelection = [];
+    }
+    
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">{title}</label>
+        <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
+          {options.map((option) => {
+            const isSelected = currentSelection.some(item => item.id === option.value);
             return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleMultiSelect(field, item)}
-                className={`text-left p-2 rounded text-sm transition-colors ${
-                  isSelected
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {String((item as Record<string, unknown>)[displayField] || (item as Record<string, unknown>).code || (item as Record<string, unknown>).name || '')}
-              </button>
+              <div key={option.value} className="flex items-center space-x-2 py-1">
+                <input
+                  type="checkbox"
+                  id={`${field}-${option.value}`}
+                  checked={isSelected}
+                  onChange={() => handleMultiSelect(field, { id: option.value, ...option })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor={`${field}-${option.value}`} className="text-sm text-gray-700">
+                  {option.label}
+                </label>
+              </div>
             );
           })}
         </div>
       </div>
-      {selectedItems.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {selectedItems.map(item => (
-            <Badge key={item.id} variant="secondary" className="text-xs">
-              {String((item as Record<string, unknown>)[displayField] || (item as Record<string, unknown>).code || (item as Record<string, unknown>).name || '')}
-              <button
-                type="button"
-                onClick={() => handleMultiSelect(field, item)}
-                className="ml-1 hover:text-red-600"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -249,51 +302,45 @@ export function ExportFieldsForm({ initialData, onSave, onCancel }: ExportFields
         {/* Multi-select sections */}
         {renderMultiSelectSection(
           'HS Codes',
-          hsCodes,
-          formData.hs_code_ids,
           'hs_code_ids',
-          'code'
+          hsCodes.map(item => ({ id: item.id, label: item.code, value: item.id })),
+          selectedHSCodes as { id: string; [key: string]: any }[]
         )}
 
         {renderMultiSelectSection(
-          'Export Ports',
-          exportPorts,
-          formData.export_port_ids,
-          'export_port_ids',
-          'port_name'
-        )}
+              'Export Ports',
+              'export_port_ids',
+              exportPorts.map(item => ({ id: item.id, label: item.port_name, value: item.id })),
+              selectedExportPorts as { id: string; [key: string]: any }[]
+            )}
 
         {renderMultiSelectSection(
-          'Required Certificates',
-          certificates,
-          formData.certificate_ids,
-          'certificate_ids',
-          'certificate_name'
-        )}
+              'Required Certificates',
+              'certificate_ids',
+              certificates.map(item => ({ id: item.id, label: item.certificate_name, value: item.id })),
+              selectedCertificates as { id: string; [key: string]: any }[]
+            )}
 
-        {renderMultiSelectSection(
-          'Incoterms',
-          incoterms,
-          formData.incoterm_ids,
-          'incoterm_ids',
-          'term_code'
-        )}
+            {renderMultiSelectSection(
+              'Incoterms',
+              'incoterm_ids',
+              incoterms.map(item => ({ id: item.id, label: item.term_code, value: item.id })),
+              selectedIncoterms as { id: string; [key: string]: any }[]
+            )}
 
-        {renderMultiSelectSection(
-          'Target Markets',
-          targetMarkets,
-          formData.target_market_ids,
-          'target_market_ids',
-          'market_name'
-        )}
+            {renderMultiSelectSection(
+              'Target Markets',
+              'target_market_ids',
+              targetMarkets.map(item => ({ id: item.id, label: item.market_name, value: item.id })),
+              selectedTargetMarkets as { id: string; [key: string]: any }[]
+            )}
 
-        {renderMultiSelectSection(
-          'Product Categories',
-          productCategories,
-          formData.product_category_ids,
-          'product_category_ids',
-          'category_name'
-        )}
+            {renderMultiSelectSection(
+              'Product Categories',
+              'product_category_ids',
+              productCategories.map(item => ({ id: item.id, label: item.category_name, value: item.id })),
+              selectedProductCategories as { id: string; [key: string]: any }[]
+            )}
 
         {/* Additional fields */}
         <div className="space-y-4">

@@ -453,7 +453,7 @@ export function InvoiceCustomizationForm({
                     <Label htmlFor="watermark">Watermark Text</Label>
                     <Input
                       id="watermark"
-                      value={localOptions.watermark || ''}
+                      value={typeof localOptions.watermark === 'object' ? localOptions.watermark?.text || '' : localOptions.watermark || ''}
                       onChange={(e) => updateOptions({ watermark: e.target.value })}
                       placeholder="Watermark text (optional)"
                     />

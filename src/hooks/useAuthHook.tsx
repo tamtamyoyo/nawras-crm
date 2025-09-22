@@ -2,9 +2,15 @@ import React, { useContext, useState, useEffect, useCallback, ReactNode } from '
 import { User, Session } from '@supabase/supabase-js';
 import { AuthContext, UserProfile } from './auth-context';
 import { supabase } from '../lib/supabase-client';
-import { devConfig } from '../config/development';
+
 import { isOfflineMode } from '../utils/offlineMode';
 import { protectFromExtensionInterference } from '../utils/extensionProtection';
+
+// Development configuration
+const devConfig = {
+  enableAuthLogs: process.env.NODE_ENV === 'development',
+  authTimeout: 10000
+};
 
 interface AuthProviderProps {
   children: ReactNode;
