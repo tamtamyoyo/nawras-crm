@@ -64,37 +64,33 @@ function createSupabaseClient(): SupabaseClient<Database> {
           'X-Client-Info': 'nawras-crm@1.0.0'
         },
         fetch: async (url, options = {}) => {
-          // Fix browser extension interference and malformed URLs
-          if (typeof url === 'string') {
-            let cleanUrl = url
-            
-            // Fix malformed URLs where multiple ? characters exist
-            // Replace ?...?... with ?...&...
-            cleanUrl = cleanUrl.replace(/\?([^?]+)\?/g, '?$1&')
-            
-            // Fix URLs where &select=* is appended incorrectly without ?
-            if (cleanUrl.includes('&select=*') && !cleanUrl.includes('?')) {
-              cleanUrl = cleanUrl.replace('&select=*', '?select=*')
-            }
-            
-            // Remove malformed columns parameter that browser extensions might add
-            if (cleanUrl.includes('columns=') && cleanUrl.includes('select=')) {
-              cleanUrl = cleanUrl.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
-                return suffix === '&' ? '&' : ''
-              })
-            }
-            
-            // Fix any remaining malformed query parameters (& without ?)
-            cleanUrl = cleanUrl.replace(/([^?])&/, '$1?')
+          // Ensure API key is included in headers
+          const headers = {
+            'apikey': validKey,
+            'Authorization': `Bearer ${validKey}`,
+            'Content-Type': 'application/json',
+            ...((options.headers as Record<string, string>) || {})
+          }
+          
+          const updatedOptions = {
+            ...options,
+            headers
+          }
+          
+          // Remove malformed columns parameter that browser extensions might add
+          if (typeof url === 'string' && url.includes('columns=') && url.includes('select=')) {
+            let cleanUrl = url.replace(/[?&]columns=[^&]*(&|$)/g, (match, suffix) => {
+              return suffix === '&' ? '&' : ''
+            })
             
             if (cleanUrl !== url) {
-              console.warn('🛡️ Fixed malformed URL:', { original: url, fixed: cleanUrl })
+              console.warn('🛡️ Removed malformed columns parameter:', { original: url, fixed: cleanUrl })
               url = cleanUrl
             }
           }
           
           try {
-            const response = await fetch(url, options)
+            const response = await fetch(url, updatedOptions)
             
             // Handle specific error cases to prevent console noise
             if (!response.ok) {
