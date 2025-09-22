@@ -1,322 +1,154 @@
-// CRUD Operations Test Script for Nawras CRM
-// This script tests Create, Read, Update, Delete operations on the customers page
+import { createClient } from '@supabase/supabase-js';
 
-console.log('🧪 Starting CRUD Operations Test Suite');
+const supabaseUrl = 'https://iqjjqfqhqjqhqjqhqjqh.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxampxZnFocWpxaHFqcWhxanFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI2MDY4NzQsImV4cCI6MjA0ODE4Mjg3NH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8';
 
-// Test data for creating customers
-const testCustomers = [
-  {
-    name: 'Test Customer 1',
-    email: 'test1@example.com',
-    phone: '+1-555-0101',
-    company: 'Test Company 1',
-    address: '123 Test Street, Test City',
-    status: 'active',
-    notes: 'This is a test customer created by automated testing'
-  },
-  {
-    name: 'Test Customer 2',
-    email: 'test2@example.com',
-    phone: '+1-555-0102',
-    company: 'Test Company 2',
-    address: '456 Test Avenue, Test City',
-    status: 'inactive',
-    notes: 'Another test customer for CRUD operations'
-  }
-];
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Helper function to wait for elements
-function waitForElement(selector, timeout = 5000) {
-  return new Promise((resolve, reject) => {
-    const element = document.querySelector(selector);
-    if (element) {
-      resolve(element);
-      return;
+async function testCRUDOperations() {
+    console.log('=== Testing CRUD Operations After ON CONFLICT Fix ===\n');
+    
+    // Test 1: Create Customer
+    console.log('=== Test 1: Create Customer ===');
+    try {
+        const { data: customer, error } = await supabase
+            .from('customers')
+            .insert({
+                name: 'CRUD Test Customer',
+                email: 'crud-test@example.com',
+                phone: '+1234567890',
+                company: 'Test Company',
+                status: 'active'
+            })
+            .select()
+            .single();
+        
+        if (error) {
+            console.log('Customer creation failed:', error);
+        } else {
+            console.log('Customer created successfully:', customer.id);
+            
+            // Test 2: Read Customer
+            console.log('\n=== Test 2: Read Customer ===');
+            const { data: readCustomer, error: readError } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('id', customer.id)
+                .single();
+            
+            if (readError) {
+                console.log('Customer read failed:', readError);
+            } else {
+                console.log('Customer read successfully:', readCustomer.name);
+            }
+            
+            // Test 3: Update Customer
+            console.log('\n=== Test 3: Update Customer ===');
+            const { data: updatedCustomer, error: updateError } = await supabase
+                .from('customers')
+                .update({ company: 'Updated Test Company' })
+                .eq('id', customer.id)
+                .select()
+                .single();
+            
+            if (updateError) {
+                console.log('Customer update failed:', updateError);
+            } else {
+                console.log('Customer updated successfully. Version:', updatedCustomer.version);
+            }
+            
+            // Test 4: Delete Customer
+            console.log('\n=== Test 4: Delete Customer ===');
+            const { error: deleteError } = await supabase
+                .from('customers')
+                .delete()
+                .eq('id', customer.id);
+            
+            if (deleteError) {
+                console.log('Customer deletion failed:', deleteError);
+            } else {
+                console.log('Customer deleted successfully');
+            }
+        }
+    } catch (err) {
+        console.log('Customer CRUD test failed:', err.message);
     }
     
-    const observer = new MutationObserver(() => {
-      const element = document.querySelector(selector);
-      if (element) {
-        observer.disconnect();
-        resolve(element);
-      }
-    });
+    // Test 5: Create Lead
+    console.log('\n=== Test 5: Create Lead ===');
+    try {
+        const { data: lead, error } = await supabase
+            .from('leads')
+            .insert({
+                name: 'CRUD Test Lead',
+                email: 'crud-lead@example.com',
+                phone: '+1234567890',
+                company: 'Lead Company',
+                status: 'new',
+                source: 'Website'
+            })
+            .select()
+            .single();
+        
+        if (error) {
+            console.log('Lead creation failed:', error);
+        } else {
+            console.log('Lead created successfully:', lead.id);
+            
+            // Clean up lead
+            await supabase.from('leads').delete().eq('id', lead.id);
+            console.log('Lead cleaned up');
+        }
+    } catch (err) {
+        console.log('Lead CRUD test failed:', err.message);
+    }
     
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+    // Test 6: Create Invoice
+    console.log('\n=== Test 6: Create Invoice ===');
+    try {
+        // First create a customer for the invoice
+        const { data: invoiceCustomer, error: customerError } = await supabase
+            .from('customers')
+            .insert({
+                name: 'Invoice Test Customer',
+                email: 'invoice-customer@example.com',
+                status: 'active'
+            })
+            .select()
+            .single();
+        
+        if (customerError) {
+            console.log('Invoice customer creation failed:', customerError);
+            return;
+        }
+        
+        const { data: invoice, error } = await supabase
+            .from('invoices')
+            .insert({
+                customer_id: invoiceCustomer.id,
+                invoice_number: 'INV-CRUD-001',
+                amount: 1000.00,
+                status: 'draft',
+                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            })
+            .select()
+            .single();
+        
+        if (error) {
+            console.log('Invoice creation failed:', error);
+        } else {
+            console.log('Invoice created successfully:', invoice.id);
+            
+            // Clean up invoice and customer
+            await supabase.from('invoices').delete().eq('id', invoice.id);
+            await supabase.from('customers').delete().eq('id', invoiceCustomer.id);
+            console.log('Invoice and customer cleaned up');
+        }
+    } catch (err) {
+        console.log('Invoice CRUD test failed:', err.message);
+    }
     
-    setTimeout(() => {
-      observer.disconnect();
-      reject(new Error(`Element ${selector} not found within ${timeout}ms`));
-    }, timeout);
-  });
+    console.log('\n=== CRUD Operations Test Complete ===');
 }
 
-// Helper function to fill form fields
-function fillFormField(selector, value) {
-  const field = document.querySelector(selector);
-  if (field) {
-    field.value = value;
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-    field.dispatchEvent(new Event('change', { bubbles: true }));
-    console.log(`✅ Filled ${selector} with: ${value}`);
-    return true;
-  }
-  console.error(`❌ Field ${selector} not found`);
-  return false;
-}
-
-// Helper function to click elements
-function clickElement(selector) {
-  const element = document.querySelector(selector);
-  if (element) {
-    element.click();
-    console.log(`✅ Clicked: ${selector}`);
-    return true;
-  }
-  console.error(`❌ Element ${selector} not found`);
-  return false;
-}
-
-// Test 1: Create Customer
-async function testCreateCustomer(customerData) {
-  console.log('\n🔵 TEST 1: Creating Customer -', customerData.name);
-  
-  try {
-    // Click Add Customer button
-    const addButton = await waitForElement('button:contains("Add Customer"), [data-testid="add-customer"], .add-customer-btn');
-    addButton.click();
-    console.log('✅ Clicked Add Customer button');
-    
-    // Wait for modal to appear
-    await waitForElement('[role="dialog"], .modal, .customer-modal');
-    console.log('✅ Modal opened');
-    
-    // Fill form fields
-    await new Promise(resolve => setTimeout(resolve, 500)); // Wait for form to render
-    
-    fillFormField('input[name="name"], #name', customerData.name);
-    fillFormField('input[name="email"], #email', customerData.email);
-    fillFormField('input[name="phone"], #phone', customerData.phone);
-    fillFormField('input[name="company"], #company', customerData.company);
-    fillFormField('input[name="address"], #address, textarea[name="address"]', customerData.address);
-    fillFormField('textarea[name="notes"], #notes', customerData.notes);
-    
-    // Set status
-    const statusSelect = document.querySelector('select[name="status"], #status');
-    if (statusSelect) {
-      statusSelect.value = customerData.status;
-      statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      console.log(`✅ Set status to: ${customerData.status}`);
-    }
-    
-    // Submit form
-    const submitButton = document.querySelector('button[type="submit"], .submit-btn, button:contains("Save")');
-    if (submitButton) {
-      submitButton.click();
-      console.log('✅ Submitted form');
-      
-      // Wait for success message or modal to close
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('✅ Customer created successfully');
-      return true;
-    }
-    
-  } catch (error) {
-    console.error('❌ Create customer test failed:', error);
-    return false;
-  }
-}
-
-// Test 2: Read/Verify Customer
-async function testReadCustomer(customerName) {
-  console.log('\n🔵 TEST 2: Reading Customer -', customerName);
-  
-  try {
-    // Look for customer in the list
-    const customerRows = document.querySelectorAll('[data-testid="customer-row"], .customer-item, .customer-card');
-    let found = false;
-    
-    for (const row of customerRows) {
-      if (row.textContent.includes(customerName)) {
-        console.log('✅ Customer found in list:', customerName);
-        found = true;
-        break;
-      }
-    }
-    
-    if (!found) {
-      // Try alternative selectors
-      const allText = document.body.textContent;
-      if (allText.includes(customerName)) {
-        console.log('✅ Customer found in page content:', customerName);
-        found = true;
-      }
-    }
-    
-    return found;
-    
-  } catch (error) {
-    console.error('❌ Read customer test failed:', error);
-    return false;
-  }
-}
-
-// Test 3: Update Customer
-async function testUpdateCustomer(originalName, updatedData) {
-  console.log('\n🔵 TEST 3: Updating Customer -', originalName);
-  
-  try {
-    // Find and click edit button for the customer
-    const editButtons = document.querySelectorAll('button:contains("Edit"), .edit-btn, [data-testid="edit-customer"]');
-    let editButton = null;
-    
-    // Look for edit button in customer row
-    const customerRows = document.querySelectorAll('[data-testid="customer-row"], .customer-item, .customer-card');
-    for (const row of customerRows) {
-      if (row.textContent.includes(originalName)) {
-        editButton = row.querySelector('button:contains("Edit"), .edit-btn, [data-testid="edit-customer"]');
-        if (editButton) break;
-      }
-    }
-    
-    if (!editButton && editButtons.length > 0) {
-      editButton = editButtons[0]; // Use first edit button as fallback
-    }
-    
-    if (editButton) {
-      editButton.click();
-      console.log('✅ Clicked Edit button');
-      
-      // Wait for modal
-      await waitForElement('[role="dialog"], .modal, .customer-modal');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Update fields
-      fillFormField('input[name="name"], #name', updatedData.name);
-      fillFormField('input[name="email"], #email', updatedData.email);
-      
-      // Submit
-      const submitButton = document.querySelector('button[type="submit"], .submit-btn, button:contains("Save")');
-      if (submitButton) {
-        submitButton.click();
-        console.log('✅ Updated customer');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return true;
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ Update customer test failed:', error);
-    return false;
-  }
-}
-
-// Test 4: Delete Customer
-async function testDeleteCustomer(customerName) {
-  console.log('\n🔵 TEST 4: Deleting Customer -', customerName);
-  
-  try {
-    // Find and click delete button
-    const customerRows = document.querySelectorAll('[data-testid="customer-row"], .customer-item, .customer-card');
-    let deleteButton = null;
-    
-    for (const row of customerRows) {
-      if (row.textContent.includes(customerName)) {
-        deleteButton = row.querySelector('button:contains("Delete"), .delete-btn, [data-testid="delete-customer"]');
-        if (deleteButton) break;
-      }
-    }
-    
-    if (deleteButton) {
-      // Override confirm dialog
-      const originalConfirm = window.confirm;
-      window.confirm = () => true;
-      
-      deleteButton.click();
-      console.log('✅ Clicked Delete button');
-      
-      // Restore confirm
-      window.confirm = originalConfirm;
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('✅ Customer deleted');
-      return true;
-    }
-    
-  } catch (error) {
-    console.error('❌ Delete customer test failed:', error);
-    return false;
-  }
-}
-
-// Main test runner
-async function runCRUDTests() {
-  console.log('🚀 Starting CRUD Tests...');
-  
-  const results = {
-    create: [],
-    read: [],
-    update: [],
-    delete: []
-  };
-  
-  try {
-    // Test Create operations
-    for (const customer of testCustomers) {
-      const result = await testCreateCustomer(customer);
-      results.create.push({ customer: customer.name, success: result });
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait between operations
-    }
-    
-    // Test Read operations
-    for (const customer of testCustomers) {
-      const result = await testReadCustomer(customer.name);
-      results.read.push({ customer: customer.name, success: result });
-    }
-    
-    // Test Update operation
-    const updateResult = await testUpdateCustomer(testCustomers[0].name, {
-      name: 'Updated Test Customer 1',
-      email: 'updated1@example.com'
-    });
-    results.update.push({ customer: 'Test Customer 1', success: updateResult });
-    
-    // Test Delete operations
-    const deleteResult = await testDeleteCustomer('Updated Test Customer 1');
-    results.delete.push({ customer: 'Updated Test Customer 1', success: deleteResult });
-    
-  } catch (error) {
-    console.error('❌ Test suite failed:', error);
-  }
-  
-  // Print results
-  console.log('\n📊 CRUD Test Results:');
-  console.log('Create:', results.create);
-  console.log('Read:', results.read);
-  console.log('Update:', results.update);
-  console.log('Delete:', results.delete);
-  
-  return results;
-}
-
-// Auto-run tests if script is executed directly
-if (typeof window !== 'undefined') {
-  // Wait for page to load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(runCRUDTests, 2000);
-    });
-  } else {
-    setTimeout(runCRUDTests, 2000);
-  }
-}
-
-// Export for manual execution
-if (typeof module !== 'undefined') {
-  module.exports = { runCRUDTests, testCreateCustomer, testReadCustomer, testUpdateCustomer, testDeleteCustomer };
-}
-
-console.log('📝 CRUD Test Script Loaded. Run runCRUDTests() to start testing.');
+testCRUDOperations();

@@ -164,7 +164,7 @@ export default function Leads() {
         contact_preference: data.contact_preference,
         follow_up_date: data.follow_up_date || null,
         assigned_to: null,
-        created_by: user?.id || null
+        created_by: user?.id || '00000000-0000-0000-0000-000000000000'
       }
       const newLead = await offlineDataService.createLead(insertData)
       setLeads([newLead, ...leads])
@@ -231,7 +231,7 @@ export default function Leads() {
             contact_preference: data.contact_preference,
             follow_up_date: data.follow_up_date || null,
             assigned_to: null,
-            created_by: user?.id || null
+            created_by: user?.id || '00000000-0000-0000-0000-000000000000' // Use default UUID for anonymous users
           }
           
           const newLead = await offlineDataService.createLead(insertData)
@@ -301,7 +301,7 @@ export default function Leads() {
             priority_level: data.priority_level,
             contact_preference: data.contact_preference,
             follow_up_date: data.follow_up_date || null,
-            created_by: user?.id
+            created_by: user?.id || null // Use null if no authenticated user
           }
           const { error } = await supabase
             .from('leads')
@@ -433,7 +433,7 @@ export default function Leads() {
         company: lead.company,
         status: 'active' as const,
         notes: `Converted from lead. Original notes: ${lead.notes || 'None'}`,
-        created_by: user?.id,
+        created_by: user?.id || null, // Use null if no authenticated user
         responsible_person: (lead.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali'
       }
       const { error: customerError } = await supabase

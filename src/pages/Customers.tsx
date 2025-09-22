@@ -156,7 +156,7 @@ export default function Customers() {
             tags: formData.tags || null,
             notes: formData.notes || '',
             responsible_person: formData.responsible_person || 'Mr. Ali',
-            created_by: user?.id || 'offline-user',
+            created_by: user?.id || null, // Use null for anonymous users
             // Export-specific fields
             export_license_number: null,
             export_license_expiry: null,
@@ -199,7 +199,7 @@ export default function Customers() {
             .from('customers')
             .insert({
               ...formData,
-              created_by: user?.id
+              created_by: user?.id || null // Use null for anonymous users
             })
             .select()
             .single();
@@ -241,7 +241,7 @@ export default function Customers() {
             tags: formData.tags || null,
             notes: formData.notes || '',
             responsible_person: formData.responsible_person || 'Mr. Ali',
-            created_by: user?.id || 'offline-user',
+            created_by: user?.id || null, // Use null for anonymous users
             export_license_number: null,
             export_license_expiry: null,
             customs_broker: null,
