@@ -68,7 +68,11 @@ function createSupabaseClient(): SupabaseClient<Database> {
           if (typeof url === 'string') {
             let cleanUrl = url
             
-            // Fix malformed URLs where &select=* is appended incorrectly
+            // Fix malformed URLs where multiple ? characters exist
+            // Replace ?...?... with ?...&...
+            cleanUrl = cleanUrl.replace(/\?([^?]+)\?/g, '?$1&')
+            
+            // Fix URLs where &select=* is appended incorrectly without ?
             if (cleanUrl.includes('&select=*') && !cleanUrl.includes('?')) {
               cleanUrl = cleanUrl.replace('&select=*', '?select=*')
             }
@@ -80,7 +84,7 @@ function createSupabaseClient(): SupabaseClient<Database> {
               })
             }
             
-            // Fix any remaining malformed query parameters
+            // Fix any remaining malformed query parameters (& without ?)
             cleanUrl = cleanUrl.replace(/([^?])&/, '$1?')
             
             if (cleanUrl !== url) {
