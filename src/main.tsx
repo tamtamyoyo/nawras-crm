@@ -2,10 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { initSentry } from "./lib/sentry";
-
-// Initialize Sentry monitoring
-initSentry();
 
 // Global error handlers to prevent console noise
 window.addEventListener('error', (event) => {

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Activity, Database, Zap, Bell, Clock } from 'lucide-react';
 import { checkSystemHealth, collectPerformanceMetrics, PerformanceMetrics } from '../lib/monitoring';
-import { captureException } from '../lib/sentry';
+
 import { getActiveAlerts, getAlertStats, acknowledgeAlert } from '../lib/alerting';
 
 interface HealthCheckProps {
@@ -38,7 +38,6 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ autoRefresh: propAutoR
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch health data:', error);
-      captureException(error as Error);
     } finally {
       setLoading(false);
     }

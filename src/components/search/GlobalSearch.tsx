@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { FilterPanel, FilterConfig, FilterValue } from '@/components/search/FilterPanel'
 import { commonFilters } from '@/components/search/common-filters'
 import { SearchResults } from '@/components/search/SearchResults'
 import { useAdvancedSearch, SearchOptions, SearchResult } from '@/hooks/useAdvancedSearch'
-
 import { cn } from '@/lib/utils'
-import { useNavigate } from 'react-router-dom'
 
 
 
@@ -77,25 +77,26 @@ export function GlobalSearch({
   }, [query, filters, selectedTypes, performSearch, clearResults])
 
   const handleResultClick = (result: SearchResult) => {
-    setShowResults(false)
-    setQuery('')
-    
-    // Navigate to the appropriate page
-    const routeMap: Record<string, string> = {
-      lead: '/leads',
-      customer: '/customers', 
-      deal: '/deals',
-      task: '/tasks',
-      proposal: '/proposals',
-      workflow: '/workflows'
+    if (onResultSelect) {
+      onResultSelect(result)
+    } else {
+      // Default navigation behavior
+      const routeMap: Record<string, string> = {
+        lead: '/leads',
+        customer: '/customers', 
+        deal: '/deals',
+        task: '/tasks',
+        proposal: '/proposals',
+        workflow: '/workflows'
+      }
+      
+      const route = routeMap[result.type]
+      if (route) {
+        navigate(`${route}?id=${result.id}`)
+      }
     }
-    
-    const route = routeMap[result.type]
-    if (route) {
-      navigate(`${route}?id=${result.id}`)
-    }
-    
-    onResultSelect?.(result)
+    // Close the modal after clicking a result
+    onClose?.()
   }
 
   const handleClearFilters = () => {
@@ -175,19 +176,25 @@ export function GlobalSearch({
   ]
 
   return (
-    <div className={cn('relative w-full', className)}>
-      <div className="space-y-4">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder={placeholder}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 pr-20"
-            onFocus={() => (query || Object.keys(filters).length > 0) && setShowResults(true)}
-          />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Global Search</DialogTitle>
+        </DialogHeader>
+        <div className={cn('relative w-full', className)}>
+          <div className="space-y-4">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder={placeholder}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-10 pr-20"
+                onFocus={() => (query || Object.keys(filters).length > 0) && setShowResults(true)}
+                autoFocus
+              />
           <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
             {showFilters && (
               <Popover open={showFilterPanel} onOpenChange={setShowFilterPanel}>
@@ -276,24 +283,26 @@ export function GlobalSearch({
           </div>
         </div>
 
-        {/* Search Results */}
-        {showResults && (
-          <Card className="w-full max-h-96 overflow-y-auto">
-            <CardContent className="p-4">
-              <SearchResults
-                results={results}
-                loading={loading}
-                error={error}
-                totalCount={totalCount}
-                hasMore={hasMore}
-                onLoadMore={loadMore}
-                onResultClick={handleResultClick}
-              />
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+            {/* Search Results */}
+            {showResults && (
+              <Card className="w-full max-h-96 overflow-y-auto">
+                <CardContent className="p-4">
+                  <SearchResults
+                    results={results}
+                    loading={loading}
+                    error={error}
+                    totalCount={totalCount}
+                    hasMore={hasMore}
+                    onLoadMore={loadMore}
+                    onResultClick={handleResultClick}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

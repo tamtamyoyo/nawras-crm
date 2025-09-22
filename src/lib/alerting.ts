@@ -1,4 +1,3 @@
-import { captureException, captureMessage } from './sentry'
 import { toast } from 'sonner'
 
 export interface AlertConfig {
@@ -127,28 +126,25 @@ class AlertingService {
       duration: this.getToastDuration(alert.severity)
     })
 
-    // Log to Sentry based on severity
+    // Log alert for monitoring
     if (alert.severity === 'critical' || alert.severity === 'high') {
-      captureException(new Error(alert.message), {
-        tags: {
-          alert_id: alert.id,
-          severity: alert.severity,
-          metric: alert.configId
-        },
-        extra: {
-          value: alert.value,
-          threshold: alert.threshold,
-          timestamp: alert.timestamp
-        }
+      console.error('Critical/High Alert:', {
+        message: alert.message,
+        alert_id: alert.id,
+        severity: alert.severity,
+        metric: alert.configId,
+        value: alert.value,
+        threshold: alert.threshold,
+        timestamp: alert.timestamp
       })
     } else {
-      captureMessage(alert.message, {
-        level: alert.severity === 'medium' ? 'warning' : 'info',
-        tags: {
-          alert_id: alert.id,
-          severity: alert.severity,
-          metric: alert.configId
-        }
+      console.warn('Alert:', {
+        message: alert.message,
+        alert_id: alert.id,
+        severity: alert.severity,
+        metric: alert.configId,
+        value: alert.value,
+        threshold: alert.threshold
       })
     }
 

@@ -1,12 +1,11 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = (typeof window !== 'undefined' && (window as any).VITE_SUPABASE_URL) || 
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 
-  (globalThis as any).VITE_SUPABASE_URL
-const supabaseAnonKey = (typeof window !== 'undefined' && (window as any).VITE_SUPABASE_ANON_KEY) || 
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || 
-  (globalThis as any).VITE_SUPABASE_ANON_KEY
+const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL as string
+const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const supabaseServiceKey: string = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string
+
+const isConfigured: boolean = Boolean(supabaseUrl && supabaseAnonKey)
 
 // Check if Supabase configuration is valid
 const isValidSupabaseConfig = (
@@ -82,9 +81,18 @@ function createSupabaseClient(): SupabaseClient<Database> {
           }
           
           // Fix malformed URL query parameters (double question marks)
-          if (typeof url === 'string' && url.includes('?') && url.includes('select=')) {
+          if (typeof url === 'string' && url.includes('?')) {
+            let cleanUrl = url
+            
             // Fix URLs with double question marks like "?select=*?order=" -> "?select=*&order="
-            let cleanUrl = url.replace(/\?([^?]+)\?/g, '?$1&')
+            // But be careful not to modify table names in the path
+            const urlParts = cleanUrl.split('?')
+            if (urlParts.length > 2) {
+              // Reconstruct URL with proper query parameter separation
+              const basePath = urlParts[0]
+              const queryParts = urlParts.slice(1)
+              cleanUrl = basePath + '?' + queryParts.join('&')
+            }
             
             // Remove malformed columns parameter that browser extensions might add
             if (cleanUrl.includes('columns=')) {
@@ -92,6 +100,10 @@ function createSupabaseClient(): SupabaseClient<Database> {
                 return suffix === '&' ? '&' : ''
               })
             }
+            
+            // Ensure table names in the path are not corrupted
+            // Fix any table names that got corrupted with query parameters
+            cleanUrl = cleanUrl.replace(/\/rest\/v1\/([^?]+)&select=([^&?]*)/g, '/rest/v1/$1?select=$2')
             
             if (cleanUrl !== url) {
               console.warn('🛡️ Fixed malformed URL:', { original: url, fixed: cleanUrl })

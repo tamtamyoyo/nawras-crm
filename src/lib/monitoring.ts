@@ -1,5 +1,4 @@
 import { supabase } from './supabase-client';
-import { captureException, addBreadcrumb } from './sentry';
 import { checkAlerts } from './alerting';
 
 export interface HealthCheckResult {
@@ -185,17 +184,11 @@ export const collectPerformanceMetrics = async (): Promise<PerformanceMetrics> =
       console.log(`🚨 ${triggeredAlerts.length} alert(s) triggered:`, triggeredAlerts.map(a => a.message))
     }
     
-    // Add breadcrumb for monitoring
-    addBreadcrumb({
-      message: 'Performance metrics collected',
-      category: 'monitoring',
-      data: { ...metrics, alertsTriggered: triggeredAlerts.length },
-      level: 'info'
-    })
+    // Performance metrics collected successfully
     
     return metrics
   } catch (error) {
-    captureException(error as Error)
+    console.error('Error collecting performance metrics:', error)
     
     // Check alerts for critical failure
     checkAlerts({
