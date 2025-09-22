@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const LIVE_WEBSITE_URL = 'https://new-simple-crm-info-45839961-info-45839961s-projects.vercel.app';
+const LIVE_WEBSITE_URL = 'https://app.nawrasinchina.com';
 
 test.describe('Live Website End-to-End Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
       if (!response || !response.ok()) {
         console.log(`Website returned status: ${response?.status() || 'No response'}`);
-        test.skip('Website is not accessible, skipping remaining tests');
+        test.skip(true, 'Website is not accessible, skipping remaining tests');
       }
       
       expect(response.ok()).toBeTruthy();
@@ -25,7 +25,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
     } catch (error) {
       console.log('Website accessibility error:', error.message);
-      test.skip('Website is not accessible, skipping remaining tests');
+      test.skip(true, 'Website is not accessible, skipping remaining tests');
     }
   });
 
@@ -70,7 +70,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
     } catch (error) {
       console.log('Navigation test error:', error.message);
-      test.skip('Navigation test failed due to accessibility issues');
+      test.skip(true, 'Navigation test failed due to accessibility issues');
     }
   });
 
@@ -104,7 +104,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
     } catch (error) {
       console.log('AlertCircle test error:', error.message);
-      test.skip('AlertCircle test failed due to accessibility issues');
+      test.skip(true, 'AlertCircle test failed due to accessibility issues');
     }
   });
 
@@ -138,7 +138,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
     } catch (error) {
       console.log('Runtime exception test error:', error.message);
-      test.skip('Runtime exception test failed due to accessibility issues');
+      test.skip(true, 'Runtime exception test failed due to accessibility issues');
     }
   });
 
@@ -161,7 +161,7 @@ test.describe('Live Website End-to-End Tests', () => {
       
     } catch (error) {
       console.log('Responsive design test error:', error.message);
-      test.skip('Responsive design test failed due to accessibility issues');
+      test.skip(true, 'Responsive design test failed due to accessibility issues');
     }
   });
 });

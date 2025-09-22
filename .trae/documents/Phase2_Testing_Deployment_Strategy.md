@@ -351,7 +351,7 @@ set -e
 echo "Starting emergency rollback..."
 
 # Switch traffic back to blue environment
-vercel alias set blue-deployment.vercel.app nawras-crm.com
+vercel alias set blue-deployment.vercel.app app.nawrasinchina.com
 
 # Revert database migrations if needed
 if [ "$REVERT_DB" = "true" ]; then

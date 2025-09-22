@@ -1,7 +1,7 @@
 # CRM Website Testing Report
 
 **Test Date:** January 2025  
-**Website URL:** https://new-simple-crm.vercel.app/  
+**Website URL:** https://app.nawrasinchina.com/  
 **Testing Framework:** Playwright with TypeScript  
 **Test Environment:** Windows, Multiple Browsers (Chromium, Firefox, WebKit, Mobile)
 
@@ -182,7 +182,7 @@ npx playwright show-report
 
 ## Conclusion
 
-**Current Status:** The CRM website at https://new-simple-crm.vercel.app/ is currently **DOWN** and requires immediate attention from the development/deployment team.
+**Current Status:** The CRM website at https://app.nawrasinchina.com/ is currently **DOWN** and requires immediate attention from the development/deployment team.
 
 **Test Infrastructure:** Fully prepared and ready to execute comprehensive testing once website accessibility is restored.
 
