@@ -101,12 +101,12 @@ export default function Customers() {
       console.log('🏁 Setting loading to false');
       setLoading(false);
     }
-  }, [setCustomers, setLoading]);
+  }, []);
 
   useEffect(() => {
     console.log('🔥 useEffect triggered - calling loadCustomers')
     loadCustomers()
-  }, [loadCustomers])
+  }, [])
 
 
 
@@ -186,7 +186,8 @@ export default function Customers() {
             address: formData.address || '',
             status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
             notes: formData.notes || '',
-            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali'
+            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
+            updated_at: new Date().toISOString()
           };
           
           const { data, error } = await (supabase as any)
@@ -272,6 +273,7 @@ export default function Customers() {
             responsible_person: formData.responsible_person || 'Mr. Ali',
             created_by: user?.id || null, // Use null for anonymous users
             version: 1, // Add missing version field
+            // Export-specific fields
             export_license_number: null,
             export_license_expiry: null,
             customs_broker: null,

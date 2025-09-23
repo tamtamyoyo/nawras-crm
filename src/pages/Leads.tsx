@@ -121,11 +121,11 @@ export default function Leads() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     loadLeads()
-  }, [loadLeads])
+  }, [])
 
   const handleOfflineOperation = async (data: LeadFormData, editingLead: Lead | null) => {
     if (editingLead) {

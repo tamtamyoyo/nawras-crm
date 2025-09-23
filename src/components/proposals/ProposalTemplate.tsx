@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useFormValidation, proposalSchema } from '@/utils/validation'
@@ -21,9 +20,7 @@ import {
   Plus,
   Copy,
   Trash2,
-  Type,
   DollarSign,
-  Clock,
   Calendar,
   User,
   Package,
@@ -32,9 +29,7 @@ import {
 import { 
   PAYMENT_TERMS, 
   RESPONSIBLE_PERSONS, 
-  calculateProposalTotals as calculateProformaInvoiceTotals,
-  calculateShippingCost,
-  calculateDeliveryDate
+  calculateProposalTotals as calculateProformaInvoiceTotals
 } from '../../lib/standardTemplate'
 
 export interface ProposalSection {
@@ -325,17 +320,6 @@ export function ProposalTemplate({
   }
 
   const handleSave = () => {
-    // Update form data with current template values
-    const currentFormData = {
-      title: template.name,
-      customer_id: formData.customer_id,
-      content: JSON.stringify(template.sections),
-      total_amount: calculateTotal(),
-      valid_until: formData.valid_until,
-      deal_id: formData.deal_id,
-      terms: formData.terms
-    }
-    
     // Validate the form
     if (!validateForm()) {
       toast.error('Please fix the validation errors before saving')
@@ -354,17 +338,6 @@ export function ProposalTemplate({
   }
 
   const handleGenerate = () => {
-    // Update form data with current template values
-    const currentFormData = {
-      title: template.name,
-      customer_id: formData.customer_id,
-      content: JSON.stringify(template.sections),
-      total_amount: calculateTotal(),
-      valid_until: formData.valid_until,
-      deal_id: formData.deal_id,
-      terms: formData.terms
-    }
-    
     // Validate the form
     if (!validateForm()) {
       toast.error('Please fix the validation errors before generating proforma invoice')
@@ -449,29 +422,22 @@ export function ProposalTemplate({
           title: variables.invoice_number ? `Proforma Invoice ${variables.invoice_number}` : template.name,
           value: calculateTotal(),
           customer_id: 'customer-1',
-          currency: 'USD',
-          stage: 'proposal',
+          lead_id: null,
+          stage: 'proposal' as const,
           probability: 50,
           expected_close_date: formData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           description: template.description || '',
           source: 'template',
-          tags: null,
-          notes: '',
+          assigned_to: null,
           created_by: 'system',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          priority: 'medium',
-          responsible_person: 'Mr. Ali',
-          export_value_usd: calculateTotal(),
-          export_destination: null,
-          export_product_category: null,
-          export_license_required: false,
-          customs_classification: null,
-          shipping_terms: 'FOB',
-          payment_terms_export: '30 days',
-          export_documentation_required: null,
-          special_export_requirements: null
-        } as any as Database['public']['Tables']['deals']['Row']
+          responsible_person: 'Mr. Ali' as const,
+          competitor_info: null,
+          decision_maker_contact: null,
+          deal_source: null,
+          deal_type: null
+        } satisfies Database['public']['Tables']['deals']['Row']
       }
       
       // Generate and download PDF
@@ -1249,7 +1215,7 @@ export function ProposalTemplate({
               </div>
 
               {/* Custom Sections */}
-              {template.sections.map((section, index) => (
+              {template.sections.map((section) => (
                 <div key={section.id} className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">{section.title}</h3>
                   <div className="bg-gray-50 p-4 rounded-lg">

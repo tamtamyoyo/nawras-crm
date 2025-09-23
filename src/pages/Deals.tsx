@@ -111,11 +111,11 @@ export default function Deals() {
     } finally {
       setLoading(false)
     }
-  }, [setDeals, setCustomers, setLoading])
+  }, [])
 
   useEffect(() => {
     loadData()
-  }, [loadData])
+  }, [])
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
