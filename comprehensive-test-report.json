@@ -1,0 +1,307 @@
+{
+  "summary": {
+    "total": 21,
+    "passed": 11,
+    "failed": 10,
+    "startTime": "2025-09-22T17:00:26.544Z",
+    "endTime": "2025-09-22T17:03:06.673Z"
+  },
+  "modules": {
+    "authentication": {
+      "tests": [
+        {
+          "name": "Login Form Validation",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Logout Functionality",
+          "status": "failed",
+          "error": "Test assertion failed"
+        }
+      ],
+      "status": "completed"
+    },
+    "customers": {
+      "tests": [
+        {
+          "name": "Create Customer",
+          "status": "failed",
+          "error": "Test assertion failed"
+        },
+        {
+          "name": "Read Customers List",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Update Customer",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Delete Customer",
+          "status": "failed",
+          "error": "Test assertion failed"
+        }
+      ],
+      "status": "completed"
+    },
+    "deals": {
+      "tests": [
+        {
+          "name": "Create Deal",
+          "status": "failed",
+          "error": "Test assertion failed"
+        },
+        {
+          "name": "Change Deal Status",
+          "status": "failed",
+          "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"edit-deal-button\"]:first-child')\u001b[22m\n"
+        }
+      ],
+      "status": "completed"
+    },
+    "leads": {
+      "tests": [
+        {
+          "name": "Create Lead",
+          "status": "failed",
+          "error": "Test assertion failed"
+        },
+        {
+          "name": "Convert Lead to Customer",
+          "status": "failed",
+          "error": "Test assertion failed"
+        }
+      ],
+      "status": "completed"
+    },
+    "invoices": {
+      "tests": [
+        {
+          "name": "Create Invoice",
+          "status": "failed",
+          "error": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    56 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "status": "completed"
+    },
+    "proposals": {
+      "tests": [
+        {
+          "name": "Create Proposal",
+          "status": "failed",
+          "error": "Test assertion failed"
+        }
+      ],
+      "status": "completed"
+    },
+    "navigation": {
+      "tests": [
+        {
+          "name": "Navigate to /dashboard",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /customers",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /deals",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /leads",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /invoices",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /proposals",
+          "status": "passed",
+          "error": null
+        },
+        {
+          "name": "Navigate to /analytics",
+          "status": "passed",
+          "error": null
+        }
+      ],
+      "status": "completed"
+    },
+    "errorHandling": {
+      "tests": [
+        {
+          "name": "Form Validation",
+          "status": "failed",
+          "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"save-customer\"]')\u001b[22m\n"
+        }
+      ],
+      "status": "completed"
+    },
+    "database": {
+      "tests": [
+        {
+          "name": "Data Persistence",
+          "status": "passed",
+          "error": null
+        }
+      ],
+      "status": "completed"
+    }
+  },
+  "defects": [
+    {
+      "area": "Console Error",
+      "description": "Failed to load resource: the server responded with a status of 400 ()",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:30.216Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "❌ Sign in error: Invalid login credentials",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:30.216Z"
+    },
+    {
+      "area": "Logout Functionality",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:33.906Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Global error caught: TypeError: Cannot read properties of null (reading 'name')\n    at http://localhost:5173/src/pages/Customers.tsx?t=1758558165849:321:36\n    at Array.filter (<anonymous>)\n    at Customers (http://localhost:5173/src/pages/Customers.tsx?t=1758558165849:320:39)\n    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:11596:26)\n    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:14630:28)\n    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:15972:22)\n    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3680:22)\n    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3705:24)\n    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3739:39)\n    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:19818:15)",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:37.745Z"
+    },
+    {
+      "area": "Page Error",
+      "description": "Cannot read properties of null (reading 'name')",
+      "severity": "Critical",
+      "timestamp": "2025-09-22T17:00:37.746Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Global error caught: TypeError: Cannot read properties of null (reading 'name')\n    at http://localhost:5173/src/pages/Customers.tsx?t=1758558165849:321:36\n    at Array.filter (<anonymous>)\n    at Customers (http://localhost:5173/src/pages/Customers.tsx?t=1758558165849:320:39)\n    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:11596:26)\n    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:14630:28)\n    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:15972:22)\n    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3680:22)\n    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3705:24)\n    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:3739:39)\n    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-KPD4VVXB.js?v=7cb0d54d:19818:15)",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:37.750Z"
+    },
+    {
+      "area": "Page Error",
+      "description": "Cannot read properties of null (reading 'name')",
+      "severity": "Critical",
+      "timestamp": "2025-09-22T17:00:37.751Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "The above error occurred in the <Customers> component:\n\n    at Customers (http://localhost:5173/src/pages/Customers.tsx?t=1758558165849:36:39)\n    at main\n    at div\n    at div\n    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1758558165849:47:26)\n    at ProtectedRoute (http://localhost:5173/src/components/ProtectedRoute.tsx?t=1758558165849:21:34)\n    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=7cb0d54d:4088:5)\n    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=7cb0d54d:4558:5)\n    at div\n    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=7cb0d54d:4501:15)\n    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=7cb0d54d:5247:5)\n    at AuthProvider (http://localhost:5173/src/hooks/useAuthHook.tsx?t=1758558165849:32:32)\n    at ErrorBoundary (http://localhost:5173/src/components/ErrorBoundary.tsx:8:5)\n    at App\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:37.753Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Error caught by boundary: {message: Cannot read properties of null (reading 'name'), timestamp: 2025-09-22T17:00:37.753Z, userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36, url: http://localhost:5173/customers} {componentStack: \n    at Customers (http://localhost:5173/src/pages…/src/components/ErrorBoundary.tsx:8:5)\n    at App}",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:37.754Z"
+    },
+    {
+      "area": "Create Customer",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:40.444Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Failed to load resource: the server responded with a status of 500 ()",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:43.948Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Error saving customer: {code: 42P17, details: null, hint: null, message: infinite recursion detected in policy for relation \"users\"}",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:43.948Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Supabase customer saving failed: {code: 42P17, details: null, hint: null, message: infinite recursion detected in policy for relation \"users\"}",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:43.949Z"
+    },
+    {
+      "area": "Delete Customer",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:50.225Z"
+    },
+    {
+      "area": "Create Deal",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:00:58.456Z"
+    },
+    {
+      "area": "Change Deal Status",
+      "description": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"edit-deal-button\"]:first-child')\u001b[22m\n",
+      "severity": "High",
+      "timestamp": "2025-09-22T17:01:28.472Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Failed to load resource: the server responded with a status of 404 ()",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:01:32.685Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Supabase operation failed: {code: PGRST205, details: null, hint: Perhaps you meant the table 'public.leads', message: Could not find the table 'public.leads&select=*' in the schema cache}",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:01:32.686Z"
+    },
+    {
+      "area": "Console Error",
+      "description": "Error saving lead: {code: PGRST205, details: null, hint: Perhaps you meant the table 'public.leads', message: Could not find the table 'public.leads&select=*' in the schema cache}",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:01:32.686Z"
+    },
+    {
+      "area": "Create Lead",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:01:35.143Z"
+    },
+    {
+      "area": "Convert Lead to Customer",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:01:35.147Z"
+    },
+    {
+      "area": "Create Invoice",
+      "description": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    56 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div data-state=\"open\" aria-hidden=\"true\" data-aria-hidden=\"true\" class=\"fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"></div> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "severity": "High",
+      "timestamp": "2025-09-22T17:02:11.712Z"
+    },
+    {
+      "area": "Create Proposal",
+      "description": "Test assertion failed",
+      "severity": "Medium",
+      "timestamp": "2025-09-22T17:02:21.044Z"
+    },
+    {
+      "area": "Form Validation",
+      "description": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"save-customer\"]')\u001b[22m\n",
+      "severity": "High",
+      "timestamp": "2025-09-22T17:03:03.553Z"
+    }
+  ]
+}

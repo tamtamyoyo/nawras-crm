@@ -54,7 +54,7 @@ async function testUUIDFixes() {
       responsible_person: 'Mr. Ali',
       lifecycle_stage: 'lead',
       priority_level: 'medium',
-      contact_preference: 'email',
+      contact_preferences: ['email'],
       follow_up_date: null,
       created_by: null // This should work now
     }

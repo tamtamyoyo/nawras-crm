@@ -9,8 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { FilterPanel, FilterConfig, FilterValue } from '@/components/search/FilterPanel'
-import { commonFilters } from '@/components/search/common-filters'
+import { FilterValue } from '@/components/search/FilterPanel'
 import { SearchResults } from '@/components/search/SearchResults'
 import { useAdvancedSearch, SearchOptions, SearchResult } from '@/hooks/useAdvancedSearch'
 import { cn } from '@/lib/utils'
@@ -112,68 +111,7 @@ export function GlobalSearch({
     return value !== undefined && value !== null && value !== ''
   }).length + (selectedTypes.length < 6 ? 1 : 0)
 
-  // Filter configurations for the search
-  const searchFilters: FilterConfig[] = [
-    {
-      id: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' },
-        { value: 'new', label: 'New' },
-        { value: 'qualified', label: 'Qualified' },
-        { value: 'proposal', label: 'Proposal' },
-        { value: 'negotiation', label: 'Negotiation' },
-        { value: 'closed_won', label: 'Closed Won' },
-        { value: 'closed_lost', label: 'Closed Lost' },
-        { value: 'draft', label: 'Draft' },
-        { value: 'sent', label: 'Sent' },
-        { value: 'accepted', label: 'Accepted' },
-        { value: 'rejected', label: 'Rejected' }
-      ]
-    },
-    {
-      id: 'priority',
-      label: 'Priority',
-      type: 'select',
-      options: [
-        { value: 'high', label: 'High' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'low', label: 'Low' }
-      ]
-    },
-    {
-      id: 'dateRange',
-      label: 'Date Range',
-      type: 'date-range'
-    },
-    {
-      id: 'valueRange',
-      label: 'Value Range',
-      type: 'number-range'
-    },
-    {
-      id: 'assignedTo',
-      label: 'Assigned To',
-      type: 'select',
-      options: []
-    },
-    {
-      id: 'tags',
-      label: 'Tags',
-      type: 'multiselect',
-      options: []
-    },
-    {
-      id: 'company',
-      label: 'Company',
-      type: 'text'
-    }
-  ]
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -254,15 +192,7 @@ export function GlobalSearch({
                     </div>
                   </div>
                   
-                  <FilterPanel
-                    filters={searchFilters}
-                    values={filters}
-                    onChange={setFilters}
-                    onClear={() => setFilters({})}
-                    title="Advanced Filters"
-                    className="border-t"
-                    collapsible={false}
-                  />
+
                 </PopoverContent>
               </Popover>
             )}

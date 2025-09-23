@@ -3,9 +3,6 @@ import type { Database } from './database.types'
 
 const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-const supabaseServiceKey: string = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string
-
-const isConfigured: boolean = Boolean(supabaseUrl && supabaseAnonKey)
 
 // Check if Supabase configuration is valid
 const isValidSupabaseConfig = (

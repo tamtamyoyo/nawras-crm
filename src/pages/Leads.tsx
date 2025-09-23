@@ -36,7 +36,7 @@ const leadSchema = z.object({
   responsible_person: z.enum(['Mr. Ali', 'Mr. Mustafa', 'Mr. Taha', 'Mr. Mohammed']),
   lifecycle_stage: z.string().optional(),
   priority_level: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  contact_preference: z.enum(['email', 'phone', 'whatsapp', 'in_person']).optional(),
+  contact_preferences: z.array(z.enum(['email', 'phone', 'whatsapp', 'in_person'])).default(['email']),
   follow_up_date: z.string().optional()
 })
 
@@ -71,7 +71,7 @@ export default function Leads() {
       responsible_person: 'Mr. Ali',
       lifecycle_stage: '',
       priority_level: 'medium',
-      contact_preference: 'email',
+      contact_preferences: ['email'],
       follow_up_date: ''
     }
   })
@@ -141,7 +141,7 @@ export default function Leads() {
         responsible_person: data.responsible_person,
         lifecycle_stage: data.lifecycle_stage || null,
         priority_level: data.priority_level,
-        contact_preference: data.contact_preference,
+        contact_preferences: data.contact_preferences,
         follow_up_date: data.follow_up_date || null,
         assigned_to: null
       }
@@ -161,7 +161,7 @@ export default function Leads() {
         responsible_person: data.responsible_person,
         lifecycle_stage: data.lifecycle_stage || null,
         priority_level: data.priority_level,
-        contact_preference: data.contact_preference,
+        contact_preferences: data.contact_preferences,
         follow_up_date: data.follow_up_date || null,
         assigned_to: null,
         created_by: user?.id || '00000000-0000-0000-0000-000000000000'
@@ -202,7 +202,7 @@ export default function Leads() {
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
             priority_level: data.priority_level,
-            contact_preference: data.contact_preference,
+            contact_preferences: data.contact_preferences,
             follow_up_date: data.follow_up_date || null,
             assigned_to: null
           }
@@ -228,7 +228,7 @@ export default function Leads() {
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
             priority_level: data.priority_level,
-            contact_preference: data.contact_preference,
+            contact_preferences: data.contact_preferences,
             follow_up_date: data.follow_up_date || null,
             assigned_to: null,
             created_by: user?.id || '00000000-0000-0000-0000-000000000000' // Use default UUID for anonymous users
@@ -265,7 +265,7 @@ export default function Leads() {
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
             priority_level: data.priority_level,
-            contact_preference: data.contact_preference,
+            contact_preferences: data.contact_preferences,
             follow_up_date: data.follow_up_date || null
           }
           const { error } = await (supabase as any)
@@ -299,7 +299,7 @@ export default function Leads() {
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
             priority_level: data.priority_level,
-            contact_preference: data.contact_preference,
+            contact_preferences: data.contact_preferences,
             follow_up_date: data.follow_up_date || null,
             created_by: user?.id || null // Use null if no authenticated user
           }
@@ -490,7 +490,7 @@ export default function Leads() {
       responsible_person: lead.responsible_person || 'Mr. Ali',
       lifecycle_stage: lead.lifecycle_stage || '',
       priority_level: lead.priority_level || 'medium',
-      contact_preference: lead.contact_preference || 'email',
+      contact_preferences: (lead.contact_preferences as ('email' | 'phone' | 'whatsapp' | 'in_person')[]) || ['email'],
       follow_up_date: lead.follow_up_date || ''
     })
     setIsEditModalOpen(true)
@@ -1045,21 +1045,32 @@ export default function Leads() {
                   
                   <FormField
                     control={form.control}
-                    name="contact_preference"
+                    name="contact_preferences"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact Preference</FormLabel>
+                        <FormLabel>Contact Preferences</FormLabel>
                         <FormControl>
-                          <select
-                            {...field}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            data-testid="lead-contact-preference-select"
-                          >
-                            <option value="email">Email</option>
-                            <option value="phone">Phone</option>
-                            <option value="whatsapp">WhatsApp</option>
-                            <option value="in_person">In Person</option>
-                          </select>
+                          <div className="space-y-2">
+                            {['email', 'phone', 'whatsapp', 'in_person'].map((option) => (
+                              <label key={option} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={field.value?.includes(option as 'email' | 'phone' | 'whatsapp' | 'in_person') || false}
+                                  onChange={(e) => {
+                                    const currentValue = field.value || [];
+                                    if (e.target.checked) {
+                                      field.onChange([...currentValue, option]);
+                                    } else {
+                                      field.onChange(currentValue.filter((v: string) => v !== option));
+                                    }
+                                  }}
+                                  className="rounded border-gray-300"
+                                  data-testid={`lead-contact-preference-${option}`}
+                                />
+                                <span className="capitalize">{option.replace('_', ' ')}</span>
+                              </label>
+                            ))}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

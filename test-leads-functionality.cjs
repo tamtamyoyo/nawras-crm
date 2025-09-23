@@ -1,24 +1,24 @@
-import { chromium } from 'playwright';
+const puppeteer = require('puppeteer');
 
 async function testLeadsFunctionality() {
   let browser;
   try {
     console.log('🚀 Starting leads functionality test...');
     
-    browser = await chromium.launch({ 
+    browser = await puppeteer.launch({ 
       headless: false,
-      slowMo: 1000
+      defaultViewport: null,
+      args: ['--start-maximized']
     });
     
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    const page = await browser.newPage();
     
     // Navigate to the application
     console.log('📱 Navigating to application...');
-    await page.goto('http://localhost:5173/');
+    await page.goto('http://localhost:5173/', { waitUntil: 'networkidle0' });
     
     // Wait for the page to load
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
     
     // Check if we're on login page or already logged in
     const currentUrl = page.url();
@@ -29,17 +29,17 @@ async function testLeadsFunctionality() {
       
       // Fill login form
       await page.waitForSelector('[data-testid="email-input"]', { timeout: 5000 });
-      await page.fill('[data-testid="email-input"]', 'test@example.com');
-      await page.fill('[data-testid="password-input"]', 'TestPassword123!');
+      await page.type('[data-testid="email-input"]', 'test@example.com');
+      await page.type('[data-testid="password-input"]', 'TestPassword123!');
       
       // Submit login
       await page.click('[data-testid="login-button"]');
-      await page.waitForURL('**/dashboard', { timeout: 10000 });
+      await page.waitForNavigation({ waitUntil: 'networkidle0' });
     }
     
     // Navigate to leads page
     console.log('📋 Navigating to leads page...');
-    await page.goto('http://localhost:5173/leads');
+    await page.goto('http://localhost:5173/leads', { waitUntil: 'networkidle0' });
     
     // Wait for leads page to load
     await page.waitForSelector('[data-testid="page-title"]', { timeout: 10000 });
@@ -47,7 +47,7 @@ async function testLeadsFunctionality() {
     
     // Click Add Lead button
     console.log('➕ Opening add lead modal...');
-    await page.getByText('Add Lead').click();
+    await page.click('button:has-text("Add Lead")');
     
     // Wait for modal to open
     await page.waitForSelector('[data-testid="lead-name-input"]', { timeout: 5000 });
@@ -76,7 +76,7 @@ async function testLeadsFunctionality() {
     console.log('📞 Testing contact preferences field...');
     
     // Check email preference (should be checked by default)
-    const emailCheckbox = page.locator('[data-testid="lead-contact-preference-email"]');
+    const emailCheckbox = await page.$('[data-testid="lead-contact-preference-email"]');
     const isEmailChecked = await emailCheckbox.isChecked();
     console.log('📧 Email preference checked:', isEmailChecked);
     
@@ -88,14 +88,13 @@ async function testLeadsFunctionality() {
     await page.check('[data-testid="lead-contact-preference-whatsapp"]');
     console.log('💬 WhatsApp preference checked');
     
-    // Verify contact preferences are working
-    const phoneChecked = await page.locator('[data-testid="lead-contact-preference-phone"]').isChecked();
-    const whatsappChecked = await page.locator('[data-testid="lead-contact-preference-whatsapp"]').isChecked();
-    
-    console.log('✅ Contact preferences verification:');
-    console.log('  - Email:', isEmailChecked);
-    console.log('  - Phone:', phoneChecked);
-    console.log('  - WhatsApp:', whatsappChecked);
+    // Uncheck in_person preference if checked
+    const inPersonCheckbox = await page.$('[data-testid="lead-contact-preference-in_person"]');
+    const isInPersonChecked = await inPersonCheckbox.isChecked();
+    if (isInPersonChecked) {
+      await page.uncheck('[data-testid="lead-contact-preference-in_person"]');
+    }
+    console.log('👥 In-person preference unchecked');
     
     // Add notes
     await page.fill('[data-testid="lead-notes-textarea"]', 'Test lead created to verify contact preferences functionality');
@@ -105,14 +104,18 @@ async function testLeadsFunctionality() {
     await page.click('[data-testid="lead-save-button"]');
     
     // Wait for form submission and modal to close
-    await page.waitForTimeout(3000);
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Check if lead was created successfully by looking for success message or lead in list
-    try {
-      await page.waitForSelector('text=Test Lead Contact Preferences', { timeout: 5000 });
+    // Check if lead was created successfully
+    const leadCards = await page.$$('.lead-card, [data-testid*="lead"]');
+    console.log('📊 Number of leads found:', leadCards.length);
+    
+    // Look for our test lead
+    const testLeadExists = await page.$('text=Test Lead Contact Preferences');
+    if (testLeadExists) {
       console.log('✅ Test lead created successfully!');
-    } catch {
-      console.log('⚠️  Could not verify lead creation in UI, but form was submitted');
+    } else {
+      console.log('❌ Test lead not found in the list');
     }
     
     console.log('🎉 Leads functionality test completed successfully!');

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, X, FileText, Download } from 'lucide-react';
 import { generateBatchInvoices, ExportFormat } from '@/utils/pdf-generator';
 import { InvoiceWithCustomer } from '@/types/invoice';
+import { Database } from '@/lib/database.types';
 
 interface BatchDownloadModalProps {
   invoices: InvoiceWithCustomer[];
@@ -55,61 +56,45 @@ export function BatchDownloadModal({
         .filter(inv => selectedInvoices.includes(inv.id))
         .map(inv => ({
           invoice: {
-            id: inv.id,
-            invoice_number: inv.invoice_number,
-            customer_id: inv.customer_id,
-            deal_id: inv.deal_id,
-            amount: inv.amount,
-            tax_amount: inv.tax_amount,
-            total_amount: inv.total_amount,
-            status: inv.status,
-            due_date: inv.due_date,
-            paid_date: inv.paid_date,
-            items: inv.items,
-            notes: inv.notes,
-            payment_terms: inv.payment_terms,
-            tax_rate: inv.tax_rate,
-            source: inv.source,
-            created_by: inv.created_by,
-            created_at: inv.created_at,
-            updated_at: inv.updated_at,
-            responsible_person: 'Mr. Ali' as const,
-            billing_address: null,
-            purchase_order_number: null,
-            payment_method: 'bank_transfer'
-          },
+            ...inv,
+            responsible_person: inv.responsible_person || 'Mr. Ali',
+            billing_address: inv.billing_address || null,
+            purchase_order_number: inv.purchase_order_number || null,
+            payment_method: inv.payment_method || 'bank_transfer'
+          } as Database['public']['Tables']['invoices']['Row'],
           customer: {
             id: inv.customer?.id || inv.customer_id,
             name: inv.customer?.name || 'Unknown Customer',
             email: inv.customer?.email || null,
-            phone: null,
-            company: null,
-            address: null,
-            status: 'active' as const,
-            source: null,
-            tags: null,
-            notes: null,
-            created_by: null,
-            created_at: inv.created_at,
-            updated_at: inv.updated_at,
-            responsible_person: 'Mr. Ali' as const,
-            export_license_number: null,
-            export_license_expiry: null,
-            customs_broker: null,
-            preferred_currency: null,
-            payment_terms_export: null,
-            credit_limit_usd: null,
-            export_documentation_language: null,
-            special_handling_requirements: null,
-            compliance_notes: null
-          },
+            phone: (inv.customer as Database['public']['Tables']['customers']['Row'])?.phone || null,
+            company: (inv.customer as Database['public']['Tables']['customers']['Row'])?.company || null,
+            address: (inv.customer as Database['public']['Tables']['customers']['Row'])?.address || null,
+            status: (inv.customer as Database['public']['Tables']['customers']['Row'])?.status || 'active',
+            source: (inv.customer as Database['public']['Tables']['customers']['Row'])?.source || null,
+            tags: (inv.customer as Database['public']['Tables']['customers']['Row'])?.tags || null,
+            notes: (inv.customer as Database['public']['Tables']['customers']['Row'])?.notes || null,
+            created_by: (inv.customer as Database['public']['Tables']['customers']['Row'])?.created_by || null,
+            created_at: (inv.customer as Database['public']['Tables']['customers']['Row'])?.created_at || inv.created_at,
+            updated_at: (inv.customer as Database['public']['Tables']['customers']['Row'])?.updated_at || inv.updated_at,
+            responsible_person: (inv.customer as Database['public']['Tables']['customers']['Row'])?.responsible_person || 'Mr. Ali',
+            export_license_number: (inv.customer as Database['public']['Tables']['customers']['Row'])?.export_license_number || null,
+            export_license_expiry: (inv.customer as Database['public']['Tables']['customers']['Row'])?.export_license_expiry || null,
+            customs_broker: (inv.customer as Database['public']['Tables']['customers']['Row'])?.customs_broker || null,
+            preferred_currency: (inv.customer as Database['public']['Tables']['customers']['Row'])?.preferred_currency || null,
+            payment_terms_export: (inv.customer as Database['public']['Tables']['customers']['Row'])?.payment_terms_export || null,
+            credit_limit_usd: (inv.customer as Database['public']['Tables']['customers']['Row'])?.credit_limit_usd || null,
+            export_documentation_language: (inv.customer as Database['public']['Tables']['customers']['Row'])?.export_documentation_language || null,
+            special_handling_requirements: (inv.customer as Database['public']['Tables']['customers']['Row'])?.special_handling_requirements || null,
+            compliance_notes: (inv.customer as Database['public']['Tables']['customers']['Row'])?.compliance_notes || null,
+            version: (inv.customer as Database['public']['Tables']['customers']['Row'])?.version || null
+          } as Database['public']['Tables']['customers']['Row'],
           deal: {
             id: inv.deal_id || 'unknown',
             title: `Deal for Invoice ${inv.invoice_number}`,
             customer_id: inv.customer_id,
             lead_id: null,
-            value: inv.amount,
-            stage: 'closed_won' as const,
+            value: inv.amount || 0,
+            stage: 'closed_won',
             probability: 100,
             expected_close_date: inv.due_date,
             description: null,
@@ -118,12 +103,12 @@ export function BatchDownloadModal({
             created_by: null,
             created_at: inv.created_at,
             updated_at: inv.updated_at,
-            responsible_person: 'Mr. Ali' as const,
+            responsible_person: 'Mr. Ali',
             competitor_info: null,
             decision_maker_contact: null,
             deal_source: null,
             deal_type: null
-          }
+          } as Database['public']['Tables']['deals']['Row']
         }));
 
       await generateBatchInvoices(selectedInvoiceData, {

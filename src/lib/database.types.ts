@@ -47,13 +47,12 @@ export type Database = {
           company: string | null
           address: string | null
           status: 'active' | 'inactive' | 'prospect'
-          source: string | null
           tags: string[] | null
           notes: string | null
           created_by: string | null
           created_at: string
           updated_at: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          source: string | null
           // Export-specific fields
           export_license_number: string | null
           export_license_expiry: string | null
@@ -64,6 +63,8 @@ export type Database = {
           export_documentation_language: string | null
           special_handling_requirements: string | null
           compliance_notes: string | null
+          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          version: number | null
         }
         Insert: {
           id?: string
@@ -73,13 +74,12 @@ export type Database = {
           company?: string | null
           address?: string | null
           status?: 'active' | 'inactive' | 'prospect'
-          source?: string | null
           tags?: string[] | null
           notes?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          source?: string | null
           // Export-specific fields
           export_license_number?: string | null
           export_license_expiry?: string | null
@@ -90,6 +90,8 @@ export type Database = {
           export_documentation_language?: string | null
           special_handling_requirements?: string | null
           compliance_notes?: string | null
+          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          version?: number | null
         }
         Update: {
           id?: string
@@ -99,13 +101,12 @@ export type Database = {
           company?: string | null
           address?: string | null
           status?: 'active' | 'inactive' | 'prospect'
-          source?: string | null
           tags?: string[] | null
           notes?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          source?: string | null
           // Export-specific fields
           export_license_number?: string | null
           export_license_expiry?: string | null
@@ -116,6 +117,8 @@ export type Database = {
           export_documentation_language?: string | null
           special_handling_requirements?: string | null
           compliance_notes?: string | null
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          version?: number | null
         }
       }
       leads: {
@@ -136,7 +139,7 @@ export type Database = {
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           lifecycle_stage: string | null
           priority_level: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preference: 'email' | 'phone' | 'whatsapp' | 'in_person' | null
+          contact_preferences: string[] | null
           follow_up_date: string | null
         }
         Insert: {
@@ -156,7 +159,7 @@ export type Database = {
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           lifecycle_stage?: string | null
           priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preference?: 'email' | 'phone' | 'whatsapp' | 'in_person' | null
+          contact_preferences?: string[] | null
           follow_up_date?: string | null
         }
         Update: {
@@ -176,7 +179,7 @@ export type Database = {
           responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           lifecycle_stage?: string | null
           priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preference?: 'email' | 'phone' | 'whatsapp' | 'in_person' | null
+          contact_preferences?: string[] | null
           follow_up_date?: string | null
         }
       }

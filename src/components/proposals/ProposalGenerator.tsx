@@ -51,6 +51,7 @@ interface Customer {
   created_at: string
   updated_at: string
   responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+  version: number | null
   // Export-specific fields
   export_license_number: string | null
   export_license_expiry: string | null

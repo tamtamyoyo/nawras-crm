@@ -195,7 +195,7 @@ const mockLeads = [
     responsible_person: 'Mr. Ali',
     lifecycle_stage: 'lead',
     priority_level: 'high',
-    contact_preference: 'email',
+    contact_preferences: ['email'],
     follow_up_date: '2024-01-15',
     notes: 'Interested in our services',
     created_at: '2024-01-01T00:00:00Z'
@@ -212,7 +212,7 @@ const mockLeads = [
     responsible_person: 'Mr. Mustafa',
     lifecycle_stage: 'sales_qualified_lead',
     priority_level: 'high',
-    contact_preference: 'phone',
+    contact_preferences: ['phone'],
     follow_up_date: '2024-01-20',
     notes: 'Ready to convert',
     created_at: '2024-01-02T00:00:00Z'

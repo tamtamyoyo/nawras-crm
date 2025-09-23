@@ -19,6 +19,7 @@ export interface Customer {
   created_at: string
   updated_at: string
   responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+  version: number | null
   // Export-specific fields
   export_license_number: string | null
   export_license_expiry: string | null
@@ -136,6 +137,7 @@ const mockCustomers: Customer[] = [
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     responsible_person: 'Mr. Ali',
+    version: 1,
     // Export-specific fields
     export_license_number: 'EXP-2024-001',
     export_license_expiry: '2025-12-31',
@@ -162,6 +164,7 @@ const mockCustomers: Customer[] = [
     created_at: '2024-01-16T09:30:00Z',
     updated_at: '2024-01-16T09:30:00Z',
     responsible_person: 'Mr. Mustafa',
+    version: 1,
     // Export-specific fields
     export_license_number: null,
     export_license_expiry: null,
@@ -193,7 +196,7 @@ const MOCK_LEADS: Lead[] = [
     responsible_person: 'Mr. Ali',
     lifecycle_stage: 'opportunity',
     priority_level: 'high',
-    contact_preference: 'email',
+    contact_preferences: ['email'],
     follow_up_date: '2024-02-01'
   },
   {
@@ -213,7 +216,7 @@ const MOCK_LEADS: Lead[] = [
     responsible_person: 'Mr. Mustafa',
     lifecycle_stage: 'lead',
     priority_level: 'medium',
-    contact_preference: 'phone',
+    contact_preferences: ['phone'],
     follow_up_date: null
   }
 ]
