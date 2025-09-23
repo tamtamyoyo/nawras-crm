@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Users, Plus, Search, Edit, Trash2, Mail, Phone, Building, MapPin, TestTube, Globe } from 'lucide-react'
-import { supabase } from '../lib/supabase-client'
+import { supabase } from '@/lib/supabase-client'
 import { offlineDataService } from '../services/offlineDataService'
 
 import { useStore } from '../store/useStore'
@@ -157,6 +157,7 @@ export default function Customers() {
             notes: formData.notes || '',
             responsible_person: formData.responsible_person || 'Mr. Ali',
             created_by: user?.id || null, // Use null for anonymous users
+            version: 1, // Add missing version field
             // Export-specific fields
             export_license_number: null,
             export_license_expiry: null,
@@ -177,12 +178,20 @@ export default function Customers() {
         if (showEditModal && selectedCustomer) {
           // Update existing customer
           console.log('✏️ Updating customer in Supabase...');
+          const updateData: Database['public']['Tables']['customers']['Update'] = {
+            name: formData.name || '',
+            email: formData.email || '',
+            phone: formData.phone || '',
+            company: formData.company || '',
+            address: formData.address || '',
+            status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
+            notes: formData.notes || '',
+            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali'
+          };
+          
           const { data, error } = await (supabase as any)
             .from('customers')
-            .update({
-              ...formData,
-              updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', selectedCustomer.id)
             .select()
             .single();
@@ -195,12 +204,32 @@ export default function Customers() {
         } else {
           // Create new customer
           console.log('➕ Creating new customer in Supabase...');
+          const customerData: Database['public']['Tables']['customers']['Insert'] = {
+            name: formData.name || '',
+            email: formData.email || '',
+            phone: formData.phone || '',
+            company: formData.company || '',
+            address: formData.address || '',
+            status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
+            source: formData.source || 'Other',
+            tags: null,
+            notes: formData.notes || '',
+            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
+            created_by: user?.id || null,
+            export_license_number: null,
+            export_license_expiry: null,
+            customs_broker: null,
+            preferred_currency: null,
+            payment_terms_export: null,
+            credit_limit_usd: null,
+            export_documentation_language: null,
+            special_handling_requirements: null,
+            compliance_notes: null
+          };
+          
           const { data, error } = await (supabase as any)
             .from('customers')
-            .insert({
-              ...formData,
-              created_by: user?.id || null // Use null for anonymous users
-            })
+            .insert(customerData)
             .select()
             .single();
           
@@ -242,6 +271,7 @@ export default function Customers() {
             notes: formData.notes || '',
             responsible_person: formData.responsible_person || 'Mr. Ali',
             created_by: user?.id || null, // Use null for anonymous users
+            version: 1, // Add missing version field
             export_license_number: null,
             export_license_expiry: null,
             customs_broker: null,
@@ -291,7 +321,7 @@ export default function Customers() {
       } else {
         console.log('🗑️ Deleting customer from Supabase...');
         
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('customers')
           .delete()
           .eq('id', customer.id);
