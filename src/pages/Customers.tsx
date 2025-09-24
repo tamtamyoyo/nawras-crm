@@ -15,6 +15,14 @@ import { ExportFieldsForm } from '../components/export-fields/ExportFieldsForm'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
 import type { Database } from '../lib/database.types'
 
+// Import error handling services
+import { useApiRetry } from '../components/ApiRetryWrapper'
+import { useLoading } from '../components/LoadingIndicator'
+import formValidationService from '../services/formValidationService'
+import databaseErrorHandlingService from '../services/databaseErrorHandlingService'
+import performanceMonitoringService from '../services/performanceMonitoringService'
+import ValidatedForm, { ValidatedInput, ValidatedSelect, ValidatedTextarea } from '../components/ValidatedForm'
+
 
 type Customer = Database['public']['Tables']['customers']['Row']
 type CustomerInsert = Database['public']['Tables']['customers']['Insert']
@@ -45,68 +53,85 @@ export default function Customers() {
 
   const { customers, setCustomers, addCustomer, updateCustomer, removeCustomer, loading, setLoading } = useStore()
   const { user } = useAuth()
+  
+  // Initialize error handling services
+  const { executeWithRetry } = useApiRetry()
+  const { startLoading, finishLoading, updateLoading } = useLoading()
+  
+  // Register validation schema for customer form
+  useEffect(() => {
+    formValidationService.registerSchema('customer', {
+      name: { required: true, message: 'Name is required' },
+      email: { email: true, message: 'Valid email is required' },
+      phone: { phone: true, message: 'Valid phone number is required' },
+      company: { required: true, message: 'Company is required' }
+    })
+  }, [])
 
   const loadCustomers = useCallback(async () => {
-    console.log('🔄 Starting loadCustomers function');
-    setLoading(true);
-    
-    // Protect from browser extension interference
-    protectFromExtensionInterference();
+    const operationId = 'load-customers-' + Date.now()
+    startLoading({
+      id: operationId,
+      type: 'database',
+      description: 'Loading customers...',
+      priority: 'medium',
+      showProgress: true
+    })
     
     try {
-      // Check if we're in offline mode
-      const offlineMode = isOfflineMode()
-      console.log('🔧 [Customers] Loading data - offlineMode:', offlineMode)
+      // Start performance monitoring
+      performanceMonitoringService.mark('customers-load-start')
       
-      if (offlineMode) {
-        console.log('📱 Loading customers from offline service')
-        const customersData = await offlineDataService.getCustomers()
-        console.log('✅ Customers loaded from offline service:', customersData);
-        // Set customers data directly from offline service
-        setCustomers(customersData || []);
-        toast.success('Customers loaded (offline mode)')
-      } else {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('💥 Supabase error:', error);
-          throw error;
-        }
-        
-        console.log('✅ Customers loaded from Supabase:', data);
-        // Only replace data if we get a successful response from Supabase
-        if (data) {
-          setCustomers(data);
-        }
-      }
+      // Use database error handling service with retry
+      const result = await databaseErrorHandlingService.executeWithErrorHandling(
+        { table: 'customers', operation: 'SELECT' },
+        async () => {
+          updateLoading(operationId, { progress: 25, message: 'Checking connection...' })
+          
+          // Protect from browser extension interference
+          protectFromExtensionInterference();
+          
+          // Check if we're in offline mode
+          const offlineMode = isOfflineMode()
+          console.log('🔧 [Customers] Loading data - offlineMode:', offlineMode)
+          
+          if (offlineMode) {
+            updateLoading(operationId, { progress: 50, message: 'Loading from offline storage...' })
+            console.log('📱 Loading customers from offline service')
+            const customersData = await offlineDataService.getCustomers()
+            console.log('✅ Customers loaded from offline service:', customersData);
+            return { data: (customersData || []) as Customer[], error: null };
+          } else {
+            updateLoading(operationId, { progress: 50, message: 'Fetching from database...' })
+            const result = await supabase
+              .from('customers')
+              .select('*')
+              .order('created_at', { ascending: false });
+            
+            console.log('✅ Customers loaded from Supabase:', result.data);
+            return result;
+          }
+        },
+        { useOfflineQueue: false, useCache: true }
+      )
+      
+      updateLoading(operationId, { progress: 75, message: 'Processing data...' })
+      setCustomers(result as Customer[])
+      
+      updateLoading(operationId, { progress: 100, message: 'Complete!' })
+      toast.success(`Loaded ${(result as Customer[]).length} customers successfully`)
+      
+      // End performance monitoring
+      performanceMonitoringService.measure('customers-load', 'customers-load-start')
+      
     } catch (err) {
       console.error('💥 Error in loadCustomers:', err);
-      
-      // Use enhanced error handling
-      const shouldFallback = handleSupabaseError(err, 'customer loading');
-      
-      if (shouldFallback) {
-        try {
-          console.log('🔄 Falling back to offline mode due to error')
-          const fallbackData = await offlineDataService.getCustomers()
-          // Set fallback data directly
-          setCustomers(fallbackData || []);
-          toast.warning('Using offline data due to connection issues')
-        } catch (offlineError) {
-          console.error('Offline fallback failed:', offlineError)
-          toast.error('Failed to load customers. Please try again.');
-        }
-      } else {
-        toast.error('Failed to load customers. Please try again.');
-      }
+      toast.error('Failed to load customers. Please try again.');
     } finally {
-      console.log('🏁 Setting loading to false');
+      finishLoading(operationId)
       setLoading(false);
     }
-  }, [setCustomers, setLoading]);
+  }, [setCustomers, setLoading, startLoading, finishLoading, updateLoading]);
 
   useEffect(() => {
     console.log('🔥 useEffect triggered - calling loadCustomers')
@@ -118,15 +143,30 @@ export default function Customers() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!validateForm()) {
+    // Use form validation service
+    const validationResult = formValidationService.validateForm('customer', formData)
+    if (!validationResult.isValid) {
+      setFormErrors(validationResult.errors)
+      toast.error('Please fix the form errors before submitting')
       return
     }
     
     setIsSubmitting(true)
-    setLoading(true)
+    const operationId = 'save-customer-' + Date.now()
+    startLoading({
+      id: operationId,
+      type: 'database',
+      description: showEditModal ? 'Updating customer...' : 'Creating customer...',
+      priority: 'high',
+      showProgress: true
+    })
 
     try {
-      console.log('💾 Starting customer save operation...');
+      // Start performance monitoring
+      const operation = showEditModal ? 'customer-update' : 'customer-create'
+      performanceMonitoringService.mark(operation + '-start')
+      
+      updateLoading(operationId, { progress: 25, message: 'Validating data...' })
       
       // Protect from browser extension interference
       protectFromExtensionInterference();
@@ -135,129 +175,131 @@ export default function Customers() {
       const offlineMode = isOfflineMode()
       console.log('🔧 [Customers] Saving data - offlineMode:', offlineMode)
       
-      if (offlineMode) {
-        if (showEditModal && selectedCustomer) {
-          // Update existing customer in offline storage
-          console.log('✏️ Updating customer in offline storage...');
-          const updatedCustomer = await offlineDataService.updateCustomer(selectedCustomer.id, {
-            ...formData,
-            updated_at: new Date().toISOString()
-          });
+      // Use database error handling service with retry
+      const result = await databaseErrorHandlingService.executeWithErrorHandling(
+        {
+          table: 'customers',
+          operation: showEditModal ? 'UPDATE' : 'INSERT'
+        },
+        async () => {
+          updateLoading(operationId, { progress: 50, message: 'Saving to database...' })
           
-          updateCustomer(selectedCustomer.id, updatedCustomer);
-          toast.success('Customer updated successfully (offline)');
-          console.log('✅ Customer updated offline:', updatedCustomer);
-          
-          // Refresh the customer list to ensure UI shows all customers (async)
-          loadCustomers().catch(console.error);
-        } else {
-          // Create new customer in offline storage
-          console.log('➕ Creating new customer in offline storage...');
-          const newCustomer = await offlineDataService.createCustomer({
-            name: formData.name || '',
-            email: formData.email || '',
-            phone: formData.phone || '',
-            company: formData.company || '',
-            address: formData.address || '',
-            status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
-            source: formData.source || 'Other',
-            tags: formData.tags || null,
-            notes: formData.notes || '',
-            responsible_person: formData.responsible_person || 'Mr. Ali',
-            created_by: user?.id || null, // Use null for anonymous users
-            version: 1, // Add missing version field
-            // Export-specific fields
-            export_license_number: null,
-            export_license_expiry: null,
-            customs_broker: null,
-            preferred_currency: null,
-            payment_terms_export: null,
-            credit_limit_usd: null,
-            export_documentation_language: null,
-            special_handling_requirements: null,
-            compliance_notes: null
-          });
-          
-          addCustomer(newCustomer);
-          toast.success('Customer added successfully (offline)');
-          console.log('✅ Customer created offline:', newCustomer);
-          
-          // Refresh the customer list to ensure UI shows all customers (async)
-          loadCustomers().catch(console.error);
-        }
+          if (offlineMode) {
+            if (showEditModal && selectedCustomer) {
+              console.log('✏️ Updating customer in offline storage...');
+              const updatedCustomer = await offlineDataService.updateCustomer(selectedCustomer.id, {
+                ...formData,
+                updated_at: new Date().toISOString()
+              } as any);
+              return updatedCustomer;
+            } else {
+              console.log('➕ Creating new customer in offline storage...');
+              const newCustomer = await offlineDataService.createCustomer({
+                name: formData.name || '',
+                email: formData.email || '',
+                phone: formData.phone || '',
+                company: formData.company || '',
+                address: formData.address || '',
+                status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
+                source: formData.source || 'Other',
+                tags: formData.tags || null,
+                notes: formData.notes || '',
+                responsible_person: formData.responsible_person || 'Mr. Ali',
+                created_by: user?.id || null,
+                version: 1,
+                export_license_number: null,
+                export_license_expiry: null,
+                customs_broker: null,
+                preferred_currency: null,
+                payment_terms_export: null,
+                credit_limit_usd: null,
+                export_documentation_language: null,
+                special_handling_requirements: null,
+                compliance_notes: null
+              } as any);
+              return newCustomer;
+            }
+          } else {
+            if (showEditModal && selectedCustomer) {
+              console.log('✏️ Updating customer in Supabase...');
+              const updateData: Database['public']['Tables']['customers']['Update'] = {
+                name: formData.name || '',
+                email: formData.email || '',
+                phone: formData.phone || '',
+                company: formData.company || '',
+                address: formData.address || '',
+                status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
+                notes: formData.notes || '',
+                responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
+                updated_at: new Date().toISOString()
+              };
+              
+              const { data, error } = await (supabase as any)
+                .from('customers')
+                .update(updateData)
+                .eq('id', selectedCustomer.id)
+                .select()
+                .single();
+              
+              if (error) throw error;
+              return data;
+            } else {
+              console.log('➕ Creating new customer in Supabase...');
+              const customerData: Database['public']['Tables']['customers']['Insert'] = {
+                name: formData.name || '',
+                email: formData.email || '',
+                phone: formData.phone || '',
+                company: formData.company || '',
+                address: formData.address || '',
+                status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
+                source: formData.source || 'Other',
+                tags: null,
+                notes: formData.notes || '',
+                responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
+                created_by: user?.id || null,
+                export_license_number: null,
+                export_license_expiry: null,
+                customs_broker: null,
+                preferred_currency: null,
+                payment_terms_export: null,
+                credit_limit_usd: null,
+                export_documentation_language: null,
+                special_handling_requirements: null,
+                compliance_notes: null
+              };
+              
+              const { data, error } = await (supabase as any)
+                .from('customers')
+                .insert([customerData])
+                .select()
+                .single();
+              
+              if (error) throw error;
+              return data;
+            }
+          }
+        },
+        { useOfflineQueue: false, useCache: true }
+      )
+      
+      updateLoading(operationId, { progress: 75, message: 'Updating UI...' })
+      
+      // Update the UI with the result
+      if (showEditModal && selectedCustomer) {
+        updateCustomer(selectedCustomer.id, result as Customer)
+        toast.success('Customer updated successfully')
       } else {
-        if (showEditModal && selectedCustomer) {
-          // Update existing customer
-          console.log('✏️ Updating customer in Supabase...');
-          const updateData: Database['public']['Tables']['customers']['Update'] = {
-            name: formData.name || '',
-            email: formData.email || '',
-            phone: formData.phone || '',
-            company: formData.company || '',
-            address: formData.address || '',
-            status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
-            notes: formData.notes || '',
-            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
-            updated_at: new Date().toISOString()
-          };
-          
-          const { data, error } = await (supabase as any)
-          .from('customers')
-          .update(updateData)
-          .eq('id', selectedCustomer.id)
-          .select()
-            .single();
-          
-          if (error) throw error;
-          
-          updateCustomer(selectedCustomer.id, data);
-          toast.success('Customer updated successfully');
-          console.log('✅ Customer updated:', data);
-          
-          // Refresh the customer list to ensure UI shows all customers (async)
-          loadCustomers().catch(console.error);
-        } else {
-          // Create new customer
-          console.log('➕ Creating new customer in Supabase...');
-          const customerData: Database['public']['Tables']['customers']['Insert'] = {
-            name: formData.name || '',
-            email: formData.email || '',
-            phone: formData.phone || '',
-            company: formData.company || '',
-            address: formData.address || '',
-            status: (formData.status as 'active' | 'inactive' | 'prospect') || 'prospect',
-            source: formData.source || 'Other',
-            tags: null,
-            notes: formData.notes || '',
-            responsible_person: (formData.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
-            created_by: user?.id || null,
-            export_license_number: null,
-            export_license_expiry: null,
-            customs_broker: null,
-            preferred_currency: null,
-            payment_terms_export: null,
-            credit_limit_usd: null,
-            export_documentation_language: null,
-            special_handling_requirements: null,
-            compliance_notes: null
-          };
-          
-          const { data, error } = await (supabase as any)
-          .from('customers')
-          .insert(customerData)
-          .select()
-            .single();
-          
-          if (error) throw error;
-          
-          addCustomer(data);
-          toast.success('Customer added successfully');
-          console.log('✅ Customer created:', data);
-          
-          // Refresh the customer list to ensure UI shows all customers (async)
-          loadCustomers().catch(console.error);
-        }
+        addCustomer(result as Customer)
+        toast.success('Customer added successfully')
       }
+      
+      updateLoading(operationId, { progress: 100, message: 'Complete!' })
+      
+      // End performance monitoring
+      performanceMonitoringService.measure(operation, operation + '-start')
+      
+      // Refresh the customer list (async)
+      loadCustomers().catch(console.error)
 
       resetForm()
     } catch (error) {
@@ -273,8 +315,8 @@ export default function Customers() {
           const updatedCustomer = await offlineDataService.updateCustomer(selectedCustomer.id, {
             ...formData,
             updated_at: new Date().toISOString()
-          });
-          updateCustomer(selectedCustomer.id, updatedCustomer);
+          } as any);
+          updateCustomer(selectedCustomer.id, updatedCustomer as Customer);
           toast.warning('Customer updated using offline storage');
           
           // Refresh the customer list to ensure UI shows all customers (async)
@@ -304,7 +346,7 @@ export default function Customers() {
             special_handling_requirements: null,
             compliance_notes: null
           });
-          addCustomer(newCustomer);
+          addCustomer(newCustomer as Customer);
           toast.warning('Customer added using offline storage');
           
           // Refresh the customer list to ensure UI shows all customers (async)
@@ -319,6 +361,7 @@ export default function Customers() {
         toast.error('Failed to save customer')
       }
     } finally {
+      finishLoading('customer-submit');
       setIsSubmitting(false)
       setLoading(false)
     }
@@ -327,36 +370,76 @@ export default function Customers() {
   const handleDelete = async (customer: Customer) => {
     if (!confirm(`Are you sure you want to delete ${customer.name}?`)) return
 
+    const operationId = `customer-delete-${customer.id}`;
+    
     try {
       setLoading(true)
+      startLoading({
+        id: operationId,
+        type: 'database',
+        description: `Deleting ${customer.name}...`,
+        priority: 'high',
+        showProgress: true
+      });
       
-      // Protect from browser extension interference
-      protectFromExtensionInterference();
+      // Start performance timing
+      performanceMonitoringService.mark('customer-delete-start');
       
-      // Check if we're in offline mode
-      const offlineMode = isOfflineMode()
-      console.log('🔧 [Customers] Deleting data - offlineMode:', offlineMode)
+      // Use database error handling service
+      const result = await databaseErrorHandlingService.executeWithErrorHandling(
+        {
+          table: 'customers',
+          operation: 'DELETE'
+        },
+        async () => {
+          updateLoading(operationId, { progress: 30, message: 'Preparing deletion...' });
+          
+          // Protect from browser extension interference
+          protectFromExtensionInterference();
+          
+          // Check if we're in offline mode
+          const offlineMode = isOfflineMode()
+          console.log('🔧 [Customers] Deleting data - offlineMode:', offlineMode)
+          
+          updateLoading(operationId, { progress: 60, message: 'Deleting customer...' });
+          
+          if (offlineMode) {
+            console.log('🗑️ Deleting customer from offline storage...');
+            await offlineDataService.deleteCustomer(customer.id);
+            console.log('✅ Customer deleted offline:', customer.name);
+            return { data: null, error: null };
+          } else {
+            console.log('🗑️ Deleting customer from Supabase...');
+            
+            const { data, error } = await supabase
+              .from('customers')
+              .delete()
+              .eq('id', customer.id);
+            
+            console.log('✅ Customer deleted:', customer.name);
+            return { data, error };
+          }
+        },
+        { useOfflineQueue: false, useCache: false }
+      );
       
-      if (offlineMode) {
-        console.log('🗑️ Deleting customer from offline storage...');
-        await offlineDataService.deleteCustomer(customer.id);
-        removeCustomer(customer.id)
-        toast.success('Customer deleted successfully (offline)')
-        console.log('✅ Customer deleted offline:', customer.name);
+      updateLoading(operationId, { progress: 90, message: 'Updating UI...' });
+      
+      if (!result.error) {
+        removeCustomer(customer.id);
+        const offlineMode = isOfflineMode();
+        if (offlineMode) {
+          toast.success('Customer deleted successfully (offline)');
+        } else {
+          toast.success('Customer deleted successfully');
+        }
       } else {
-        console.log('🗑️ Deleting customer from Supabase...');
-        
-        const { error } = await supabase
-          .from('customers')
-          .delete()
-          .eq('id', customer.id);
-        
-        if (error) throw error;
-        
-        removeCustomer(customer.id)
-        toast.success('Customer deleted successfully')
-        console.log('✅ Customer deleted:', customer.name);
+        throw result.error;
       }
+      
+      // End performance timing
+      performanceMonitoringService.measure('customer-delete', 'customer-delete-start');
+      
     } catch (error) {
       console.error('Error deleting customer:', error)
       
@@ -377,26 +460,22 @@ export default function Customers() {
         toast.error('Failed to delete customer')
       }
     } finally {
+      finishLoading(operationId);
       setLoading(false)
     }
   }
 
   const validateForm = () => {
-    const errors: Record<string, string> = {}
+    // Use the form validation service
+    const validationResult = formValidationService.validateForm('customer', formData);
     
-    if (!formData.name?.trim()) {
-      errors.name = 'Name is required'
+    if (!validationResult.isValid) {
+      setFormErrors(validationResult.errors);
+      return false;
     }
     
-    if (formData.email && formData.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.email)) {
-        errors.email = 'Please enter a valid email address'
-      }
-    }
-    
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
+    setFormErrors({});
+    return true;
   }
 
   const resetForm = () => {
@@ -705,166 +784,116 @@ export default function Customers() {
                 {showEditModal ? 'Edit Customer' : 'Add New Customer'}
               </h2>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.name || ''}
-                    onChange={(e) => {
-                      setFormData({ ...formData, name: e.target.value })
-                      if (formErrors.name) {
-                        setFormErrors({ ...formErrors, name: '' })
-                      }
-                    }}
-                    className={formErrors.name ? 'border-red-500 focus:ring-red-500' : ''}
-                    required
-                    data-testid="customer-name-input"
-                  />
-                  {formErrors.name && (
-                    <p className="mt-1 text-sm text-red-600" data-testid="customer-name-error">
-                      {formErrors.name}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <Input
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value })
-                      if (formErrors.email) {
-                        setFormErrors({ ...formErrors, email: '' })
-                      }
-                    }}
-                    className={formErrors.email ? 'border-red-500 focus:ring-red-500' : ''}
-                    data-testid="customer-email-input"
-                  />
-                  {formErrors.email && (
-                    <p className="mt-1 text-sm text-red-600" data-testid="customer-email-error">
-                      {formErrors.email}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <Input
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    data-testid="customer-phone-input"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.company || ''}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    data-testid="customer-company-input"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.address || ''}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    data-testid="customer-address-input"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status || 'prospect'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'prospect' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    data-testid="customer-status-select"
-                  >
-                    <option value="prospect">Prospect</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Source
-                  </label>
-                  <select
-                    value={formData.source || 'Other'}
-                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    data-testid="customer-source-select"
-                  >
-                    <option value="Website">Website</option>
-                    <option value="Referral">Referral</option>
-                    <option value="Social Media">Social Media</option>
-                    <option value="Cold Call">Cold Call</option>
-                    <option value="Email Campaign">Email Campaign</option>
-                    <option value="Trade Show">Trade Show</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Responsible Person *
-                  </label>
-                  <select
-                    value={formData.responsible_person || 'Mr. Ali'}
-                    onChange={(e) => setFormData({ ...formData, responsible_person: e.target.value as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    data-testid="customer-responsible-person-select"
-                    required
-                  >
-                    <option value="Mr. Ali">Mr. Ali</option>
-                    <option value="Mr. Mustafa">Mr. Mustafa</option>
-                    <option value="Mr. Taha">Mr. Taha</option>
-                    <option value="Mr. Mohammed">Mr. Mohammed</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
-                  </label>
-                  <textarea
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    data-testid="customer-notes-textarea"
-                  />
-                </div>
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={resetForm} data-testid="customer-cancel-button">
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || loading} data-testid="customer-save-button">
-                    {isSubmitting || loading ? 'Saving...' : (showEditModal ? 'Update' : 'Add')} Customer
-                  </Button>
-                </div>
-              </form>
+              <ValidatedForm
+                schema="customer"
+                initialData={formData}
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                {(formProps) => (
+                  <>
+                    <ValidatedInput
+                      field="name"
+                      label="Name *"
+                      type="text"
+                      required
+                      formProps={formProps}
+                      data-testid="customer-name-input"
+                    />
+                    
+                    <ValidatedInput
+                      field="email"
+                      label="Email"
+                      type="email"
+                      formProps={formProps}
+                      data-testid="customer-email-input"
+                    />
+                    
+                    <ValidatedInput
+                      field="phone"
+                      label="Phone"
+                      type="tel"
+                      formProps={formProps}
+                      data-testid="customer-phone-input"
+                    />
+                    
+                    <ValidatedInput
+                      field="company"
+                      label="Company"
+                      type="text"
+                      formProps={formProps}
+                      data-testid="customer-company-input"
+                    />
+                    
+                    <ValidatedInput
+                      field="address"
+                      label="Address"
+                      type="text"
+                      formProps={formProps}
+                      data-testid="customer-address-input"
+                    />
+                    
+                    <ValidatedSelect
+                      field="status"
+                      label="Status"
+                      options={[
+                        { value: 'prospect', label: 'Prospect' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'inactive', label: 'Inactive' }
+                      ]}
+                      formProps={formProps}
+                      data-testid="customer-status-select"
+                    />
+                    
+                    <ValidatedSelect
+                      field="source"
+                      label="Source"
+                      options={[
+                        { value: 'Website', label: 'Website' },
+                        { value: 'Referral', label: 'Referral' },
+                        { value: 'Social Media', label: 'Social Media' },
+                        { value: 'Cold Call', label: 'Cold Call' },
+                        { value: 'Email Campaign', label: 'Email Campaign' },
+                        { value: 'Trade Show', label: 'Trade Show' },
+                        { value: 'Other', label: 'Other' }
+                      ]}
+                      formProps={formProps}
+                      data-testid="customer-source-select"
+                    />
+                    
+                    <ValidatedSelect
+                      field="responsible_person"
+                      label="Responsible Person *"
+                      options={[
+                        { value: 'Mr. Ali', label: 'Mr. Ali' },
+                        { value: 'Mr. Mustafa', label: 'Mr. Mustafa' },
+                        { value: 'Mr. Taha', label: 'Mr. Taha' },
+                        { value: 'Mr. Mohammed', label: 'Mr. Mohammed' }
+                      ]}
+                      required
+                      formProps={formProps}
+                      data-testid="customer-responsible-person-select"
+                    />
+                    
+                    <ValidatedTextarea
+                      field="notes"
+                      label="Notes"
+                      rows={3}
+                      formProps={formProps}
+                      data-testid="customer-notes-textarea"
+                    />
+                    
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <Button type="button" variant="outline" onClick={resetForm} data-testid="customer-cancel-button">
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={formProps.isSubmitting || loading} data-testid="customer-save-button">
+                        {formProps.isSubmitting || loading ? 'Saving...' : (showEditModal ? 'Update' : 'Add')} Customer
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </ValidatedForm>
             </div>
           </div>
         </div>

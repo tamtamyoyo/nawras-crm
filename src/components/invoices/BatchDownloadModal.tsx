@@ -107,7 +107,12 @@ export function BatchDownloadModal({
             competitor_info: null,
             decision_maker_contact: null,
             deal_source: null,
-            deal_type: null
+            deal_type: null,
+            deal_source_detail: null,
+            decision_maker_name: null,
+            decision_maker_email: null,
+            decision_maker_phone: null,
+            version: 1
           } as Database['public']['Tables']['deals']['Row']
         }));
 

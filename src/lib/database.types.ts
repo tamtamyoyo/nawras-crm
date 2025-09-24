@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       users: {
@@ -14,28 +14,28 @@ export type Database = {
           id: string
           email: string
           full_name: string | null
-          role: 'admin' | 'manager' | 'sales_rep'
           avatar_url: string | null
-          created_at: string
-          updated_at: string
+          role: 'admin' | 'manager' | 'sales_rep' | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: string
           email: string
           full_name?: string | null
-          role?: 'admin' | 'manager' | 'sales_rep'
           avatar_url?: string | null
-          created_at?: string
-          updated_at?: string
+          role?: 'admin' | 'manager' | 'sales_rep' | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'admin' | 'manager' | 'sales_rep'
           avatar_url?: string | null
-          created_at?: string
-          updated_at?: string
+          role?: 'admin' | 'manager' | 'sales_rep' | null
+          created_at?: string | null
+          updated_at?: string | null
         }
       }
       customers: {
@@ -46,14 +46,13 @@ export type Database = {
           phone: string | null
           company: string | null
           address: string | null
-          status: 'active' | 'inactive' | 'prospect'
+          status: 'active' | 'inactive' | 'prospect' | null
           tags: string[] | null
           notes: string | null
           created_by: string | null
-          created_at: string
-          updated_at: string
-          source: string | null
-          // Export-specific fields
+          created_at: string | null
+          updated_at: string | null
+          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           export_license_number: string | null
           export_license_expiry: string | null
           customs_broker: string | null
@@ -73,14 +72,13 @@ export type Database = {
           phone?: string | null
           company?: string | null
           address?: string | null
-          status?: 'active' | 'inactive' | 'prospect'
+          status?: 'active' | 'inactive' | 'prospect' | null
           tags?: string[] | null
           notes?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          source?: string | null
-          // Export-specific fields
+          created_at?: string | null
+          updated_at?: string | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           export_license_number?: string | null
           export_license_expiry?: string | null
           customs_broker?: string | null
@@ -90,7 +88,7 @@ export type Database = {
           export_documentation_language?: string | null
           special_handling_requirements?: string | null
           compliance_notes?: string | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           version?: number | null
         }
         Update: {
@@ -100,14 +98,13 @@ export type Database = {
           phone?: string | null
           company?: string | null
           address?: string | null
-          status?: 'active' | 'inactive' | 'prospect'
+          status?: 'active' | 'inactive' | 'prospect' | null
           tags?: string[] | null
           notes?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          source?: string | null
-          // Export-specific fields
+          created_at?: string | null
+          updated_at?: string | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           export_license_number?: string | null
           export_license_expiry?: string | null
           customs_broker?: string | null
@@ -128,19 +125,22 @@ export type Database = {
           email: string | null
           phone: string | null
           company: string | null
-          source: string | null
-          status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
           score: number | null
           notes: string | null
           assigned_to: string | null
           created_by: string | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage: string | null
+          lifecycle_stage: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
+          lead_score: number | null
           priority_level: 'low' | 'medium' | 'high' | 'urgent' | null
           contact_preferences: string[] | null
           follow_up_date: string | null
+          lead_source_detail: string | null
+          version: number | null
         }
         Insert: {
           id?: string
@@ -148,19 +148,22 @@ export type Database = {
           email?: string | null
           phone?: string | null
           company?: string | null
-          source?: string | null
-          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
           score?: number | null
           notes?: string | null
           assigned_to?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          lifecycle_stage?: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
+          lead_score?: number | null
           priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
           contact_preferences?: string[] | null
           follow_up_date?: string | null
+          lead_source_detail?: string | null
+          version?: number | null
         }
         Update: {
           id?: string
@@ -168,19 +171,22 @@ export type Database = {
           email?: string | null
           phone?: string | null
           company?: string | null
-          source?: string | null
-          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
           score?: number | null
           notes?: string | null
           assigned_to?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
           responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage?: string | null
+          lifecycle_stage?: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
+          lead_score?: number | null
           priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
           contact_preferences?: string[] | null
           follow_up_date?: string | null
+          lead_source_detail?: string | null
+          version?: number | null
         }
       }
       deals: {
@@ -190,20 +196,23 @@ export type Database = {
           customer_id: string | null
           lead_id: string | null
           value: number
-          stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
-          probability: number
+          stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
+          probability: number | null
           expected_close_date: string | null
           description: string | null
-          source: string | null
           assigned_to: string | null
           created_by: string | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
+          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          deal_source_detail: string | null
           competitor_info: string | null
-          decision_maker_contact: string | null
-          deal_source: string | null
-          deal_type: string | null
+          decision_maker_name: string | null
+          decision_maker_email: string | null
+          decision_maker_phone: string | null
+          deal_type: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
+          version: number | null
         }
         Insert: {
           id?: string
@@ -211,20 +220,23 @@ export type Database = {
           customer_id?: string | null
           lead_id?: string | null
           value?: number
-          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
-          probability?: number
+          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
+          probability?: number | null
           expected_close_date?: string | null
           description?: string | null
-          source?: string | null
           assigned_to?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          created_at?: string | null
+          updated_at?: string | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          deal_source_detail?: string | null
           competitor_info?: string | null
-          decision_maker_contact?: string | null
-          deal_source?: string | null
-          deal_type?: string | null
+          decision_maker_name?: string | null
+          decision_maker_email?: string | null
+          decision_maker_phone?: string | null
+          deal_type?: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
+          version?: number | null
         }
         Update: {
           id?: string
@@ -232,20 +244,23 @@ export type Database = {
           customer_id?: string | null
           lead_id?: string | null
           value?: number
-          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
-          probability?: number
+          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
+          probability?: number | null
           expected_close_date?: string | null
           description?: string | null
-          source?: string | null
           assigned_to?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          deal_source_detail?: string | null
           competitor_info?: string | null
-          decision_maker_contact?: string | null
-          deal_source?: string | null
-          deal_type?: string | null
+          decision_maker_name?: string | null
+          decision_maker_email?: string | null
+          decision_maker_phone?: string | null
+          deal_type?: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
+          version?: number | null
         }
       }
       proposals: {
@@ -255,16 +270,22 @@ export type Database = {
           deal_id: string | null
           customer_id: string | null
           content: string
-          status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected'
+          status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
           valid_until: string | null
-          source: string | null
           created_by: string | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
+          notes: string | null
+          total_amount: number | null
+          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type: string | null
+          proposal_type: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
           validity_period: number | null
-          delivery_method: string | null
+          approval_workflow: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
+          template_used: string | null
+          delivery_method: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
+          estimated_value: number | null
+          version: number | null
         }
         Insert: {
           id?: string
@@ -272,16 +293,22 @@ export type Database = {
           deal_id?: string | null
           customer_id?: string | null
           content: string
-          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected'
+          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
           valid_until?: string | null
-          source?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          notes?: string | null
+          total_amount?: number | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          proposal_type?: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
           validity_period?: number | null
-          delivery_method?: string | null
+          approval_workflow?: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
+          template_used?: string | null
+          delivery_method?: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
+          estimated_value?: number | null
+          version?: number | null
         }
         Update: {
           id?: string
@@ -289,16 +316,22 @@ export type Database = {
           deal_id?: string | null
           customer_id?: string | null
           content?: string
-          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected'
+          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
           valid_until?: string | null
-          source?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
+          notes?: string | null
+          total_amount?: number | null
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type?: string | null
+          proposal_type?: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
           validity_period?: number | null
-          delivery_method?: string | null
+          approval_workflow?: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
+          template_used?: string | null
+          delivery_method?: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
+          estimated_value?: number | null
+          version?: number | null
         }
       }
       invoices: {
@@ -310,21 +343,25 @@ export type Database = {
           amount: number
           tax_amount: number
           total_amount: number
-          status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+          status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
           due_date: string
           paid_date: string | null
-          items: Json
+          items: any
           notes: string | null
-          payment_terms: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt'
-          tax_rate: number
-          source: string | null
           created_by: string | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
+          payment_terms: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
+          tax_rate: number
+          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           billing_address: string | null
           purchase_order_number: string | null
-          payment_method: string | null
+          payment_method: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
+          currency_code: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          discount_amount: number | null
+          discount_percentage: number | null
+          version: number | null
         }
         Insert: {
           id?: string
@@ -334,21 +371,25 @@ export type Database = {
           amount?: number
           tax_amount?: number
           total_amount?: number
-          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
           due_date: string
           paid_date?: string | null
-          items?: Json
+          items?: any
           notes?: string | null
-          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt'
-          tax_rate?: number
-          source?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          created_at?: string | null
+          updated_at?: string | null
+          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
+          tax_rate?: number
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
+          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           billing_address?: string | null
           purchase_order_number?: string | null
-          payment_method?: string | null
+          payment_method?: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
+          currency_code?: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          version?: number | null
         }
         Update: {
           id?: string
@@ -358,418 +399,39 @@ export type Database = {
           amount?: number
           tax_amount?: number
           total_amount?: number
-          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
           due_date?: string
           paid_date?: string | null
-          items?: Json
+          items?: any
           notes?: string | null
-          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt'
-          tax_rate?: number
-          source?: string | null
           created_by?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
+          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
+          tax_rate?: number
+          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
           responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           billing_address?: string | null
           purchase_order_number?: string | null
-          payment_method?: string | null
-        }
-      }
-      // Export-related tables
-      export_licenses: {
-        Row: {
-          id: string
-          customer_id: string
-          license_number: string
-          license_type: string
-          issuing_authority: string
-          issue_date: string
-          expiry_date: string
-          status: 'active' | 'expired' | 'suspended' | 'cancelled'
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          license_number: string
-          license_type: string
-          issuing_authority: string
-          issue_date: string
-          expiry_date: string
-          status?: 'active' | 'expired' | 'suspended' | 'cancelled'
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          license_number?: string
-          license_type?: string
-          issuing_authority?: string
-          issue_date?: string
-          expiry_date?: string
-          status?: 'active' | 'expired' | 'suspended' | 'cancelled'
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      hs_codes: {
-        Row: {
-          id: string
-          code: string
-          description: string
-          category: string | null
-          duty_rate: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          code: string
-          description: string
-          category?: string | null
-          duty_rate?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          code?: string
-          description?: string
-          category?: string | null
-          duty_rate?: number | null
-          created_at?: string
-        }
-      }
-      export_ports: {
-        Row: {
-          id: string
-          port_code: string
-          port_name: string
-          city: string
-          country: string
-          port_type: 'seaport' | 'airport' | 'land_border'
-          is_active: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          port_code: string
-          port_name: string
-          city: string
-          country?: string
-          port_type?: 'seaport' | 'airport' | 'land_border'
-          is_active?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          port_code?: string
-          port_name?: string
-          city?: string
-          country?: string
-          port_type?: 'seaport' | 'airport' | 'land_border'
-          is_active?: boolean
-          created_at?: string
-        }
-      }
-      certificates: {
-        Row: {
-          id: string
-          certificate_code: string
-          certificate_name: string
-          description: string | null
-          issuing_body: string | null
-          validity_period_months: number | null
-          is_mandatory: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          certificate_code: string
-          certificate_name: string
-          description?: string | null
-          issuing_body?: string | null
-          validity_period_months?: number | null
-          is_mandatory?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          certificate_code?: string
-          certificate_name?: string
-          description?: string | null
-          issuing_body?: string | null
-          validity_period_months?: number | null
-          is_mandatory?: boolean
-          created_at?: string
-        }
-      }
-      incoterms: {
-        Row: {
-          id: string
-          term_code: string
-          term_name: string
-          description: string | null
-          risk_transfer_point: string | null
-          cost_responsibility: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          term_code: string
-          term_name: string
-          description?: string | null
-          risk_transfer_point?: string | null
-          cost_responsibility?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          term_code?: string
-          term_name?: string
-          description?: string | null
-          risk_transfer_point?: string | null
-          cost_responsibility?: string | null
-          created_at?: string
-        }
-      }
-      target_markets: {
-        Row: {
-          id: string
-          market_code: string
-          market_name: string
-          region: string | null
-          regulatory_requirements: string | null
-          market_notes: string | null
-          is_active: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          market_code: string
-          market_name: string
-          region?: string | null
-          regulatory_requirements?: string | null
-          market_notes?: string | null
-          is_active?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          market_code?: string
-          market_name?: string
-          region?: string | null
-          regulatory_requirements?: string | null
-          market_notes?: string | null
-          is_active?: boolean
-          created_at?: string
-        }
-      }
-      product_categories: {
-        Row: {
-          id: string
-          category_code: string
-          category_name: string
-          parent_category_id: string | null
-          description: string | null
-          export_restrictions: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          category_code: string
-          category_name: string
-          parent_category_id?: string | null
-          description?: string | null
-          export_restrictions?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          category_code?: string
-          category_name?: string
-          parent_category_id?: string | null
-          description?: string | null
-          export_restrictions?: string | null
-          created_at?: string
-        }
-      }
-      // Junction tables for many-to-many relationships
-      customer_hs_codes: {
-        Row: {
-          id: string
-          customer_id: string
-          hs_code_id: string
-          is_primary: boolean
-          volume_percentage: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          hs_code_id: string
-          is_primary?: boolean
-          volume_percentage?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          hs_code_id?: string
-          is_primary?: boolean
-          volume_percentage?: number | null
-          created_at?: string
-        }
-      }
-      customer_export_ports: {
-        Row: {
-          id: string
-          customer_id: string
-          export_port_id: string
-          is_preferred: boolean
-          shipping_method: string | null
-          transit_time_days: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          export_port_id: string
-          is_preferred?: boolean
-          shipping_method?: string | null
-          transit_time_days?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          export_port_id?: string
-          is_preferred?: boolean
-          shipping_method?: string | null
-          transit_time_days?: number | null
-          created_at?: string
-        }
-      }
-      customer_certificates: {
-        Row: {
-          id: string
-          customer_id: string
-          certificate_id: string
-          certificate_number: string | null
-          issue_date: string | null
-          expiry_date: string | null
-          issuing_body: string | null
-          status: 'valid' | 'expired' | 'pending' | 'cancelled'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          certificate_id: string
-          certificate_number?: string | null
-          issue_date?: string | null
-          expiry_date?: string | null
-          issuing_body?: string | null
-          status?: 'valid' | 'expired' | 'pending' | 'cancelled'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          certificate_id?: string
-          certificate_number?: string | null
-          issue_date?: string | null
-          expiry_date?: string | null
-          issuing_body?: string | null
-          status?: 'valid' | 'expired' | 'pending' | 'cancelled'
-          created_at?: string
-        }
-      }
-      customer_target_markets: {
-        Row: {
-          id: string
-          customer_id: string
-          target_market_id: string
-          market_priority: number | null
-          annual_volume_target: number | null
-          market_entry_date: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          target_market_id: string
-          market_priority?: number | null
-          annual_volume_target?: number | null
-          market_entry_date?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          target_market_id?: string
-          market_priority?: number | null
-          annual_volume_target?: number | null
-          market_entry_date?: string | null
-          created_at?: string
-        }
-      }
-      customer_product_categories: {
-        Row: {
-          id: string
-          customer_id: string
-          product_category_id: string
-          is_primary: boolean
-          volume_percentage: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          product_category_id: string
-          is_primary?: boolean
-          volume_percentage?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          product_category_id?: string
-          is_primary?: boolean
-          volume_percentage?: number | null
-          created_at?: string
-        }
-      }
-      customer_incoterms: {
-        Row: {
-          id: string
-          customer_id: string
-          incoterm_id: string
-          is_preferred: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          customer_id: string
-          incoterm_id: string
-          is_preferred?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          customer_id?: string
-          incoterm_id?: string
-          is_preferred?: boolean
-          created_at?: string
+          payment_method?: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
+          currency_code?: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          version?: number | null
         }
       }
     }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
-
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']

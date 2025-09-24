@@ -1,85 +1,15 @@
 import { Database } from '@/lib/database.types';
 
 // Use Database types for consistency
-type Lead = Database['public']['Tables']['leads']['Row'];
-
-// Types for our CRM entities
-export interface Customer {
-  id: string
-  name: string
-  email: string | null
-  phone: string | null
-  company: string | null
-  address: string | null
-  status: 'active' | 'inactive' | 'prospect'
-  source: string | null
-  tags: string[] | null
-  notes: string | null
-  created_by: string | null
-  created_at: string
-  updated_at: string
-  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-  version: number | null
-  // Export-specific fields
-  export_license_number: string | null
-  export_license_expiry: string | null
-  customs_broker: string | null
-  preferred_currency: string | null
-  payment_terms_export: string | null
-  credit_limit_usd: number | null
-  export_documentation_language: string | null
-  special_handling_requirements: string | null
-  compliance_notes: string | null
-}
-
-// Lead type is now imported from Database types above
-
-export interface Deal {
-  id: string;
-  title: string;
-  customer_id: string | null;
-  lead_id: string | null;
-  customer_name?: string;
-  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
-  value: number;
-  probability: number;
-  expected_close_date: string | null;
-  description: string | null;
-  source: string | null;
-  assigned_to: string | null;
-  notes?: string;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  // Additional required properties to match database schema
-  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed';
-  competitor_info: string | null;
-  decision_maker_contact: string | null;
-  deal_source: string | null;
-  deal_type: string;
-}
+export type Customer = Database['public']['Tables']['customers']['Row'];
+export type Lead = Database['public']['Tables']['leads']['Row'];
+export type Deal = Database['public']['Tables']['deals']['Row'];
+export type Proposal = Database['public']['Tables']['proposals']['Row'];
+export type Invoice = Database['public']['Tables']['invoices']['Row'];
 
 export interface ProposalContent {
   sections: string[];
   [key: string]: unknown;
-}
-
-export interface Proposal {
-  id: string;
-  title: string;
-  customer_id: string | null;
-  deal_id: string | null;
-  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected';
-  source: string | null;
-  content: string;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  valid_until: string | null;
-  responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed';
-  proposal_type: string | null;
-  validity_period: number | null;
-  delivery_method: string | null;
 }
 
 export interface InvoiceItem {
@@ -87,27 +17,6 @@ export interface InvoiceItem {
   quantity: number;
   rate: number;
   amount: number;
-}
-
-export interface Invoice {
-  id: string
-  invoice_number: string
-  customer_id: string
-  deal_id: string | null
-  amount: number
-  tax_amount: number
-  total_amount: number
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
-  due_date: string
-  paid_date: string | null
-  items: InvoiceItem[]
-  notes: string | null
-  payment_terms: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt'
-  tax_rate: number
-  source: string | null
-  created_by: string | null
-  created_at: string
-  updated_at: string
 }
 
 // Local Storage Keys
@@ -197,7 +106,10 @@ const MOCK_LEADS: Lead[] = [
     lifecycle_stage: 'opportunity',
     priority_level: 'high',
     contact_preferences: ['email'],
-    follow_up_date: '2024-02-01'
+    follow_up_date: '2024-02-01',
+    lead_score: 85,
+    lead_source_detail: 'Contact form submission',
+    version: 1
   },
   {
     id: 'lead-2',
@@ -217,7 +129,10 @@ const MOCK_LEADS: Lead[] = [
     lifecycle_stage: 'lead',
     priority_level: 'medium',
     contact_preferences: ['phone'],
-    follow_up_date: null
+    follow_up_date: null,
+    lead_score: 60,
+    lead_source_detail: 'Partner referral',
+    version: 1
   }
 ]
 
@@ -227,7 +142,6 @@ const MOCK_DEALS: Deal[] = [
     title: 'Enterprise CRM Solution',
     customer_id: '1',
     lead_id: 'lead-1',
-    customer_name: 'John Doe',
     stage: 'proposal',
     value: 50000,
     probability: 75,
@@ -235,22 +149,23 @@ const MOCK_DEALS: Deal[] = [
     description: 'Complete CRM implementation for enterprise client',
     source: 'Website',
     assigned_to: 'sales-rep-1',
-    notes: 'Proposal sent, awaiting feedback',
     created_by: null,
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     responsible_person: 'Mr. Ali',
+    deal_source_detail: 'Website contact form',
     competitor_info: null,
-    decision_maker_contact: null,
-    deal_source: 'Website',
-    deal_type: 'Enterprise'
+    decision_maker_name: 'John Doe',
+    decision_maker_email: 'john@enterprise.com',
+    decision_maker_phone: '+1-555-0123',
+    deal_type: 'new_business',
+    version: 1
   },
   {
     id: 'deal-2',
     title: 'Small Business Package',
     customer_id: '2',
     lead_id: null,
-    customer_name: 'Jane Smith',
     stage: 'negotiation',
     value: 15000,
     probability: 60,
@@ -258,15 +173,17 @@ const MOCK_DEALS: Deal[] = [
     description: 'CRM solution for small business',
     source: 'Referral',
     assigned_to: null,
-    notes: 'In negotiation phase',
     created_by: null,
     created_at: '2024-01-16T09:30:00Z',
     updated_at: '2024-01-16T09:30:00Z',
     responsible_person: 'Mr. Mustafa',
+    deal_source_detail: 'Partner referral',
     competitor_info: null,
-    decision_maker_contact: null,
-    deal_source: 'Referral',
-    deal_type: 'Small Business'
+    decision_maker_name: 'Jane Smith',
+    decision_maker_email: 'jane@smallbiz.com',
+    decision_maker_phone: '+1-555-0126',
+    deal_type: 'new_business',
+    version: 1
   }
 ];
 
@@ -277,16 +194,22 @@ const MOCK_PROPOSALS: Proposal[] = [
     customer_id: 'cust-1',
     deal_id: 'deal-1',
     status: 'sent',
-    source: 'Website',
     content: 'Complete CRM implementation proposal with overview, implementation plan, and pricing details.',
     created_by: 'offline-user',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     valid_until: '2024-12-31T23:59:59Z',
+    notes: null,
+    total_amount: 50000,
+    source: 'Website',
     responsible_person: 'Mr. Ali',
     proposal_type: 'standard',
     validity_period: 30,
-    delivery_method: 'email'
+    approval_workflow: null,
+    template_used: null,
+    delivery_method: 'email',
+    estimated_value: 50000,
+    version: 1
   }
 ];
 
@@ -309,7 +232,15 @@ const MOCK_INVOICES: Invoice[] = [
     source: 'Website',
     created_by: null,
     created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z'
+    updated_at: '2024-01-15T10:00:00Z',
+    responsible_person: 'Mr. Ali',
+    billing_address: '123 Main St, City, State 12345',
+    purchase_order_number: 'PO-2024-001',
+    payment_method: 'bank_transfer',
+    currency_code: 'USD',
+    discount_amount: null,
+    discount_percentage: null,
+    version: 1
   },
   {
     id: 'invoice-2',
@@ -329,7 +260,15 @@ const MOCK_INVOICES: Invoice[] = [
     source: 'Referral',
     created_by: null,
     created_at: '2024-01-01T10:00:00Z',
-    updated_at: '2024-01-20T10:00:00Z'
+    updated_at: '2024-01-20T10:00:00Z',
+    responsible_person: 'Mr. Mustafa',
+    billing_address: '456 Oak Ave, City, State 12346',
+    purchase_order_number: null,
+    payment_method: 'credit_card',
+    currency_code: 'USD',
+    discount_amount: null,
+    discount_percentage: null,
+    version: 1
   }
 ];
 

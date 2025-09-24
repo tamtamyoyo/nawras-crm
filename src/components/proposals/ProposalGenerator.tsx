@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { generateProposalPDF } from '@/utils/pdf-generator'
+import { Database } from '@/lib/database.types'
 
 interface Deal {
   id: string
@@ -874,18 +875,52 @@ We are excited about the opportunity to partner with ${customVariables.customer_
           content: Object.values(generatedContent).join('\n\n'),
           status: proposal.status as 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected',
           valid_until: proposal.validUntil.toISOString().split('T')[0],
-          source: 'generator',
+          source: 'Other' as Database['public']['Tables']['proposals']['Row']['source'],
           created_by: 'system',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           currency: 'USD',
-          delivery_method: 'email',
+          delivery_method: 'email' as Database['public']['Tables']['proposals']['Row']['delivery_method'],
           responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
-          proposal_type: 'standard',
-          validity_period: 30
+          proposal_type: 'standard' as Database['public']['Tables']['proposals']['Row']['proposal_type'],
+          validity_period: 30,
+          notes: '',
+          total_amount: proposal.totalValue,
+          approval_workflow: null,
+          template_used: null,
+          estimated_value: proposal.totalValue,
+          version: 1
         },
-        deal,
-        customer,
+        deal: {
+          id: deal?.id || '',
+          title: deal?.title || '',
+          customer_id: deal?.customer_id || '',
+          lead_id: deal?.lead_id || null,
+          value: deal?.value || 0,
+          stage: deal?.stage || 'prospecting',
+          probability: deal?.probability || 0,
+          expected_close_date: deal?.expected_close_date || null,
+          description: deal?.description || null,
+          source: (deal?.source as 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other') || 'Other',
+          assigned_to: deal?.assigned_to || null,
+          created_by: deal?.created_by || null,
+          created_at: deal?.created_at || new Date().toISOString(),
+          updated_at: deal?.updated_at || new Date().toISOString(),
+          responsible_person: deal?.responsible_person || 'Mr. Ali',
+          competitor_info: deal?.competitor_info || null,
+          decision_maker_contact: deal?.decision_maker_contact || null,
+          deal_source: deal?.deal_source || null,
+          deal_type: (deal?.deal_type as 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell') || 'new_business',
+          deal_source_detail: null,
+          decision_maker_name: null,
+          decision_maker_email: null,
+          decision_maker_phone: null,
+          version: 1
+        },
+        customer: {
+          ...customer,
+          source: (customer?.source as 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other') || 'Other'
+        },
         financialSummary,
         shippingMethod,
         profitMargin,

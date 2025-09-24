@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './hooks/useAuthHook'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
+import LoadingIndicator from './components/LoadingIndicator'
+import OfflineIndicator from './components/OfflineIndicator'
+import ApiRetryWrapper from './components/ApiRetryWrapper'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -13,8 +16,22 @@ import Invoices from './pages/Invoices'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
 import { Toaster } from '@/components/ui/toaster'
+import errorReportingService from './services/errorReportingService'
+import performanceMonitoringService from './services/performanceMonitoringService'
+import offlineService from './services/offlineService'
+import loadingStateService from './services/loadingStateService'
+import { useEffect } from 'react'
 
 function App() {
+  // Initialize services on app startup
+  useEffect(() => {
+    // Services are already initialized as singletons
+    // Just setup cleanup on unmount
+    return () => {
+      performanceMonitoringService.destroy()
+    }
+  }, [])
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -23,7 +40,12 @@ function App() {
           v7_relativeSplatPath: true
         }}>
           <div className="min-h-screen bg-gray-50">
-          <Routes>
+            {/* Global UI Components */}
+            <LoadingIndicator />
+            <OfflineIndicator />
+            <ApiRetryWrapper />
+            
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -82,7 +104,7 @@ function App() {
             
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+            </Routes>
           </div>
           <Toaster />
         </Router>

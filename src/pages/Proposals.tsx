@@ -110,21 +110,26 @@ export default function ProformaInvoices() {
   const getMockProformaInvoices = (): Proposal[] => [
     {
       id: '1',
-      title: 'Website Redesign Proposal',
-      status: 'sent' as const,
+      title: 'Website Development Proposal',
+      status: 'draft' as const,
       deal_id: 'deal-1',
       customer_id: 'customer-1',
-
+      content: '',
       valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       responsible_person: 'Mr. Ali',
-      content: '',
-      source: 'manual',
+      source: 'Other',
       created_by: 'user-1',
       proposal_type: 'standard',
       validity_period: 30,
-      delivery_method: 'email'
+      delivery_method: 'email',
+      notes: null,
+      total_amount: null,
+      approval_workflow: null,
+      template_used: null,
+      estimated_value: null,
+      version: 1
     },
     {
       id: '2',
@@ -132,17 +137,22 @@ export default function ProformaInvoices() {
       status: 'viewed' as const,
       deal_id: 'deal-2',
       customer_id: 'customer-2',
-
+      content: '',
       valid_until: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
       responsible_person: 'Mr. Ali',
-      content: '',
-      source: 'manual',
+      source: 'Other',
       created_by: 'user-1',
       proposal_type: 'standard',
       validity_period: 15,
-      delivery_method: 'email'
+      delivery_method: 'email',
+      notes: null,
+      total_amount: null,
+      approval_workflow: null,
+      template_used: null,
+      estimated_value: null,
+      version: 1
     }
   ]
 

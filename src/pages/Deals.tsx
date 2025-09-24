@@ -46,9 +46,11 @@ export default function Deals() {
     description: '',
     responsible_person: 'Mr. Ali',
     competitor_info: '',
-    decision_maker_contact: '',
-    deal_source: '',
-    deal_type: 'new'
+    decision_maker_name: '',
+    decision_maker_email: '',
+    decision_maker_phone: '',
+    deal_source_detail: '',
+    deal_type: 'new_business'
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -175,7 +177,7 @@ export default function Deals() {
           loadData().catch(console.error)
           toast.success('Deal updated successfully')
         } else {
-          const insertData = { 
+          const insertData = {
             title: formData.title || '',
             customer_id: formData.customer_id || null,
             value: formData.value || 0,
@@ -183,18 +185,20 @@ export default function Deals() {
             stage: formData.stage || 'prospecting',
             expected_close_date: formData.expected_close_date || null,
             description: formData.description || null,
-            source: 'Other',
+            source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
             responsible_person: formData.responsible_person || 'Mr. Ali',
             competitor_info: formData.competitor_info || null,
-            decision_maker_contact: formData.decision_maker_contact || null,
-            deal_source: formData.deal_source || null,
-            deal_type: formData.deal_type || 'new',
+            decision_maker_name: formData.decision_maker_name || null,
+            decision_maker_email: formData.decision_maker_email || null,
+            decision_maker_phone: formData.decision_maker_phone || null,
+            deal_source_detail: formData.deal_source_detail || null,
+            deal_type: formData.deal_type || 'new_business',
             lead_id: null,
             assigned_to: null,
-            notes: formData.description || null,
             created_by: user.id,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            version: 1
           }
           const newDeal = await offlineDataService.createDeal(insertData)
           // Use functional update to ensure we don't lose existing deals
@@ -234,12 +238,13 @@ export default function Deals() {
             source: 'Other',
             responsible_person: formData.responsible_person || 'Mr. Ali',
             competitor_info: formData.competitor_info || null,
-            decision_maker_contact: formData.decision_maker_contact || null,
-            deal_source: formData.deal_source || null,
-            deal_type: formData.deal_type || 'new',
+            decision_maker_name: formData.decision_maker_name || null,
+            decision_maker_email: formData.decision_maker_email || null,
+            decision_maker_phone: formData.decision_maker_phone || null,
+            deal_source_detail: formData.deal_source_detail || null,
+            deal_type: formData.deal_type || 'new_business',
             lead_id: null,
             assigned_to: null,
-            notes: formData.description || null,
             created_by: user.id
           }
           
@@ -275,18 +280,20 @@ export default function Deals() {
               stage: formData.stage || 'prospecting',
               expected_close_date: formData.expected_close_date || null,
               description: formData.description || null,
-              source: 'Other',
+              source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
               responsible_person: formData.responsible_person || 'Mr. Ali',
               competitor_info: formData.competitor_info || null,
-              decision_maker_contact: formData.decision_maker_contact || null,
-              deal_source: formData.deal_source || null,
-              deal_type: formData.deal_type || 'new',
+              decision_maker_name: formData.decision_maker_name || null,
+              decision_maker_email: formData.decision_maker_email || null,
+              decision_maker_phone: formData.decision_maker_phone || null,
+              deal_source_detail: formData.deal_source_detail || null,
+              deal_type: formData.deal_type || 'new_business',
               lead_id: null,
               assigned_to: null,
-              notes: formData.description || null,
               created_by: user.id,
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              version: 1
             }
             const newDeal = await offlineDataService.createDeal(insertData)
             addDeal(newDeal)
@@ -367,9 +374,9 @@ export default function Deals() {
       description: '',
       responsible_person: 'Mr. Ali',
       competitor_info: '',
-      decision_maker_contact: '',
-      deal_source: '',
-      deal_type: 'new'
+      decision_maker_name: '',
+      deal_source_detail: '',
+      deal_type: 'new_business'
     })
     setFormErrors({})
     setShowAddModal(false)
@@ -388,9 +395,9 @@ export default function Deals() {
       expected_close_date: deal.expected_close_date,
       responsible_person: deal.responsible_person || 'Mr. Ali',
       competitor_info: deal.competitor_info || '',
-      decision_maker_contact: deal.decision_maker_contact || '',
-      deal_source: deal.deal_source || '',
-      deal_type: deal.deal_type || 'new',
+      decision_maker_name: deal.decision_maker_name || '',
+      deal_source_detail: deal.deal_source_detail || '',
+      deal_type: deal.deal_type || 'new_business',
       description: deal.description
     })
     setShowEditModal(true)

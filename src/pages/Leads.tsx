@@ -27,14 +27,14 @@ const leadSchema = z.object({
   email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
   phone: z.string().optional(),
   company: z.string().optional(),
-  source: z.string().optional(),
+  source: z.enum(['Website', 'Referral', 'Social Media', 'Cold Call', 'Email Campaign', 'Trade Show', 'Other']).optional(),
   status: z.enum(['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'closed_won', 'closed_lost']),
-  score: z.number().min(0).max(100).optional(),
+  lead_score: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
   responsible_person: z.enum(['Mr. Ali', 'Mr. Mustafa', 'Mr. Taha', 'Mr. Mohammed']),
-  lifecycle_stage: z.string().optional(),
+  lifecycle_stage: z.enum(['subscriber', 'lead', 'marketing_qualified_lead', 'sales_qualified_lead', 'opportunity', 'customer', 'evangelist', 'other']).optional(),
   priority_level: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  contact_preferences: z.array(z.enum(['email', 'phone', 'whatsapp', 'in_person'])).default(['email']),
+  contact_preferences: z.array(z.string()).default(['email']),
   follow_up_date: z.string().optional()
 })
 
@@ -62,12 +62,12 @@ export default function Leads() {
       email: '',
       phone: '',
       company: '',
-      source: '',
+      source: 'Website',
       status: 'new',
-      score: 50,
+      lead_score: 50,
       notes: '',
       responsible_person: 'Mr. Ali',
-      lifecycle_stage: '',
+      lifecycle_stage: 'lead',
       priority_level: 'medium',
       contact_preferences: ['email'],
       follow_up_date: ''
@@ -143,7 +143,7 @@ export default function Leads() {
         company: data.company || null,
         source: data.source || null,
         status: data.status,
-        score: data.score || null,
+        lead_score: data.lead_score || null,
         notes: data.notes || null,
         responsible_person: data.responsible_person,
         lifecycle_stage: data.lifecycle_stage || null,
@@ -164,7 +164,7 @@ export default function Leads() {
         company: data.company || null,
         source: data.source || null,
         status: data.status,
-        score: data.score || null,
+        lead_score: data.lead_score || null,
         notes: data.notes || null,
         responsible_person: data.responsible_person,
         lifecycle_stage: data.lifecycle_stage || null,
@@ -172,7 +172,10 @@ export default function Leads() {
         contact_preferences: data.contact_preferences,
         follow_up_date: data.follow_up_date || null,
         assigned_to: null,
-        created_by: user?.id || '00000000-0000-0000-0000-000000000000'
+        created_by: user?.id || '00000000-0000-0000-0000-000000000000',
+        score: null,
+        lead_source_detail: null,
+        version: null
       }
       const newLead = await offlineDataService.createLead(insertData)
       setLeads([newLead, ...leads])
@@ -206,7 +209,7 @@ export default function Leads() {
             company: data.company || null,
             source: data.source || null,
             status: data.status,
-            score: data.score || null,
+            lead_score: data.lead_score || null,
             notes: data.notes || null,
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
@@ -234,7 +237,7 @@ export default function Leads() {
             company: data.company || null,
             source: data.source || null,
             status: data.status,
-            score: data.score || null,
+            lead_score: data.lead_score || null,
             notes: data.notes || null,
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
@@ -242,7 +245,10 @@ export default function Leads() {
             contact_preferences: data.contact_preferences,
             follow_up_date: data.follow_up_date || null,
             assigned_to: null,
-            created_by: user?.id || '00000000-0000-0000-0000-000000000000' // Use default UUID for anonymous users
+            created_by: user?.id || '00000000-0000-0000-0000-000000000000', // Use default UUID for anonymous users
+            score: null,
+            lead_source_detail: null,
+            version: null
           }
           
           const newLead = await offlineDataService.createLead(insertData)
@@ -273,7 +279,7 @@ export default function Leads() {
             company: data.company || null,
             source: data.source || null,
             status: data.status,
-            score: data.score || null,
+            lead_score: data.lead_score || null,
             notes: data.notes || null,
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
@@ -308,7 +314,7 @@ export default function Leads() {
             company: data.company || null,
             source: data.source || null,
             status: data.status,
-            score: data.score || null,
+            lead_score: data.lead_score || null,
             notes: data.notes || null,
             responsible_person: data.responsible_person,
             lifecycle_stage: data.lifecycle_stage || null,
@@ -497,12 +503,12 @@ export default function Leads() {
       email: lead.email || '',
       phone: lead.phone || '',
       company: lead.company || '',
-      source: lead.source || '',
+      source: lead.source || 'Other',
       status: lead.status,
-      score: lead.score || 50,
+      lead_score: lead.lead_score || 50,
       notes: lead.notes || '',
       responsible_person: lead.responsible_person || 'Mr. Ali',
-      lifecycle_stage: lead.lifecycle_stage || '',
+      lifecycle_stage: lead.lifecycle_stage || 'lead',
       priority_level: lead.priority_level || 'medium',
       contact_preferences: (lead.contact_preferences as ('email' | 'phone' | 'whatsapp' | 'in_person')[]) || ['email'],
       follow_up_date: lead.follow_up_date || ''
@@ -972,7 +978,7 @@ export default function Leads() {
                   
                   <FormField
                     control={form.control}
-                    name="score"
+                    name="lead_score"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Lead Score (0-100)</FormLabel>

@@ -271,12 +271,12 @@ export default function Invoices() {
         notes: data.notes,
         payment_terms: (data.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt') || 'net_30',
         tax_rate: taxRate,
-        source: data.source || 'Other',
+        source: (data.source as 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other') || 'Other',
         created_by: user?.id || '00000000-0000-0000-0000-000000000000', // Use default UUID for anonymous users
         responsible_person: (user?.user_metadata?.full_name as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
         billing_address: data.billing_address,
         purchase_order_number: data.purchase_order_number,
-        payment_method: data.payment_method
+        payment_method: (data.payment_method as 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other') || 'other'
       }
 
       if (isOfflineMode()) {

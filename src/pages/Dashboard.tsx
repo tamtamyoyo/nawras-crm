@@ -19,26 +19,24 @@ import { ResponsiveContainer as ResponsiveWrapper, ResponsiveGrid, ResponsiveCar
 import { PageLoadingOverlay, StatsLoadingSkeleton, ChartLoadingSkeleton } from '@/components/ui/loading-states'
 import { VisuallyHidden, AccessibleButton } from '@/components/ui/accessibility'
 
+import type { Database } from '../lib/database.types'
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
-interface Deal {
-  id: string
-  stage: string
-  value: number
-  updated_at: string
-}
-
-interface Lead {
-  id: string
-  source?: string
-  status: string
-}
+type Deal = Database['public']['Tables']['deals']['Row']
+type Lead = Database['public']['Tables']['leads']['Row']
+type Customer = Database['public']['Tables']['customers']['Row']
+type Proposal = Database['public']['Tables']['proposals']['Row']
 
 export default function Dashboard() {
   const { user } = useAuth()
   const { customers, deals, leads, proposals, setCustomers, setDeals, setLeads, setProposals } = useStore()
   const [loading, setLoading] = useState(true)
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<{
+    monthlyRevenue: Array<{ month: string; revenue: number }>
+    dealsByStage: Array<{ stage: string; count: number }>
+    leadsBySource: Array<{ source: string; count: number; value: number }>
+  }>({
     monthlyRevenue: [],
     dealsByStage: [],
     leadsBySource: []
@@ -71,10 +69,10 @@ export default function Dashboard() {
           await offlineDataService.getProposals()
         ])
 
-        setCustomers(customersData)
-        setDeals(dealsData)
-        setLeads(leadsData)
-        setProposals(proposalsData)
+        setCustomers(customersData as Customer[])
+        setDeals(dealsData as Deal[])
+        setLeads(leadsData as Lead[])
+        setProposals(proposalsData as Proposal[])
 
         // Generate chart data
         generateChartData(dealsData, leadsData)
@@ -96,10 +94,10 @@ export default function Dashboard() {
         if (leadsRes.error) throw leadsRes.error
         if (proposalsRes.error) throw proposalsRes.error
 
-        setCustomers(customersRes.data || [])
-        setDeals(dealsRes.data || [])
-        setLeads(leadsRes.data || [])
-        setProposals(proposalsRes.data || [])
+        setCustomers(customersRes.data as Customer[] || [])
+        setDeals(dealsRes.data as Deal[] || [])
+        setLeads(leadsRes.data as Lead[] || [])
+        setProposals(proposalsRes.data as Proposal[] || [])
 
         // Generate chart data
         generateChartData(dealsRes.data || [], leadsRes.data || [])
@@ -120,10 +118,10 @@ export default function Dashboard() {
             await offlineDataService.getProposals()
           ])
 
-          setCustomers(customersData)
-          setDeals(dealsData)
-          setLeads(leadsData)
-          setProposals(proposalsData)
+          setCustomers(customersData as Customer[])
+          setDeals(dealsData as Deal[])
+          setLeads(leadsData as Lead[])
+          setProposals(proposalsData as Proposal[])
           generateChartData(dealsData, leadsData)
           
           toast.warning('Using offline data due to connection issues')
@@ -156,38 +154,39 @@ export default function Dashboard() {
       const monthName = date.toLocaleDateString('en-US', { month: 'short' })
       const revenue = dealsData
         .filter(deal => deal.stage === 'closed_won' && 
-          new Date(deal.updated_at).getMonth() === date.getMonth())
-        .reduce((sum, deal) => sum + deal.value, 0)
+          deal.updated_at && new Date(deal.updated_at).getMonth() === date.getMonth())
+        .reduce((sum, deal) => sum + (deal.value || 0), 0)
       return { month: monthName, revenue }
     }).reverse()
 
     // Deals by stage
-    const stageGroups = dealsData.reduce((acc, deal) => {
-      acc[deal.stage] = (acc[deal.stage] || 0) + 1
+    const stageGroups = dealsData.reduce((acc: Record<string, number>, deal) => {
+      const stage = deal.stage || 'unknown'
+      acc[stage] = (acc[stage] || 0) + 1
       return acc
     }, {})
     const dealsByStage = Object.entries(stageGroups).map(([stage, count]) => ({
       stage: stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      count
+      count: count as number
     }))
 
     // Leads by source
-    const sourceGroups = leadsData.reduce((acc, lead) => {
+    const sourceGroups = leadsData.reduce((acc: Record<string, number>, lead) => {
       const source = lead.source || 'Unknown'
       acc[source] = (acc[source] || 0) + 1
       return acc
     }, {})
     const leadsBySource = Object.entries(sourceGroups).map(([source, count]) => ({
       source,
-      count,
-      value: count
+      count: count as number,
+      value: count as number
     }))
 
     setChartData({ monthlyRevenue, dealsByStage, leadsBySource })
   }
 
-  const totalRevenue = deals.filter(deal => deal.stage === 'closed_won').reduce((sum, deal) => sum + deal.value, 0)
-  const activeDeals = deals.filter(deal => !['closed_won', 'closed_lost'].includes(deal.stage))
+  const totalRevenue = deals.filter(deal => deal.stage === 'closed_won').reduce((sum, deal) => sum + (deal.value || 0), 0)
+  const activeDeals = deals.filter(deal => deal.stage && !['closed_won', 'closed_lost'].includes(deal.stage))
   // Calculate conversion rate from leads to deals
   const conversionRate = leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0
   

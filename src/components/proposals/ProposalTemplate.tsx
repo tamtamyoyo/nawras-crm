@@ -379,16 +379,21 @@ export function ProposalTemplate({
           content: JSON.stringify(template.sections),
           status: 'draft',
           valid_until: formData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          source: 'template',
+          source: 'Other' as Database['public']['Tables']['customers']['Row']['source'],
           created_by: 'system',
           updated_by: 'system',
           total_amount: calculateTotal(),
           currency: 'USD',
           payment_terms: formData.terms || '30 days',
-          delivery_method: 'standard',
+          delivery_method: 'email' as Database['public']['Tables']['proposals']['Row']['delivery_method'],
           responsible_person: 'Mr. Ali',
-          proposal_type: 'proforma_invoice',
+          proposal_type: 'custom' as Database['public']['Tables']['proposals']['Row']['proposal_type'],
           validity_period: 30,
+          notes: '',
+          approval_workflow: null,
+          template_used: template.id,
+          estimated_value: calculateTotal(),
+          version: 1,
           created_at: template.createdAt?.toISOString() || new Date().toISOString(),
           updated_at: template.updatedAt?.toISOString() || new Date().toISOString()
         } as Database['public']['Tables']['proposals']['Row'],
@@ -400,7 +405,7 @@ export function ProposalTemplate({
           company: variables.customer_name || 'Valued Client',
           address: '',
           status: 'active',
-          source: 'template',
+          source: 'Other' as Database['public']['Tables']['customers']['Row']['source'],
           tags: null,
           notes: '',
           created_by: 'system',
@@ -415,7 +420,8 @@ export function ProposalTemplate({
           credit_limit_usd: null,
           export_documentation_language: 'en',
           special_handling_requirements: null,
-          compliance_notes: ''
+          compliance_notes: '',
+          version: 1
         } as Database['public']['Tables']['customers']['Row'],
         deal: {
           id: 'deal-1',
@@ -427,16 +433,19 @@ export function ProposalTemplate({
           probability: 50,
           expected_close_date: formData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           description: template.description || '',
-          source: 'template',
+          source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
           assigned_to: null,
           created_by: 'system',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           responsible_person: 'Mr. Ali' as const,
           competitor_info: null,
-          decision_maker_contact: null,
-          deal_source: null,
-          deal_type: null
+          decision_maker_name: null,
+          decision_maker_email: null,
+          decision_maker_phone: null,
+          deal_source_detail: null,
+          deal_type: 'new_business' as const,
+          version: 1
         } satisfies Database['public']['Tables']['deals']['Row']
       }
       
