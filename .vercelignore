@@ -40,3 +40,4 @@ scripts
 !eslint.config.js
 !playwright.config.ts
 !components.json
+!index.html

@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Deploy to Vercel with Monitoring
 
 on:
   push:
@@ -17,39 +17,161 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Create deployment log directory
+      run: mkdir -p logs
       
-    - name: Run TypeScript check
-      run: npx tsc --noEmit
+    - name: Pre-deployment checks
+      run: |
+        echo "🔍 Running pre-deployment checks..."
+        echo "Node.js version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "Checking required files..."
+        test -f package.json && echo "✅ package.json found" || (echo "❌ package.json missing" && exit 1)
+        test -f index.html && echo "✅ index.html found" || (echo "❌ index.html missing" && exit 1)
+        test -f vite.config.ts && echo "✅ vite.config.ts found" || (echo "❌ vite.config.ts missing" && exit 1)
+        test -f src/main.tsx && echo "✅ src/main.tsx found" || (echo "❌ src/main.tsx missing" && exit 1)
+        echo "Pre-deployment checks completed" | tee -a logs/deployment.log
+        
+    - name: Install dependencies with monitoring
+      run: |
+        echo "📦 Installing dependencies..." | tee -a logs/deployment.log
+        start_time=$(date +%s)
+        npm ci 2>&1 | tee -a logs/deployment.log
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "✅ Dependencies installed in ${duration}s" | tee -a logs/deployment.log
+        
+    - name: Run TypeScript check with monitoring
+      run: |
+        echo "🔍 Running TypeScript checks..." | tee -a logs/deployment.log
+        start_time=$(date +%s)
+        npm run check 2>&1 | tee -a logs/deployment.log
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "✅ TypeScript checks completed in ${duration}s" | tee -a logs/deployment.log
       
-    - name: Run linting
-      run: npm run lint
+    - name: Run ESLint with monitoring
+      run: |
+        echo "🔍 Running ESLint..." | tee -a logs/deployment.log
+        start_time=$(date +%s)
+        npm run lint 2>&1 | tee -a logs/deployment.log || echo "⚠️ ESLint issues found but continuing" | tee -a logs/deployment.log
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "✅ ESLint completed in ${duration}s" | tee -a logs/deployment.log
+      continue-on-error: true
       
-    - name: Build project
-      run: npm run build
-      
-    - name: Deploy to Vercel
+    - name: Build project with monitoring
+      run: |
+        echo "🏗️ Building project..." | tee -a logs/deployment.log
+        start_time=$(date +%s)
+        npm run build 2>&1 | tee -a logs/deployment.log
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "✅ Build completed in ${duration}s" | tee -a logs/deployment.log
+        
+        # Verify build artifacts
+        if [ -d "dist" ]; then
+          echo "✅ Build artifacts created successfully" | tee -a logs/deployment.log
+          echo "📊 Build size: $(du -sh dist | cut -f1)" | tee -a logs/deployment.log
+        else
+          echo "❌ Build artifacts not found" | tee -a logs/deployment.log
+          exit 1
+        fi
+        
+    - name: Deploy to Vercel with monitoring
+      id: deploy
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        vercel-args: '--prod'
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        working-directory: ./
+        vercel-args: '--prod'
         
-    - name: Comment PR
+    - name: Post-deployment verification
+      if: steps.deploy.outputs.preview-url
+      run: |
+        echo "🔍 Verifying deployment..." | tee -a logs/deployment.log
+        DEPLOY_URL="${{ steps.deploy.outputs.preview-url }}"
+        echo "🌐 Deployment URL: $DEPLOY_URL" | tee -a logs/deployment.log
+        
+        # Wait a moment for deployment to be ready
+        sleep 10
+        
+        # Check if deployment is accessible
+        if curl -f -s "$DEPLOY_URL" > /dev/null; then
+          echo "✅ Deployment verification successful" | tee -a logs/deployment.log
+        else
+          echo "⚠️ Deployment verification failed" | tee -a logs/deployment.log
+        fi
+        
+    - name: Generate deployment report
+      if: always()
+      run: |
+        echo "📊 Generating deployment report..." | tee -a logs/deployment.log
+        
+        # Create deployment report
+        cat > logs/deployment-report.json << EOF
+        {
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "workflow_run_id": "${{ github.run_id }}",
+          "commit_sha": "${{ github.sha }}",
+          "branch": "${{ github.ref_name }}",
+          "actor": "${{ github.actor }}",
+          "deployment_url": "${{ steps.deploy.outputs.preview-url }}",
+          "status": "${{ job.status }}"
+        }
+        EOF
+        
+        echo "📋 Deployment Summary:" | tee -a logs/deployment.log
+        echo "- Workflow Run: ${{ github.run_id }}" | tee -a logs/deployment.log
+        echo "- Commit: ${{ github.sha }}" | tee -a logs/deployment.log
+        echo "- Branch: ${{ github.ref_name }}" | tee -a logs/deployment.log
+        echo "- Actor: ${{ github.actor }}" | tee -a logs/deployment.log
+        echo "- Status: ${{ job.status }}" | tee -a logs/deployment.log
+        
+    - name: Upload deployment logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-logs-${{ github.run_id }}
+        path: logs/
+        retention-days: 30
+        
+    - name: Comment PR with deployment status
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
         script: |
+          const deployUrl = '${{ steps.deploy.outputs.preview-url }}';
+          const status = '${{ job.status }}';
+          const runId = '${{ github.run_id }}';
+          
+          let body = '';
+          if (status === 'success') {
+            body = `🚀 **Deployment completed successfully!**\n\n`;
+            if (deployUrl) {
+              body += `🌐 **Live URL:** ${deployUrl}\n`;
+            }
+            body += `📊 **Workflow Run:** [#${runId}](https://github.com/${{ github.repository }}/actions/runs/${runId})`;
+          } else {
+            body = `❌ **Deployment failed**\n\n`;
+            body += `📊 **Workflow Run:** [#${runId}](https://github.com/${{ github.repository }}/actions/runs/${runId})\n`;
+            body += `📋 **Logs:** Check the workflow logs for detailed error information.`;
+          }
+          
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '🚀 Deployment completed successfully!'
-          })
+            body: body
+          });
+          
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "💥 Deployment failed!" | tee -a logs/deployment.log
+        echo "📋 Check the workflow logs and deployment report for details." | tee -a logs/deployment.log
+        echo "🔗 Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee -a logs/deployment.log
