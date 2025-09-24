@@ -31,6 +31,7 @@ import {
   RESPONSIBLE_PERSONS, 
   calculateProposalTotals as calculateProformaInvoiceTotals
 } from '../../lib/standardTemplate'
+import { generateProposalPDF } from '@/utils/pdf-generator'
 
 export interface ProposalSection {
   id: string
@@ -366,8 +367,6 @@ export function ProposalTemplate({
 
   const exportTemplate = async () => {
     try {
-      // Import the PDF generator
-      const { generateProposalPDF } = await import('@/utils/pdf-generator')
       
       // Prepare proforma invoice data for PDF generation
       const proposalData = {
