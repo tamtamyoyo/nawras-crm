@@ -157,79 +157,100 @@ async function monitorDeployment(deploymentUrl, maxWaitTime = 300000) { // 5 min
 
 // Analyze deployment failure
 function analyzeDeploymentFailure(deployment) {
-  log('Analyzing deployment failure...');
+  if (!deployment || !deployment.line) return 'unknown';
   
   // Common failure patterns and their fixes
-  const commonIssues = [
-    {
-      pattern: /could not resolve entry module.*index\.html/i,
-      fix: 'vercelignore_html_exclusion',
-      description: 'index.html is being excluded by .vercelignore'
-    },
-    {
-      pattern: /module not found/i,
-      fix: 'missing_dependency',
-      description: 'Missing dependency in package.json'
-    },
-    {
-      pattern: /typescript.*error/i,
-      fix: 'typescript_errors',
-      description: 'TypeScript compilation errors'
-    },
-    {
-      pattern: /eslint.*error/i,
-      fix: 'eslint_errors',
-      description: 'ESLint errors blocking build'
-    }
+  const patterns = [
+    { pattern: /index\.html.*not found/i, fix: 'missing-index-html' },
+    { pattern: /build.*failed/i, fix: 'build-failure' },
+    { pattern: /module.*not found/i, fix: 'missing-dependencies' },
+    { pattern: /permission.*denied/i, fix: 'permission-error' },
+    { pattern: /timeout/i, fix: 'timeout-error' },
+    { pattern: /html.*excluded/i, fix: 'vercel-ignore-issue' }
   ];
   
-  // Try to get build logs for analysis
-  const logsResult = executeCommand(`npx vercel logs ${deployment.url}`);
-  const logs = logsResult.output || '';
+  const errorText = deployment.line || '';
   
-  for (const issue of commonIssues) {
-    if (issue.pattern.test(logs)) {
-      log(`Identified issue: ${issue.description}`, 'WARN');
-      return issue.fix;
+  for (const { pattern, fix } of patterns) {
+    if (pattern.test(errorText)) {
+      log(`Identified issue: ${fix}`);
+      return fix;
     }
   }
   
-  log('Could not identify specific failure cause', 'WARN');
   return 'unknown';
 }
 
+function analyzeFailureFromOutput(outputLine) {
+  const fixes = [];
+  
+  if (outputLine.includes('index.html') && outputLine.includes('not found')) {
+    fixes.push('missing-index-html');
+  }
+  if (outputLine.includes('build') && outputLine.includes('failed')) {
+    fixes.push('build-failure');
+  }
+  if (outputLine.includes('module') && outputLine.includes('not found')) {
+    fixes.push('missing-dependencies');
+  }
+  
+  return fixes;
+}
+
 // Apply automatic fixes
-function applyFix(fixType) {
+async function applyFix(fixType) {
   log(`Applying fix: ${fixType}`);
   
   switch (fixType) {
-    case 'vercelignore_html_exclusion':
-      // This fix has already been applied
-      log('HTML exclusion fix already applied');
-      return true;
-      
-    case 'typescript_errors':
-      log('Running TypeScript check...');
-      const tscResult = executeCommand('npm run check');
-      if (!tscResult.success) {
-        log(`TypeScript errors found: ${tscResult.output}`, 'ERROR');
+    case 'missing-index-html':
+    case 'vercel-ignore-issue':
+      // Fix .vercelignore excluding HTML files
+      const fs = require('fs');
+      try {
+        let vercelIgnoreContent = '';
+        if (fs.existsSync('.vercelignore')) {
+          vercelIgnoreContent = fs.readFileSync('.vercelignore', 'utf8');
+        }
+        
+        // Remove any HTML exclusions and ensure index.html is included
+        vercelIgnoreContent = vercelIgnoreContent.replace(/^\*\.html$/gm, '# *.html');
+        if (!vercelIgnoreContent.includes('!index.html')) {
+          vercelIgnoreContent += '\n!index.html\n';
+        }
+        
+        fs.writeFileSync('.vercelignore', vercelIgnoreContent);
+        log('Updated .vercelignore to include index.html', 'SUCCESS');
+        return true;
+      } catch (error) {
+        log(`Failed to fix .vercelignore: ${error.message}`, 'ERROR');
         return false;
       }
-      return true;
       
-    case 'eslint_errors':
-      log('Running ESLint check...');
-      const eslintResult = executeCommand('npm run lint');
-      if (!eslintResult.success) {
-        log(`ESLint errors found: ${eslintResult.output}`, 'ERROR');
-        return false;
+    case 'missing-dependencies':
+      // Try to install missing dependencies
+      const installResult = executeCommand('npm install');
+      if (installResult.success) {
+        log('Dependencies installed successfully', 'SUCCESS');
+        return true;
       }
-      return true;
+      break;
+      
+    case 'build-failure':
+      // Try to fix build issues
+      log('Attempting to fix build errors...');
+      const buildResult = executeCommand('npm run build');
+      if (buildResult.success) {
+        log('Build errors resolved', 'SUCCESS');
+        return true;
+      }
+      break;
       
     default:
       log(`No automatic fix available for: ${fixType}`, 'WARN');
       return false;
   }
+  
+  return false;
 }
 
 // Sleep utility
