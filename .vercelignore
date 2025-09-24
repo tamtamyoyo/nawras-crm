@@ -23,7 +23,7 @@ coverage
 *.png
 *.cjs
 *.mjs
-*.js
+# *.js - commented out to allow JS files
 # *.html - removed to allow index.html
 *.spec.ts
 playwright-report
