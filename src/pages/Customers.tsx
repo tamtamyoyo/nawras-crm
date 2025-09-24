@@ -62,7 +62,8 @@ export default function Customers() {
         console.log('📱 Loading customers from offline service')
         const customersData = await offlineDataService.getCustomers()
         console.log('✅ Customers loaded from offline service:', customersData);
-        setCustomers(customersData);
+        // Set customers data directly from offline service
+        setCustomers(customersData || []);
         toast.success('Customers loaded (offline mode)')
       } else {
         const { data, error } = await supabase
@@ -76,7 +77,10 @@ export default function Customers() {
         }
         
         console.log('✅ Customers loaded from Supabase:', data);
-        setCustomers(data || []);
+        // Only replace data if we get a successful response from Supabase
+        if (data) {
+          setCustomers(data);
+        }
       }
     } catch (err) {
       console.error('💥 Error in loadCustomers:', err);
@@ -88,7 +92,8 @@ export default function Customers() {
         try {
           console.log('🔄 Falling back to offline mode due to error')
           const fallbackData = await offlineDataService.getCustomers()
-          setCustomers(fallbackData);
+          // Set fallback data directly
+          setCustomers(fallbackData || []);
           toast.warning('Using offline data due to connection issues')
         } catch (offlineError) {
           console.error('Offline fallback failed:', offlineError)
@@ -101,12 +106,12 @@ export default function Customers() {
       console.log('🏁 Setting loading to false');
       setLoading(false);
     }
-  }, []);
+  }, [setCustomers, setLoading]);
 
   useEffect(() => {
     console.log('🔥 useEffect triggered - calling loadCustomers')
     loadCustomers()
-  }, [])
+  }, [loadCustomers])
 
 
 
@@ -142,6 +147,9 @@ export default function Customers() {
           updateCustomer(selectedCustomer.id, updatedCustomer);
           toast.success('Customer updated successfully (offline)');
           console.log('✅ Customer updated offline:', updatedCustomer);
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         } else {
           // Create new customer in offline storage
           console.log('➕ Creating new customer in offline storage...');
@@ -173,6 +181,9 @@ export default function Customers() {
           addCustomer(newCustomer);
           toast.success('Customer added successfully (offline)');
           console.log('✅ Customer created offline:', newCustomer);
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         }
       } else {
         if (showEditModal && selectedCustomer) {
@@ -191,10 +202,10 @@ export default function Customers() {
           };
           
           const { data, error } = await (supabase as any)
-            .from('customers')
-            .update(updateData)
-            .eq('id', selectedCustomer.id)
-            .select()
+          .from('customers')
+          .update(updateData)
+          .eq('id', selectedCustomer.id)
+          .select()
             .single();
           
           if (error) throw error;
@@ -202,6 +213,9 @@ export default function Customers() {
           updateCustomer(selectedCustomer.id, data);
           toast.success('Customer updated successfully');
           console.log('✅ Customer updated:', data);
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         } else {
           // Create new customer
           console.log('➕ Creating new customer in Supabase...');
@@ -229,9 +243,9 @@ export default function Customers() {
           };
           
           const { data, error } = await (supabase as any)
-            .from('customers')
-            .insert(customerData)
-            .select()
+          .from('customers')
+          .insert(customerData)
+          .select()
             .single();
           
           if (error) throw error;
@@ -239,6 +253,9 @@ export default function Customers() {
           addCustomer(data);
           toast.success('Customer added successfully');
           console.log('✅ Customer created:', data);
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         }
       }
 
@@ -258,7 +275,10 @@ export default function Customers() {
             updated_at: new Date().toISOString()
           });
           updateCustomer(selectedCustomer.id, updatedCustomer);
-          toast.warning('Customer updated using offline storage')
+          toast.warning('Customer updated using offline storage');
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         } else {
           const newCustomer = await offlineDataService.createCustomer({
             name: formData.name || '',
@@ -285,7 +305,10 @@ export default function Customers() {
             compliance_notes: null
           });
           addCustomer(newCustomer);
-          toast.warning('Customer added using offline storage')
+          toast.warning('Customer added using offline storage');
+          
+          // Refresh the customer list to ensure UI shows all customers (async)
+          loadCustomers().catch(console.error);
         }
           resetForm()
         } catch (offlineError) {

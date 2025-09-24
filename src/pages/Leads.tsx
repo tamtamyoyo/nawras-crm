@@ -5,9 +5,7 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Plus, Search, Mail, Phone, Building, Edit, Trash2, Star, UserPlus, Clock, TrendingUp, CheckCircle, FileText, TestTube, Globe } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
@@ -87,6 +85,7 @@ export default function Leads() {
       if (offline) {
         console.log('📱 Loading leads from offline storage')
         const data = await offlineDataService.getLeads()
+        // Set leads data directly from offline service
         setLeads(data || [])
         return
       }
@@ -101,12 +100,20 @@ export default function Leads() {
 
         if (error) throw error
         console.log('🔧 [Leads] Supabase response:', { leadsCount: data?.length || 0, data })
-        setLeads(data || [])
+        // Only replace data if we get a successful response from Supabase
+        if (data) {
+          setLeads(data)
+        }
       } catch (supabaseError) {
         console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
         if (handleSupabaseError(supabaseError)) {
           const data = await offlineDataService.getLeads()
-          setLeads(data || [])
+          // Preserve existing data and merge with offline data
+          setLeads(prevLeads => {
+            const existingIds = new Set(prevLeads.map(l => l.id))
+            const newLeads = (data || []).filter(l => !existingIds.has(l.id))
+            return [...prevLeads, ...newLeads]
+          })
         } else {
           throw supabaseError
         }
@@ -121,11 +128,11 @@ export default function Leads() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setLoading, setLeads])
 
   useEffect(() => {
     loadLeads()
-  }, [])
+  }, [loadLeads])
 
   const handleOfflineOperation = async (data: LeadFormData, editingLead: Lead | null) => {
     if (editingLead) {
@@ -147,6 +154,7 @@ export default function Leads() {
       }
       const updatedLead = await offlineDataService.updateLead(editingLead.id, updateData)
       setLeads(leads.map(lead => lead.id === editingLead.id ? updatedLead : lead))
+      loadLeads().catch(console.error)
       setIsEditModalOpen(false)
     } else {
       const insertData: Omit<Lead, 'id' | 'created_at' | 'updated_at'> = {
@@ -168,6 +176,7 @@ export default function Leads() {
       }
       const newLead = await offlineDataService.createLead(insertData)
       setLeads([newLead, ...leads])
+      loadLeads().catch(console.error)
       setIsAddModalOpen(false)
     }
     toast({
@@ -208,7 +217,9 @@ export default function Leads() {
           }
           
           const updatedLead = await offlineDataService.updateLead(editingLead.id, updateData)
-          setLeads(leads.map(lead => lead.id === editingLead.id ? updatedLead : lead))
+          // Use functional update to ensure we don't lose existing leads
+          setLeads(prevLeads => prevLeads.map(lead => lead.id === editingLead.id ? updatedLead : lead))
+          loadLeads().catch(console.error)
           setIsEditModalOpen(false)
           toast({
             title: "Lead updated",
@@ -235,7 +246,9 @@ export default function Leads() {
           }
           
           const newLead = await offlineDataService.createLead(insertData)
-          setLeads([newLead, ...leads])
+          // Use functional update to ensure we don't lose existing leads
+          setLeads(prevLeads => [newLead, ...prevLeads])
+          loadLeads().catch(console.error)
           setIsAddModalOpen(false)
           toast({
             title: "Lead created",
@@ -280,6 +293,7 @@ export default function Leads() {
               ? { ...lead, ...data, updated_at: new Date().toISOString() }
               : lead
           ))
+          loadLeads().catch(console.error)
           setIsEditModalOpen(false)
           toast({
             title: "Lead updated",
@@ -368,7 +382,7 @@ export default function Leads() {
       
       // Try Supabase first, fallback to offline mode on error
       try {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('leads')
           .delete()
           .eq('id', lead.id)

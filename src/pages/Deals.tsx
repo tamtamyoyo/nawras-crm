@@ -68,7 +68,8 @@ export default function Deals() {
         console.log('📱 Using offline mode for deals data')
         const dealsData = await offlineDataService.getDeals()
         const customersData = await offlineDataService.getCustomers()
-        setDeals(dealsData)
+        // Set deals data directly from offline service
+        setDeals(dealsData || [])
         setCustomers(customersData)
         return
       }
@@ -82,7 +83,10 @@ export default function Deals() {
 
         if (dealsError) throw dealsError
         console.log('✅ Supabase deals response:', { count: dealsData?.length, data: dealsData })
-        setDeals(dealsData || [])
+        // Only replace data if we get a successful response from Supabase
+        if (dealsData) {
+          setDeals(dealsData)
+        }
 
         const { data: customersData, error: customersError } = await supabase
           .from('customers')
@@ -99,7 +103,8 @@ export default function Deals() {
         if (handleSupabaseError(supabaseError)) {
           const dealsData = await offlineDataService.getDeals()
           const customersData = await offlineDataService.getCustomers()
-          setDeals(dealsData)
+          // Set deals data directly from offline service
+        setDeals(dealsData || [])
           setCustomers(customersData)
         } else {
           throw supabaseError
@@ -111,11 +116,11 @@ export default function Deals() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setLoading, setDeals, setCustomers])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
@@ -167,6 +172,7 @@ export default function Deals() {
           const updateData = { ...formData, updated_at: new Date().toISOString() }
           const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
           updateDeal(selectedDeal.id, updatedDeal)
+          loadData().catch(console.error)
           toast.success('Deal updated successfully')
         } else {
           const insertData = { 
@@ -191,7 +197,9 @@ export default function Deals() {
             updated_at: new Date().toISOString()
           }
           const newDeal = await offlineDataService.createDeal(insertData)
+          // Use functional update to ensure we don't lose existing deals
           addDeal(newDeal)
+          loadData().catch(console.error)
           toast.success('Deal added successfully')
         }
         
@@ -212,6 +220,7 @@ export default function Deals() {
           if (error) throw error
           
           updateDeal(selectedDeal.id, data)
+          loadData().catch(console.error)
           toast.success('Deal updated successfully')
         } else {
           const insertData = {
@@ -243,6 +252,7 @@ export default function Deals() {
           if (error) throw error
           
           addDeal(data)
+          loadData().catch(console.error)
           toast.success('Deal added successfully')
         }
       } catch (supabaseError) {
@@ -252,7 +262,9 @@ export default function Deals() {
           if (showEditModal && selectedDeal) {
             const updateData = { ...formData, updated_at: new Date().toISOString() }
             const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
+            // Use functional update to ensure we don't lose existing deals
             updateDeal(selectedDeal.id, updatedDeal)
+            loadData().catch(console.error)
             toast.success('Deal updated successfully')
           } else {
             const insertData = { 
@@ -278,6 +290,7 @@ export default function Deals() {
             }
             const newDeal = await offlineDataService.createDeal(insertData)
             addDeal(newDeal)
+            loadData().catch(console.error)
             toast.success('Deal added successfully')
           }
         } else {
