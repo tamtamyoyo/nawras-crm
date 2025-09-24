@@ -391,7 +391,7 @@ export default function Customers() {
           table: 'customers',
           operation: 'DELETE'
         },
-        async () => {
+        async (): Promise<{ data: any; error: any }> => {
           updateLoading(operationId, { progress: 30, message: 'Preparing deletion...' });
           
           // Protect from browser extension interference
