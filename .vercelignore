@@ -24,7 +24,7 @@ coverage
 *.cjs
 *.mjs
 *.js
-*.html
+# *.html - removed to allow index.html
 *.spec.ts
 playwright-report
 tests
