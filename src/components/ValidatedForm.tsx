@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import formValidationService from '../services/formValidationService'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
