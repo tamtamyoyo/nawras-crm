@@ -90,11 +90,19 @@ function getLatestDeployment() {
     const result = execSync('npx vercel ls', { encoding: 'utf8', timeout: 30000 });
     
     // Parse the output to extract deployment info
-    const lines = result.split('\n').filter(line => line.trim());
-    const deploymentLines = lines.filter(line => 
-      (line.includes('● Error') || line.includes('● Ready') || line.includes('● Building')) &&
-      line.includes('https://')
-    );
+      const lines = result.split('\n').filter(line => line.trim());
+      log(`Total lines found: ${lines.length}`);
+      
+      const deploymentLines = lines.filter(line => {
+        const hasStatus = line.includes('● Error') || line.includes('● Ready') || line.includes('● Building');
+        const hasUrl = line.includes('https://');
+        if (hasStatus || hasUrl) {
+          log(`Checking line: ${line.substring(0, 150)}...`);
+        }
+        return hasStatus && hasUrl;
+      });
+      
+      log(`Found ${deploymentLines.length} deployment lines`);
     
     if (deploymentLines.length === 0) {
       log('No deployments found', 'WARN');
