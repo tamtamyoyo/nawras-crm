@@ -85,17 +85,12 @@ async function pushToGitHub(maxRetries = 5) {
 
 // Get latest deployment status
 function getLatestDeployment() {
-  log('Fetching latest deployment status...');
-  const result = executeCommand('npx vercel ls');
-  
-  if (!result.success) {
-    log(`Failed to get deployments: ${result.error}`, 'ERROR');
-    return null;
-  }
-  
   try {
+    log('Fetching latest deployment status...');
+    const result = execSync('npx vercel ls', { encoding: 'utf8', timeout: 30000 });
+    
     // Parse the output to extract deployment info
-    const lines = result.output.split('\n').filter(line => line.trim());
+    const lines = result.split('\n').filter(line => line.trim());
     const deploymentLines = lines.filter(line => 
       (line.includes('● Error') || line.includes('● Ready') || line.includes('● Building')) &&
       line.includes('https://')
@@ -116,10 +111,9 @@ function getLatestDeployment() {
     log(`Deployment line: ${latestLine.substring(0, 100)}...`);
     return { state, line: latestLine };
   } catch (error) {
-    log(`Failed to parse deployment data: ${error.message}`, 'ERROR');
+    log(`Failed to get deployments: ${error.message}`, 'ERROR');
+    return null;
   }
-  
-  return null;
 }
 
 // Monitor deployment status
