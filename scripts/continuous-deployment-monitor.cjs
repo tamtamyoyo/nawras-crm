@@ -86,7 +86,7 @@ async function pushToGitHub(maxRetries = 5) {
 // Get latest deployment status
 function getLatestDeployment() {
   log('Fetching latest deployment status...');
-  const result = executeCommand('npx vercel ls --json');
+  const result = executeCommand('npx vercel ls');
   
   if (!result.success) {
     log(`Failed to get deployments: ${result.error}`, 'ERROR');
@@ -94,10 +94,25 @@ function getLatestDeployment() {
   }
   
   try {
-    const deployments = JSON.parse(result.output);
-    if (deployments && deployments.length > 0) {
-      return deployments[0]; // Most recent deployment
+    // Parse the output to extract deployment info
+    const lines = result.output.split('\n').filter(line => line.trim());
+    const deploymentLines = lines.filter(line => 
+      line.includes('Error') || line.includes('Ready') || line.includes('Building')
+    );
+    
+    if (deploymentLines.length === 0) {
+      log('No deployments found', 'WARN');
+      return null;
     }
+    
+    // Get the most recent deployment (first in list)
+    const latestLine = deploymentLines[0];
+    const state = latestLine.includes('Error') ? 'ERROR' : 
+                 latestLine.includes('Ready') ? 'READY' : 
+                 latestLine.includes('Building') ? 'BUILDING' : 'UNKNOWN';
+    
+    log(`Latest deployment status: ${state}`);
+    return { state, line: latestLine };
   } catch (error) {
     log(`Failed to parse deployment data: ${error.message}`, 'ERROR');
   }
@@ -226,69 +241,68 @@ function sleep(ms) {
 async function main() {
   log('Starting continuous deployment monitoring...', 'INFO');
   
-  let attempt = 1;
+  let attempts = 0;
+  const maxAttempts = 10;
   
-  while (attempt <= CONFIG.maxRetries) {
-    log(`\n=== Deployment Attempt ${attempt}/${CONFIG.maxRetries} ===`);
+  while (attempts < maxAttempts) {
+    attempts++;
+    log(`\n=== Deployment Attempt ${attempts}/${maxAttempts} ===`);
     
-    // Step 1: Ensure we have the latest changes committed
+    // Check for uncommitted changes and commit them
     const statusResult = executeCommand('git status --porcelain');
     if (statusResult.success && statusResult.output.trim()) {
       log('Uncommitted changes detected, committing...', 'WARN');
       executeCommand('git add .');
-      executeCommand(`git commit -m "Auto-fix deployment issues - attempt ${attempt}"`);
+      executeCommand(`git commit -m "Auto-fix deployment issues - attempt ${attempts}"`);
     }
     
-    // Step 2: Try to push to GitHub
+    // Push to GitHub with retries
     const pushSuccess = await pushToGitHub();
     if (!pushSuccess) {
-      log('Failed to push to GitHub, will retry in next cycle', 'ERROR');
-      attempt++;
-      if (attempt <= CONFIG.maxRetries) {
-        await sleep(CONFIG.retryDelay);
-      }
+      log('Failed to push to GitHub after retries', 'ERROR');
+      await sleep(30000); // Wait 30 seconds before next attempt
       continue;
     }
     
-    // Step 3: Wait a moment for GitHub Actions to trigger
+    // Wait for deployment to trigger
     log('Waiting for GitHub Actions to trigger deployment...');
-    await sleep(30000); // Wait 30 seconds
+    await sleep(30000);
     
-    // Step 4: Monitor the deployment
+    // Monitor deployment status
     const deployment = getLatestDeployment();
     if (!deployment) {
       log('Could not fetch deployment status', 'ERROR');
-      attempt++;
+      await sleep(30000);
       continue;
     }
     
-    const monitorResult = await monitorDeployment(deployment.url);
+    log(`Deployment status: ${deployment.state}`);
     
-    if (monitorResult.success) {
-      log('\n🎉 DEPLOYMENT SUCCESSFUL! 🎉', 'SUCCESS');
-      log(`Deployment URL: ${deployment.url}`);
+    if (deployment.state === 'READY') {
+      log('🎉 Deployment successful!', 'SUCCESS');
+      log(`Deployment info: ${deployment.line}`);
       break;
-    }
-    
-    // Step 5: Analyze failure and apply fixes
-    log('Deployment failed, analyzing...', 'ERROR');
-    const fixType = analyzeDeploymentFailure(monitorResult.deployment || deployment);
-    
-    if (fixType !== 'unknown') {
-      const fixApplied = applyFix(fixType);
-      if (!fixApplied) {
-        log('Could not apply automatic fix', 'ERROR');
+    } else if (deployment.state === 'ERROR') {
+      log('Deployment failed, analyzing...', 'ERROR');
+      log(`Error details: ${deployment.line}`);
+      
+      // Apply common fixes for deployment errors
+      const fixType = analyzeDeploymentFailure(deployment);
+      if (fixType !== 'unknown') {
+        const fixApplied = applyFix(fixType);
+        if (!fixApplied) {
+          log('Could not apply automatic fix', 'ERROR');
+        }
       }
-    }
-    
-    attempt++;
-    if (attempt <= CONFIG.maxRetries) {
-      log(`Waiting ${CONFIG.retryDelay/1000} seconds before next attempt...`);
-      await sleep(CONFIG.retryDelay);
+      
+      await sleep(10000); // Wait before next attempt
+    } else {
+      log(`Deployment in progress (${deployment.state}), waiting...`);
+      await sleep(30000);
     }
   }
   
-  if (attempt > CONFIG.maxRetries) {
+  if (attempts >= maxAttempts) {
     log('\n❌ DEPLOYMENT FAILED AFTER ALL RETRIES ❌', 'ERROR');
     log('Manual intervention may be required.');
     process.exit(1);
