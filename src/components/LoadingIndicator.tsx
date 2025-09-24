@@ -1,10 +1,10 @@
 import React from 'react'
 import { Loader2, X, AlertCircle } from 'lucide-react'
 import { useLoadingStore } from '../services/loadingStateService'
-import { Button } from './ui/button'
-import { Progress } from './ui/progress'
-import { Card, CardContent } from './ui/card'
-import { Badge } from './ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 interface LoadingIndicatorProps {
   /** Show only specific operation */

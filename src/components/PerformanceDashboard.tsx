@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Activity, Zap, Clock, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Gauge } from 'lucide-react'
 import performanceMonitoringService from '../services/performanceMonitoringService'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Badge } from './ui/badge'
-import { Progress } from './ui/progress'
-import { Alert, AlertDescription } from './ui/alert'
-import { Button } from './ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface PerformanceDashboardProps {
   /** Show in compact mode */

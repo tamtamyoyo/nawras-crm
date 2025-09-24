@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, AlertTriangle, CheckCircle, Clock, Wifi, WifiOff } from 'lucide-react'
 import apiRetryService from '../services/apiRetryService'
-import { Button } from './ui/button'
-import { Alert, AlertDescription } from './ui/alert'
-import { Badge } from './ui/badge'
-import { Progress } from './ui/progress'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 interface ApiOperation {
   id: string

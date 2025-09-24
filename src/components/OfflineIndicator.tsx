@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import offlineService from '../services/offlineService'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Progress } from './ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/Alert'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 interface OfflineIndicatorProps {
   /** Show detailed status */
