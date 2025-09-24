@@ -97,7 +97,8 @@ function getLatestDeployment() {
     // Parse the output to extract deployment info
     const lines = result.output.split('\n').filter(line => line.trim());
     const deploymentLines = lines.filter(line => 
-      line.includes('Error') || line.includes('Ready') || line.includes('Building')
+      (line.includes('● Error') || line.includes('● Ready') || line.includes('● Building')) &&
+      line.includes('https://')
     );
     
     if (deploymentLines.length === 0) {
@@ -107,11 +108,12 @@ function getLatestDeployment() {
     
     // Get the most recent deployment (first in list)
     const latestLine = deploymentLines[0];
-    const state = latestLine.includes('Error') ? 'ERROR' : 
-                 latestLine.includes('Ready') ? 'READY' : 
-                 latestLine.includes('Building') ? 'BUILDING' : 'UNKNOWN';
+    const state = latestLine.includes('● Error') ? 'ERROR' : 
+                 latestLine.includes('● Ready') ? 'READY' : 
+                 latestLine.includes('● Building') ? 'BUILDING' : 'UNKNOWN';
     
     log(`Latest deployment status: ${state}`);
+    log(`Deployment line: ${latestLine.substring(0, 100)}...`);
     return { state, line: latestLine };
   } catch (error) {
     log(`Failed to parse deployment data: ${error.message}`, 'ERROR');
