@@ -414,7 +414,8 @@ export default function Customers() {
             const { data, error } = await supabase
               .from('customers')
               .delete()
-              .eq('id', customer.id);
+              .eq('id', customer.id)
+              .select();
             
             console.log('✅ Customer deleted:', customer.name);
             return { data, error };

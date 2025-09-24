@@ -15,8 +15,8 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
-    minify: "esbuild",
-    sourcemap: false,
+    minify: "terser",
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -29,7 +29,16 @@ export default defineConfig({
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    terserOptions: {
+      keep_fnames: true,
+      mangle: {
+        keep_fnames: true
+      },
+      compress: {
+        keep_fargs: true
+      }
+    }
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom"]

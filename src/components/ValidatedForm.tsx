@@ -168,7 +168,10 @@ const ValidatedForm: React.FC<ValidatedFormProps> = ({
 
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
+    // Defensive programming: check if event exists and has preventDefault
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
     
     if (isSubmitting) return
 
@@ -287,7 +290,7 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
           id={field}
           type={type}
           value={formData[field] || ''}
-          onChange={(e) => handleChange(field, e.target.value)}
+          onChange={(e) => handleChange(field, e?.target?.value || '')}
           onBlur={() => handleBlur(field)}
           placeholder={placeholder}
           disabled={disabled}
@@ -358,7 +361,7 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
         <Textarea
           id={field}
           value={formData[field] || ''}
-          onChange={(e) => handleChange(field, e.target.value)}
+          onChange={(e) => handleChange(field, e?.target?.value || '')}
           onBlur={() => handleBlur(field)}
           placeholder={placeholder}
           disabled={disabled}

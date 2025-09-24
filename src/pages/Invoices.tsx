@@ -226,8 +226,14 @@ export default function Invoices() {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
-    const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0')
-    return `INV-${year}-${month}-${day}-${random}`
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+    // Use timestamp + random for better uniqueness
+    const timestamp = Date.now().toString().slice(-6) // Last 6 digits of timestamp
+    const random = Math.floor(Math.random() * 999).toString().padStart(3, '0')
+    return `INV-${year}${month}${day}-${hours}${minutes}${seconds}-${timestamp}${random}`
   }
 
 

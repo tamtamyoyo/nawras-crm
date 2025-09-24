@@ -70,7 +70,7 @@ export function DateRangePicker({
                 type="date"
                 value={selectedDate?.from ? selectedDate.from.toISOString().split('T')[0] : ''}
                 onChange={(e) => {
-                  const newDate = e.target.value ? new Date(e.target.value) : undefined
+                  const newDate = e?.target?.value ? new Date(e.target.value) : undefined
                   handleDateChange({
                     from: newDate,
                     to: selectedDate?.to
@@ -84,7 +84,7 @@ export function DateRangePicker({
                 type="date"
                 value={selectedDate?.to ? selectedDate.to.toISOString().split('T')[0] : ''}
                 onChange={(e) => {
-                  const newDate = e.target.value ? new Date(e.target.value) : undefined
+                  const newDate = e?.target?.value ? new Date(e.target.value) : undefined
                   handleDateChange({
                     from: selectedDate?.from,
                     to: newDate

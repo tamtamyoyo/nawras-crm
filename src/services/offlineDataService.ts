@@ -356,7 +356,6 @@ class OfflineDataService {
 
   // Customer operations
   async getCustomers(): Promise<Customer[]> {
-    if (!this.isOfflineMode()) throw new Error('Not in offline mode');
     return this.getFromStorage<Customer>(STORAGE_KEYS.CUSTOMERS);
   }
 
@@ -400,7 +399,6 @@ class OfflineDataService {
 
   // Lead operations
   async getLeads(): Promise<Lead[]> {
-    if (!this.isOfflineMode()) throw new Error('Not in offline mode');
     return this.getFromStorage<Lead>(STORAGE_KEYS.LEADS);
   }
 
@@ -439,7 +437,6 @@ class OfflineDataService {
 
   // Deal operations
   async getDeals(): Promise<Deal[]> {
-    if (!this.isOfflineMode()) throw new Error('Not in offline mode');
     return this.getFromStorage<Deal>(STORAGE_KEYS.DEALS);
   }
 
@@ -478,7 +475,6 @@ class OfflineDataService {
 
   // Proposal operations
   async getProposals(): Promise<Proposal[]> {
-    if (!this.isOfflineMode()) throw new Error('Not in offline mode');
     return this.getFromStorage<Proposal>(STORAGE_KEYS.PROPOSALS);
   }
 
@@ -517,7 +513,6 @@ class OfflineDataService {
 
   // Invoice operations
   async getInvoices(): Promise<Invoice[]> {
-    if (!this.isOfflineMode()) throw new Error('Not in offline mode');
     return this.getFromStorage<Invoice>(STORAGE_KEYS.INVOICES);
   }
 
