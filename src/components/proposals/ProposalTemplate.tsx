@@ -474,7 +474,7 @@ export function ProposalTemplate({
 
   const renderSectionContent = (section: ProposalSection) => {
     switch (section.type) {
-      case 'text':
+      case 'text': {
         const textContent = section.content as { title?: string; text?: string }
         return (
           <div className="space-y-4">
@@ -499,6 +499,7 @@ export function ProposalTemplate({
             </div>
           </div>
         )
+      }
 
       case 'pricing':
         return (
