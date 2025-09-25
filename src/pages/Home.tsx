@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuthHook';
 import { useStore } from '@/store/useStore';
-import { supabase } from '@/lib/supabase-client';
-import { offlineDataService } from '@/services/offlineDataService';
-import { isOfflineMode } from '../utils/offlineMode'
-import { handleSupabaseError } from '../utils/errorHandling'
+import { dashboardService } from '../services/dashboardService';
 import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { toast } from 'sonner';
 import {
@@ -25,60 +22,32 @@ import {
 
 export default function Home() {
   const { user, profile } = useAuth();
-  const { deals, leads, customers } = useStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const { deals, leads, customers, setDeals, setLeads, setCustomers } = useStore();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        protectFromExtensionInterference()
-        
-        if (isOfflineMode()) {
-          await Promise.all([
-            offlineDataService.getDeals(),
-            offlineDataService.getLeads(),
-            offlineDataService.getCustomers()
-          ]);
-        } else {
-          try {
-            await Promise.all([
-              supabase.from('deals').select('*').order('created_at', { ascending: false }).limit(10),
-              supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(10),
-              supabase.from('customers').select('*').order('created_at', { ascending: false }).limit(10)
-            ]);
-          } catch (supabaseError) {
-            console.warn('Supabase error, checking fallback:', supabaseError)
-            const shouldFallback = handleSupabaseError(supabaseError, 'dashboard data loading')
-            
-            if (shouldFallback) {
-              // Fallback to offline data
-              await Promise.all([
-                offlineDataService.getDeals(),
-                offlineDataService.getLeads(),
-                offlineDataService.getCustomers()
-              ]);
-              toast.info('Loading data from offline storage')
-            } else {
-              throw supabaseError
-            }
-          }
-        }
-        setIsLoading(false);
+        setLoading(true);
+        const data = await dashboardService.loadDashboardData();
+        setDeals(data.deals);
+        setLeads(data.leads);
+        setCustomers(data.customers);
       } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Failed to load dashboard data')
-        setIsLoading(false);
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [setDeals, setLeads, setCustomers]);
 
   const totalDeals = deals?.length || 0;
   const totalLeads = leads?.length || 0;
   const totalCustomers = customers?.length || 0;
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="p-6">
         <div className="text-center">Loading dashboard...</div>

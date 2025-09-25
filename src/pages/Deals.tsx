@@ -7,13 +7,13 @@ import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData, clearDemoData } from '../utils/demo-data'
 import { ExportFieldsForm } from '../components/ExportFieldsForm'
 
+import { dealService } from '../services/dealService'
 import { supabase } from '../lib/supabase-client'
 import { useStore } from '../store/useStore'
 import type { Deal as OfflineDeal } from '../services/offlineDataService'
 import { useAuth } from '../hooks/useAuthHook'
 import { toast } from 'sonner'
 import type { Database } from '../lib/database.types'
-import { offlineDataService } from '../services/offlineDataService'
 
 import { EnhancedPipeline } from '../components/deals/EnhancedPipeline'
 import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
@@ -62,54 +62,20 @@ export default function Deals() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      protectFromExtensionInterference()
-      const offline = isOfflineMode()
-      console.log('🔄 Deals page - Loading data:', { offlineMode: offline })
+      console.log('🔄 Deals page - Loading data')
       
-      if (offline) {
-        console.log('📱 Using offline mode for deals data')
-        const dealsData = await offlineDataService.getDeals()
-        const customersData = await offlineDataService.getCustomers()
-        // Set deals data directly from offline service
-        setDeals(dealsData || [])
-        setCustomers(customersData)
-        return
-      }
+      const dealsData = await dealService.getDeals()
+      setDeals(dealsData)
       
-      console.log('🔍 Querying Supabase for deals and customers...')
-      try {
-        const { data: dealsData, error: dealsError } = await supabase
-          .from('deals')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (dealsError) throw dealsError
-        console.log('✅ Supabase deals response:', { count: dealsData?.length, data: dealsData })
-        // Only replace data if we get a successful response from Supabase
-        if (dealsData) {
-          setDeals(dealsData)
-        }
-
-        const { data: customersData, error: customersError } = await supabase
+      // Load customers if not already loaded
+      if (!customers || customers.length === 0) {
+        const { data: customersData } = await supabase
           .from('customers')
           .select('*')
-          .order('name')
-
-        if (customersError) throw customersError
-        console.log('✅ Supabase customers response:', { count: customersData?.length })
-        setCustomers(customersData || [])
-      
-
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        if (handleSupabaseError(supabaseError)) {
-          const dealsData = await offlineDataService.getDeals()
-          const customersData = await offlineDataService.getCustomers()
-          // Set deals data directly from offline service
-        setDeals(dealsData || [])
+          .order('created_at', { ascending: false })
+        
+        if (customersData) {
           setCustomers(customersData)
-        } else {
-          throw supabaseError
         }
       }
     } catch (error) {
@@ -118,7 +84,7 @@ export default function Deals() {
     } finally {
       setLoading(false)
     }
-  }, [setLoading, setDeals, setCustomers])
+  }, [setDeals, setCustomers, setLoading, customers])
 
   useEffect(() => {
     loadData()
@@ -150,10 +116,7 @@ export default function Deals() {
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('🚀 handleSubmit called', { formData, showAddModal, showEditModal, user })
     
-    // Defensive programming for preventDefault
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault()
-    }
+    e.preventDefault()
     
     console.log('📝 Validating form...')
     if (!validateForm()) {
@@ -174,155 +137,41 @@ export default function Deals() {
     console.log('🔄 Set submitting and loading states')
 
     try {
-      protectFromExtensionInterference()
-      const offline = isOfflineMode()
-      console.log('💾 Deals page - Saving deal:', { offlineMode: offline, formData })
-      
-      if (offline) {
-        console.log('📱 Using offline mode for deal operations')
-        
-        if (showEditModal && selectedDeal) {
-          const updateData = { ...formData, updated_at: new Date().toISOString() }
-          const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
-          updateDeal(selectedDeal.id, updatedDeal)
-          loadData().catch(console.error)
-          toast.success('Deal updated successfully')
-        } else {
-          const insertData = {
-            title: formData.title || '',
-            customer_id: formData.customer_id || null,
-            value: formData.value || 0,
-            probability: formData.probability || 0,
-            stage: formData.stage || 'prospecting',
-            expected_close_date: formData.expected_close_date || null,
-            description: formData.description || null,
-            source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
-            responsible_person: formData.responsible_person || 'Mr. Ali',
-            competitor_info: formData.competitor_info || null,
-            decision_maker_name: formData.decision_maker_name || null,
-            decision_maker_email: formData.decision_maker_email || null,
-            decision_maker_phone: formData.decision_maker_phone || null,
-            deal_source_detail: formData.deal_source_detail || null,
-            deal_type: formData.deal_type || 'new_business',
-            lead_id: null,
-            assigned_to: null,
-            created_by: user.id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            version: 1
-          }
-          const newDeal = await offlineDataService.createDeal(insertData)
-          // Use functional update to ensure we don't lose existing deals
-          addDeal(newDeal)
-          loadData().catch(console.error)
-          toast.success('Deal added successfully')
+      if (showEditModal && selectedDeal) {
+        const updateData = { ...formData, updated_at: new Date().toISOString() }
+        const updatedDeal = await dealService.updateDeal(selectedDeal.id, updateData)
+        updateDeal(selectedDeal.id, updatedDeal)
+        toast.success('Deal updated successfully')
+      } else {
+        const insertData = {
+          title: formData.title || '',
+          customer_id: formData.customer_id || null,
+          value: formData.value || 0,
+          probability: formData.probability || 0,
+          stage: formData.stage || 'prospecting',
+          expected_close_date: formData.expected_close_date || null,
+          description: formData.description || null,
+          source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
+          responsible_person: formData.responsible_person || 'Mr. Ali',
+          competitor_info: formData.competitor_info || null,
+          decision_maker_name: formData.decision_maker_name || null,
+          decision_maker_email: formData.decision_maker_email || null,
+          decision_maker_phone: formData.decision_maker_phone || null,
+          deal_source_detail: formData.deal_source_detail || null,
+          deal_type: formData.deal_type || 'new_business',
+          lead_id: null,
+          assigned_to: null,
+          created_by: user.id
         }
         
-        console.log('🎯 About to call resetForm in offline mode')
-        resetForm()
-        console.log('✅ resetForm called successfully in offline mode')
-        return
+        const newDeal = await dealService.createDeal(insertData)
+        addDeal(newDeal)
+        toast.success('Deal added successfully')
       }
       
-      try {
-        if (showEditModal && selectedDeal) {
-          const updateData = { ...formData, updated_at: new Date().toISOString() }
-          const { data, error } = await (supabase as any)
-            .from('deals')
-            .update(updateData)
-            .eq('id', selectedDeal.id)
-            .select()
-            .single()
-
-          if (error) throw error
-          
-          updateDeal(selectedDeal.id, data)
-          loadData().catch(console.error)
-          toast.success('Deal updated successfully')
-        } else {
-          const insertData = {
-            title: formData.title || '',
-            customer_id: formData.customer_id || null,
-            value: formData.value || 0,
-            probability: formData.probability || 0,
-            stage: formData.stage || 'prospecting',
-            expected_close_date: formData.expected_close_date || null,
-            description: formData.description || null,
-            source: 'Other',
-            responsible_person: formData.responsible_person || 'Mr. Ali',
-            competitor_info: formData.competitor_info || null,
-            decision_maker_name: formData.decision_maker_name || null,
-            decision_maker_email: formData.decision_maker_email || null,
-            decision_maker_phone: formData.decision_maker_phone || null,
-            deal_source_detail: formData.deal_source_detail || null,
-            deal_type: formData.deal_type || 'new_business',
-            lead_id: null,
-            assigned_to: null,
-            created_by: user.id
-          }
-          
-          const { data, error } = await (supabase as any)
-            .from('deals')
-            .insert([insertData])
-            .select()
-            .single()
-
-          if (error) throw error
-          
-          addDeal(data)
-          loadData().catch(console.error)
-          toast.success('Deal added successfully')
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        
-        if (handleSupabaseError(supabaseError)) {
-          if (showEditModal && selectedDeal) {
-            const updateData = { ...formData, updated_at: new Date().toISOString() }
-            const updatedDeal = await offlineDataService.updateDeal(selectedDeal.id, updateData)
-            // Use functional update to ensure we don't lose existing deals
-            updateDeal(selectedDeal.id, updatedDeal)
-            loadData().catch(console.error)
-            toast.success('Deal updated successfully')
-          } else {
-            const insertData = { 
-              title: formData.title || '',
-              customer_id: formData.customer_id || null,
-              value: formData.value || 0,
-              probability: formData.probability || 0,
-              stage: formData.stage || 'prospecting',
-              expected_close_date: formData.expected_close_date || null,
-              description: formData.description || null,
-              source: 'Other' as Database['public']['Tables']['deals']['Row']['source'],
-              responsible_person: formData.responsible_person || 'Mr. Ali',
-              competitor_info: formData.competitor_info || null,
-              decision_maker_name: formData.decision_maker_name || null,
-              decision_maker_email: formData.decision_maker_email || null,
-              decision_maker_phone: formData.decision_maker_phone || null,
-              deal_source_detail: formData.deal_source_detail || null,
-              deal_type: formData.deal_type || 'new_business',
-              lead_id: null,
-              assigned_to: null,
-              created_by: user.id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              version: 1
-            }
-            const newDeal = await offlineDataService.createDeal(insertData)
-            addDeal(newDeal)
-            loadData().catch(console.error)
-            toast.success('Deal added successfully')
-          }
-          resetForm()
-            console.log('✅ resetForm called successfully in fallback offline mode')
-          } else {
-          throw supabaseError
-        }
-      }
-      
-      console.log('🎯 About to call resetForm in online mode')
+      console.log('🎯 About to call resetForm')
       resetForm()
-      console.log('✅ resetForm called successfully in online mode')
+      console.log('✅ resetForm called successfully')
     } catch (error) {
       console.error('Error saving deal:', error)
       toast.error('Failed to save deal')
@@ -342,39 +191,11 @@ export default function Deals() {
 
     try {
       setLoading(true)
-      protectFromExtensionInterference()
+      console.log('🗑️ Deals page - Deleting deal:', { dealId: deal.id })
       
-      const offline = isOfflineMode()
-      console.log('🗑️ Deals page - Deleting deal:', { offlineMode: offline, dealId: deal.id })
-      
-      if (offline) {
-        console.log('📱 Using offline mode for deal deletion')
-        await offlineDataService.deleteDeal(deal.id)
-        removeDeal(deal.id)
-        toast.success('Deal deleted successfully')
-        return
-      }
-      
-      try {
-        const { error } = await supabase
-          .from('deals')
-          .delete()
-          .eq('id', deal.id)
-
-        if (error) throw error
-        
-        removeDeal(deal.id)
-        toast.success('Deal deleted successfully')
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        if (handleSupabaseError(supabaseError)) {
-          await offlineDataService.deleteDeal(deal.id)
-          removeDeal(deal.id)
-          toast.success('Deal deleted successfully')
-        } else {
-          throw supabaseError
-        }
-      }
+      await dealService.deleteDeal(deal.id)
+      removeDeal(deal.id)
+      toast.success('Deal deleted successfully')
     } catch (error) {
       console.error('Error deleting deal:', error)
       toast.error('Failed to delete deal')
@@ -597,42 +418,10 @@ export default function Deals() {
               try {
                 setLoading(true)
                 
-                protectFromExtensionInterference()
-                const offline = isOfflineMode()
-                
-                if (offline) {
-                  console.log('📱 Using offline mode for deal stage update')
-                  const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
-                  const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
-                  updateDeal(dealId, updatedDeal)
-                  toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
-                  return
-                }
-                
-                try {
-                  const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
-                  const { data, error } = await (supabase as any)
-                    .from('deals')
-                    .update(updateData)
-                    .eq('id', dealId)
-                    .select()
-                    .single()
-
-                  if (error) throw error
-                  
-                  updateDeal(dealId, data)
-                  toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
-                } catch (supabaseError) {
-                  console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-                  if (handleSupabaseError(supabaseError)) {
-                    const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
-                    const updatedDeal = await offlineDataService.updateDeal(dealId, updateData)
-                    updateDeal(dealId, updatedDeal)
-                    toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
-                  } else {
-                    throw supabaseError
-                  }
-                }
+                const updateData = { stage: newStage as OfflineDeal['stage'], updated_at: new Date().toISOString() }
+                const updatedDeal = await dealService.updateDeal(dealId, updateData)
+                updateDeal(dealId, updatedDeal)
+                toast.success(`Deal moved to ${DEAL_STAGES.find(s => s.id === newStage)?.title}`)
               } catch (error) {
                 console.error('Error updating deal stage:', error)
                 toast.error('Failed to update deal stage')
@@ -649,27 +438,7 @@ export default function Deals() {
                     if (!confirm(`Are you sure you want to delete ${dealIds.length} deal(s)?`)) return
                     
                     for (const dealId of dealIds) {
-                      protectFromExtensionInterference()
-                      const offline = isOfflineMode()
-                      
-                      if (offline) {
-                        await offlineDataService.deleteDeal(dealId)
-                      } else {
-                        try {
-                          const { error } = await supabase
-                            .from('deals')
-                            .delete()
-                            .eq('id', dealId)
-                          if (error) throw error
-                        } catch (supabaseError) {
-                          console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-                          if (handleSupabaseError(supabaseError)) {
-                            await offlineDataService.deleteDeal(dealId)
-                          } else {
-                            throw supabaseError
-                          }
-                        }
-                      }
+                      await dealService.deleteDeal(dealId)
                       removeDeal(dealId)
                     }
                     toast.success(`${dealIds.length} deal(s) deleted successfully`)

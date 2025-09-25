@@ -17,13 +17,12 @@ import { InvoicesTable } from '@/components/invoices/invoices-table'
 import { BatchDownloadModal } from '@/components/invoices/BatchDownloadModal'
 import { InvoiceTemplate } from '@/components/invoices/InvoiceTemplate'
 import { LogoUpload } from '@/components/invoices/LogoUpload'
-import { supabase } from '@/lib/supabase-client'
 import { useStore } from '@/store/useStore'
 import { useAuth } from '../hooks/useAuthHook'
-import { Database, Json } from '@/lib/database.types'
-import { offlineDataService } from '../services/offlineDataService'
-import { isOfflineMode } from '../utils/offlineMode'
-import { handleSupabaseError, protectFromExtensionInterference, setSupabaseOffline } from '../utils/offlineMode'
+import { Database } from '@/lib/database.types'
+import { invoiceService } from '../services/invoiceService'
+import { dealService } from '../services/dealService'
+import { customerService } from '../services/customerService'
 import { PAYMENT_TERMS } from '../lib/standardTemplate'
 import { InvoiceItem } from '@/types/invoice'
 
@@ -112,82 +111,19 @@ export default function Invoices() {
 
   const loadData = useCallback(async () => {
     try {
-      protectFromExtensionInterference()
       setLoading(true)
-      console.log('📋 Loading Invoices data...', { offlineMode: isOfflineMode() })
+      console.log('📋 Loading Invoices data...')
       
-      if (isOfflineMode()) {
-        console.log('📋 Loading from offline storage')
-        // Load from offline service
-        const invoicesData = await offlineDataService.getInvoices()
-        const dealsData = await offlineDataService.getDeals()
-        const customersData = await offlineDataService.getCustomers()
-        
-        setInvoices(invoicesData as any)
-        setDeals(dealsData)
-        setCustomers(customersData as Database['public']['Tables']['customers']['Row'][])
-        return
-      }
+      // Load invoices using service
+      const invoicesData = await invoiceService.getInvoices()
+      setInvoices(invoicesData)
+
+      // Load deals and customers using services
+      const dealsData = await dealService.getDeals()
+      const customersData = await customerService.getCustomers()
       
-      try {
-        console.log('📋 Querying Supabase for invoices...')
-        // Load invoices with cache-busting headers to prevent browser extension interference
-        const { data: invoicesData, error: invoicesError } = await supabase
-          .from('invoices')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .abortSignal(AbortSignal.timeout(10000))
-
-        if (invoicesError) throw invoicesError
-        setInvoices(invoicesData || [])
-
-        // Load deals
-        const { data: dealsData, error: dealsError } = await supabase
-          .from('deals')
-          .select('*')
-          .order('title')
-
-        if (dealsError) throw dealsError
-        setDeals(dealsData || [])
-
-        // Load customers
-        const { data: customersData, error: customersError } = await supabase
-          .from('customers')
-          .select('*')
-          .order('name')
-
-        if (customersError) throw customersError
-        setCustomers(customersData || [])
-      } catch (supabaseError: unknown) {
-
-        console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        
-        // Handle specific 400 errors that might be caused by browser extensions
-        const error = supabaseError as { message?: string; status?: number }
-        if (error?.message?.includes('400') || error?.status === 400) {
-          console.warn('⚠️ Detected 400 error - possibly caused by browser extension interference')
-          toast({
-            title: 'Connection Issue Detected',
-            description: 'Please disable browser extensions or clear cache if issues persist',
-            variant: 'destructive'
-          })
-        }
-        
-        // Use centralized error handling to determine fallback
-        const shouldFallback = handleSupabaseError(supabaseError, 'invoice data loading')
-        
-        if (!shouldFallback) {
-          throw supabaseError
-        }
-        
-        const invoicesData = await offlineDataService.getInvoices()
-        const dealsData = await offlineDataService.getDeals()
-        const customersData = await offlineDataService.getCustomers()
-        
-        setInvoices(invoicesData as any)
-        setDeals(dealsData)
-        setCustomers(customersData as any)
-      }
+      setDeals(dealsData)
+      setCustomers(customersData as Database['public']['Tables']['customers']['Row'][])
     } catch (error) {
       console.error('Error loading data:', error)
       toast({
@@ -201,15 +137,11 @@ export default function Invoices() {
   }, [toast, setLoading, setInvoices, setDeals, setCustomers])
 
   const calculateTotals = useCallback(() => {
-    const subtotal = (invoiceItems || []).reduce((sum, item) => sum + item.amount, 0)
-    const taxAmount = subtotal * (taxRate / 100)
-    const total = subtotal + taxAmount
+    const totals = invoiceService.calculateTotals(invoiceItems, taxRate)
     
     setFormData(prev => ({
       ...prev,
-      amount: subtotal,
-      tax_amount: taxAmount,
-      total_amount: total
+      ...totals
     }))
   }, [invoiceItems, taxRate])
 
@@ -222,30 +154,13 @@ export default function Invoices() {
   }, [calculateTotals])
 
   const generateInvoiceNumber = () => {
-    const date = new Date()
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
-    // Use timestamp + random for better uniqueness
-    const timestamp = Date.now().toString().slice(-6) // Last 6 digits of timestamp
-    const random = Math.floor(Math.random() * 999).toString().padStart(3, '0')
-    return `INV-${year}${month}${day}-${hours}${minutes}${seconds}-${timestamp}${random}`
+    return invoiceService.generateInvoiceNumber()
   }
 
 
 
   const updateInvoiceItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    const newItems = [...invoiceItems]
-    newItems[index] = { ...newItems[index], [field]: value }
-    
-    if (field === 'quantity' || field === 'rate') {
-      newItems[index].amount = newItems[index].quantity * newItems[index].rate
-    }
-    
+    const newItems = invoiceService.updateInvoiceItem(invoiceItems, index, field, value)
     setInvoiceItems(newItems)
   }
 
@@ -264,152 +179,26 @@ export default function Invoices() {
 
     setLoading(true)
     try {
-      const invoiceData: InvoiceInsert = {
-        invoice_number: data.invoice_number || generateInvoiceNumber(),
-        customer_id: data.deal_id || '', // This should be customer_id, but using deal_id for now
-        deal_id: data.deal_id || null,
-        amount: data.amount || 0,
-        tax_amount: data.tax_amount || 0,
-        total_amount: data.total_amount || 0,
-        status: (data.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled') || 'draft',
-        due_date: data.due_date || new Date().toISOString(),
-        items: JSON.stringify(invoiceItems) as Json,
-        notes: data.notes,
-        payment_terms: (data.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt') || 'net_30',
-        tax_rate: taxRate,
-        source: (data.source as 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other') || 'Other',
-        created_by: user?.id || '00000000-0000-0000-0000-000000000000', // Use default UUID for anonymous users
-        responsible_person: (user?.user_metadata?.full_name as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali',
-        billing_address: data.billing_address,
-        purchase_order_number: data.purchase_order_number,
-        payment_method: (data.payment_method as 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other') || 'other'
-      }
-
-      if (isOfflineMode()) {
-        if (showEditModal && selectedInvoice) {
-          // Update existing invoice offline
-          const updateData = { 
-            ...selectedInvoice, 
-            ...invoiceData, 
-            status: invoiceData.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', 
-            payment_terms: invoiceData.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt', 
-            updated_at: new Date().toISOString(),
-            responsible_person: selectedInvoice.responsible_person || 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
-            billing_address: selectedInvoice.billing_address || null,
-            purchase_order_number: selectedInvoice.purchase_order_number || null,
-            payment_method: selectedInvoice.payment_method || null
-          }
-          await offlineDataService.updateInvoice(selectedInvoice.id, updateData as any)
-          const updatedInvoices = await offlineDataService.getInvoices()
-          setInvoices(updatedInvoices as unknown as Invoice[])
-          updateInvoice(selectedInvoice.id, updateData as any)
-        } else {
-          // Create new invoice offline
-          const newInvoiceData = { 
-              ...invoiceData, 
-              id: Date.now().toString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
-              billing_address: null,
-              purchase_order_number: null,
-              payment_method: null
-            }
-          await offlineDataService.createInvoice(newInvoiceData as any)
-          const updatedInvoices = await offlineDataService.getInvoices()
-          setInvoices(updatedInvoices as unknown as Invoice[])
-          addInvoice(newInvoiceData as any)
-        }
-        
+      if (showEditModal && selectedInvoice) {
+        // Update existing invoice
+        const updatedInvoice = await invoiceService.updateInvoice(selectedInvoice.id, data, invoiceItems, selectedInvoice)
+        updateInvoice(selectedInvoice.id, updatedInvoice as any)
+        // Refresh the invoice list
+        await loadData()
         toast({
           title: 'Success',
-          description: showEditModal ? 'Invoice updated successfully' : 'Invoice created successfully'
+          description: 'Invoice updated successfully'
         })
-        resetForm()
-        return
-      }
-
-      try {
-        if (showEditModal && selectedInvoice) {
-          // Update existing invoice
-          const { data: updatedData, error } = await (supabase as any)
-            .from('invoices')
-            .update(invoiceData)
-            .eq('id', selectedInvoice.id)
-            .select()
-            .single()
-
-          if (error) throw error
-          updateInvoice(selectedInvoice.id, updatedData as any)
-          // Refresh the invoice list
-          await loadData()
-          toast({
-            title: 'Success',
-            description: 'Invoice updated successfully'
-          })
-        } else {
-          // Create new invoice
-          const { data: newData, error } = await (supabase as any)
-            .from('invoices')
-            .insert([invoiceData])
-            .select()
-            .single()
-
-          if (error) throw error
-          addInvoice(newData as any)
-          // Refresh the invoice list
-          await loadData()
-          toast({
-            title: 'Success',
-            description: 'Invoice created successfully'
-          })
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        setSupabaseOffline() // Mark Supabase as offline for future operations
-        
-        try {
-          if (showEditModal && selectedInvoice) {
-            const updateData = { 
-              ...selectedInvoice, 
-              ...invoiceData, 
-              status: invoiceData.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', 
-              payment_terms: invoiceData.payment_terms as 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt', 
-              updated_at: new Date().toISOString(),
-              responsible_person: selectedInvoice.responsible_person || 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
-              billing_address: selectedInvoice.billing_address || null,
-              purchase_order_number: selectedInvoice.purchase_order_number || null,
-              payment_method: selectedInvoice.payment_method || null
-            }
-            await offlineDataService.updateInvoice(selectedInvoice.id, updateData as any)
-            const updatedInvoices = await offlineDataService.getInvoices()
-            setInvoices(updatedInvoices as unknown as Invoice[])
-            updateInvoice(selectedInvoice.id, updateData as any)
-          } else {
-            const newInvoiceData = { 
-              ...invoiceData, 
-              id: Date.now().toString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              responsible_person: 'Mr. Ali' as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
-              billing_address: null,
-              purchase_order_number: null,
-              payment_method: null
-            }
-            await offlineDataService.createInvoice(newInvoiceData as any)
-            const updatedInvoices = await offlineDataService.getInvoices()
-            setInvoices(updatedInvoices as unknown as Invoice[])
-            addInvoice(newInvoiceData as any)
-          }
-          
-          toast({
-            title: 'Success',
-            description: showEditModal ? 'Invoice updated successfully (offline)' : 'Invoice created successfully (offline)'
-          })
-        } catch (offlineError) {
-          console.error('Offline operation failed:', offlineError)
-          throw offlineError
-        }
+      } else {
+        // Create new invoice
+        const newInvoice = await invoiceService.createInvoice(data, invoiceItems, user?.id)
+        addInvoice(newInvoice as any)
+        // Refresh the invoice list
+        await loadData()
+        toast({
+          title: 'Success',
+          description: 'Invoice created successfully'
+        })
       }
 
       resetForm()
@@ -430,49 +219,12 @@ export default function Invoices() {
 
     try {
       setLoading(true)
-      
-      if (isOfflineMode()) {
-        await offlineDataService.deleteInvoice(invoice.id)
-        const updatedInvoices = await offlineDataService.getInvoices()
-        setInvoices(updatedInvoices as unknown as Invoice[])
-        removeInvoice(invoice.id)
-        toast({
-          title: 'Success',
-          description: 'Invoice deleted successfully'
-        })
-        return
-      }
-      
-      try {
-        const { error } = await supabase
-          .from('invoices')
-          .delete()
-          .eq('id', invoice.id)
-
-        if (error) throw error
-        removeInvoice(invoice.id)
-        toast({
-          title: 'Success',
-          description: 'Invoice deleted successfully'
-        })
-      } catch (supabaseError) {
-          console.warn('Supabase error, falling back to offline mode:', supabaseError)
-          setSupabaseOffline() // Mark Supabase as offline for future operations
-          
-          try {
-          await offlineDataService.deleteInvoice(invoice.id)
-          const updatedInvoices = await offlineDataService.getInvoices()
-          setInvoices(updatedInvoices as unknown as Invoice[])
-          removeInvoice(invoice.id)
-          toast({
-            title: 'Success',
-            description: 'Invoice deleted successfully (offline)'
-          })
-        } catch (offlineError) {
-          console.error('Offline delete failed:', offlineError)
-          throw offlineError
-        }
-      }
+      await invoiceService.deleteInvoice(invoice.id)
+      removeInvoice(invoice.id)
+      toast({
+        title: 'Success',
+        description: 'Invoice deleted successfully'
+      })
     } catch (error) {
       console.error('Error deleting invoice:', error)
       toast({
@@ -499,8 +251,8 @@ export default function Invoices() {
           purchase_order_number: invoice.purchase_order_number || null,
           payment_method: invoice.payment_method || null
         }
-        await offlineDataService.updateInvoice(invoice.id, updatedInvoice as any)
-        const updatedInvoices = await offlineDataService.getInvoices()
+        await invoiceService.updateInvoice(invoice.id, { status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' })
+        const updatedInvoices = await invoiceService.getInvoices()
         setInvoices(updatedInvoices as unknown as Invoice[])
         updateInvoice(invoice.id, updatedInvoice as any)
         toast({
@@ -530,9 +282,8 @@ export default function Invoices() {
           setSupabaseOffline() // Mark Supabase as offline for future operations
           
           try {
-          const updatedInvoice = { ...invoice, status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', updated_at: new Date().toISOString() }
-          await offlineDataService.updateInvoice(invoice.id, updatedInvoice as any)
-          const updatedInvoices = await offlineDataService.getInvoices()
+          const updatedInvoice = await invoiceService.updateInvoice(invoice.id, { status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' })
+          const updatedInvoices = await invoiceService.getInvoices()
           setInvoices(updatedInvoices as unknown as Invoice[])
           updateInvoice(invoice.id, { status: newStatus, updated_at: new Date().toISOString() } as any)
           toast({

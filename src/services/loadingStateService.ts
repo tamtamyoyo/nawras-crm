@@ -383,9 +383,9 @@ class LoadingStateService {
   /**
    * Subscribe to loading state changes
    */
-  subscribe(
-    selector: (state: LoadingStateStore) => any,
-    callback: (value: any) => void
+  subscribe<T>(
+    selector: (state: LoadingStateStore) => T,
+    callback: (value: T) => void
   ): () => void {
     return this.store.subscribe(selector, callback)
   }

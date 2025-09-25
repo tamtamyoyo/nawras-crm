@@ -19,13 +19,13 @@ interface ValidatedFormProps {
   /** Form schema name */
   schema: string
   /** Initial form data */
-  initialData?: Record<string, any>
+  initialData?: Record<string, unknown>
   /** Form submission handler */
-  onSubmit: (data: Record<string, any>) => Promise<void> | void
+  onSubmit: (data: Record<string, unknown>) => Promise<void> | void
   /** Form change handler */
-  onChange?: (data: Record<string, any>, isValid: boolean) => void
+  onChange?: (data: Record<string, unknown>, isValid: boolean) => void
   /** Custom validation rules */
-  customRules?: Record<string, any>
+  customRules?: Record<string, unknown>
   /** Show validation on change */
   validateOnChange?: boolean
   /** Show validation on blur */
@@ -36,11 +36,11 @@ interface ValidatedFormProps {
   className?: string
   /** Children render function */
   children: (props: {
-    formData: Record<string, any>
+    formData: Record<string, unknown>
     errors: ValidationError[]
     isValid: boolean
     isSubmitting: boolean
-    handleChange: (field: string, value: any) => void
+    handleChange: (field: string, value: unknown) => void
     handleBlur: (field: string) => void
     handleSubmit: (e: React.FormEvent) => void
     getFieldError: (field: string) => ValidationError | undefined
@@ -62,7 +62,7 @@ const ValidatedForm: React.FC<ValidatedFormProps> = ({
   className = '',
   children
 }) => {
-  const [formData, setFormData] = useState<Record<string, any>>(initialData)
+  const [formData, setFormData] = useState<Record<string, unknown>>(initialData)
   const [errors, setErrors] = useState<ValidationError[]>([])
   const [isValid, setIsValid] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,7 +78,7 @@ const ValidatedForm: React.FC<ValidatedFormProps> = ({
   }, [schema, customRules])
 
   // Validate form
-  const validateForm = useCallback(async (data: Record<string, any>, field?: string) => {
+  const validateForm = useCallback(async (data: Record<string, unknown>, field?: string) => {
     try {
       let result
       if (field) {
@@ -135,14 +135,14 @@ const ValidatedForm: React.FC<ValidatedFormProps> = ({
 
   // Debounced validation
   const debouncedValidate = useCallback(
-    debounce((data: Record<string, any>, field?: string) => {
+    debounce((data: Record<string, unknown>, field?: string) => {
       validateForm(data, field)
     }, debounceMs),
     [validateForm, debounceMs]
   )
 
   // Handle field change
-  const handleChange = useCallback((field: string, value: any) => {
+  const handleChange = useCallback((field: string, value: unknown) => {
     const newData = { ...formData, [field]: value }
     setFormData(newData)
 
@@ -168,10 +168,7 @@ const ValidatedForm: React.FC<ValidatedFormProps> = ({
 
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    // Defensive programming: check if event exists and has preventDefault
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault()
-    }
+    e.preventDefault()
     
     if (isSubmitting) return
 
@@ -253,6 +250,7 @@ interface ValidatedInputProps {
   required?: boolean
   disabled?: boolean
   className?: string
+  'data-testid'?: string
   formProps: {
     formData: Record<string, any>
     handleChange: (field: string, value: any) => void
@@ -270,6 +268,7 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
   required = false,
   disabled = false,
   className = '',
+  'data-testid': testId,
   formProps
 }) => {
   const { formData, handleChange, handleBlur, getFieldError, hasFieldError } = formProps
@@ -295,6 +294,7 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
           placeholder={placeholder}
           disabled={disabled}
           className={hasError ? 'border-red-500 focus:border-red-500' : ''}
+          data-testid={testId}
         />
         
         {hasError && (
@@ -325,6 +325,7 @@ interface ValidatedTextareaProps {
   disabled?: boolean
   rows?: number
   className?: string
+  'data-testid'?: string
   formProps: {
     formData: Record<string, any>
     handleChange: (field: string, value: any) => void
@@ -342,6 +343,7 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
   disabled = false,
   rows = 3,
   className = '',
+  'data-testid': testId,
   formProps
 }) => {
   const { formData, handleChange, handleBlur, getFieldError, hasFieldError } = formProps
@@ -367,6 +369,7 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
           disabled={disabled}
           rows={rows}
           className={hasError ? 'border-red-500 focus:border-red-500' : ''}
+          data-testid={testId}
         />
         
         {hasError && (
@@ -393,6 +396,7 @@ interface ValidatedSelectProps {
   disabled?: boolean
   options: { value: string; label: string }[]
   className?: string
+  'data-testid'?: string
   formProps: {
     formData: Record<string, any>
     handleChange: (field: string, value: any) => void
@@ -410,6 +414,7 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
   disabled = false,
   options,
   className = '',
+  'data-testid': testId,
   formProps
 }) => {
   const { formData, handleChange, handleBlur, getFieldError, hasFieldError } = formProps
@@ -431,7 +436,10 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
         onOpenChange={(open) => !open && handleBlur(field)}
         disabled={disabled}
       >
-        <SelectTrigger className={hasError ? 'border-red-500 focus:border-red-500' : ''}>
+        <SelectTrigger 
+          className={hasError ? 'border-red-500 focus:border-red-500' : ''}
+          data-testid={testId}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

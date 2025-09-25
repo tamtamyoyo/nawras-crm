@@ -2,6 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { useStore } from "./store/useStore";
+
+// Expose store to window for debugging
+if (import.meta.env.DEV) {
+  (window as any).useStore = useStore;
+}
 
 // Global error handlers to prevent console noise
 window.addEventListener('error', (event) => {

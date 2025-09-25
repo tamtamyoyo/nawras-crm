@@ -12,16 +12,6 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   const { user, profile, loading } = useAuth()
   console.log('🔐 ProtectedRoute - Auth state:', { user: !!user, profile: !!profile, loading })
 
-  // Check for testing environment bypasses
-  const isTestEnvironment = import.meta.env.MODE === 'test'
-  const isLocalhost = typeof window !== 'undefined' && window.location?.hostname === 'localhost'
-  const userAgent = typeof window !== 'undefined' ? window.navigator?.userAgent || '' : ''
-  const isWebdriver = typeof window !== 'undefined' && window.navigator?.webdriver === true
-  const isHeadlessChrome = userAgent.includes('HeadlessChrome')
-  const isPlaywright = userAgent.includes('Playwright')
-  
-  const shouldBypassAuth = isTestEnvironment || (isLocalhost && (isWebdriver || isHeadlessChrome || isPlaywright))
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -33,8 +23,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     )
   }
 
-  // Enforce authentication - with testing bypasses
-  if (!user && !shouldBypassAuth) {
+  // Enforce authentication
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 

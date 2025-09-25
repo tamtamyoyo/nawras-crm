@@ -1,9 +1,9 @@
 /**
  * Centralized error handling utilities for Supabase operations
+ * Now uses the unified error handling service
  */
 
-import { toast } from 'sonner';
-
+import errorHandlingService from '../services/errorHandlingService'
 
 /**
  * Handles Supabase errors with consistent fallback behavior
@@ -11,28 +11,16 @@ import { toast } from 'sonner';
  * @param context - Context description for logging
  * @returns boolean - true if should fallback to offline mode, false otherwise
  */
-export function handleSupabaseError(error: any, context: string = 'Operation'): boolean {
-  console.error(`❌ ${context} error:`, error);
+export function handleSupabaseError(error: unknown, context: string = 'Operation'): boolean {
+  console.warn(`${context} failed:`, error)
   
-  // Check if it's a connection/network error that should trigger offline fallback
-  if (error?.message?.includes('Failed to fetch') || 
-      error?.message?.includes('NetworkError') ||
-      error?.message?.includes('fetch') ||
-      error?.code === 'PGRST301' ||
-      error?.code === 'PGRST116') {
-    
-    toast.info('Connection issue detected, switching to offline mode');
-    return true; // Should fallback to offline
+  // Check if it's a network error or auth error that should trigger offline mode
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message: string }).message.toLowerCase()
+    return message.includes('network') || message.includes('fetch') || message.includes('connection')
   }
   
-  // For other errors, show error message but don't fallback
-  if (error?.message) {
-    toast.error(`${context} failed: ${error.message}`);
-  } else {
-    toast.error(`${context} failed`);
-  }
-  
-  return false; // Don't fallback to offline
+  return false
 }
 
 /**
@@ -40,12 +28,8 @@ export function handleSupabaseError(error: any, context: string = 'Operation'): 
  * @param message - Message to log
  * @param data - Optional data to log
  */
-export function logDev(message: string, data?: any): void {
-  if (false) { // Dev logging disabled
-    if (data) {
-      console.log(message, data);
-    } else {
-      console.log(message);
-    }
+export function logDev(message: string, data?: unknown): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DEV] ${message}`, data)
   }
 }

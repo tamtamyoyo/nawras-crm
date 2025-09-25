@@ -3,8 +3,8 @@ interface RetryConfig {
   baseDelay?: number
   maxDelay?: number
   backoffFactor?: number
-  retryCondition?: (error: any) => boolean
-  onRetry?: (attempt: number, error: any) => void
+  retryCondition?: (error: unknown) => boolean
+  onRetry?: (attempt: number, error: unknown) => void
 }
 
 interface ApiCallOptions extends RetryConfig {
@@ -19,7 +19,7 @@ class ApiRetryService {
     baseDelay: 1000, // 1 second
     maxDelay: 30000, // 30 seconds
     backoffFactor: 2,
-    retryCondition: (error: any) => {
+    retryCondition: (error: unknown) => {
       // Retry on network errors, 5xx errors, and specific 4xx errors
       if (!error.response) return true // Network error
       const status = error.response?.status || error.status
@@ -40,7 +40,7 @@ class ApiRetryService {
     options: ApiCallOptions = {}
   ): Promise<T> {
     const config = { ...this.defaultConfig, ...options }
-    let lastError: any
+    let lastError: unknown
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       try {
@@ -150,7 +150,7 @@ class ApiRetryService {
    */
   async postWithRetry<T>(
     url: string,
-    data: any,
+    data: unknown,
     options: ApiCallOptions = {}
   ): Promise<T> {
     return this.jsonWithRetry<T>(url, {
@@ -164,7 +164,7 @@ class ApiRetryService {
    */
   async putWithRetry<T>(
     url: string,
-    data: any,
+    data: unknown,
     options: ApiCallOptions = {}
   ): Promise<T> {
     return this.jsonWithRetry<T>(url, {
@@ -201,13 +201,13 @@ class ApiRetryService {
    * Supabase-specific retry wrapper
    */
   async supabaseWithRetry<T>(
-    supabaseCall: () => Promise<{ data: T | null; error: any }>,
+    supabaseCall: () => Promise<{ data: T | null; error: unknown }>,
     options: ApiCallOptions = {}
   ): Promise<T> {
     const config = {
       ...this.defaultConfig,
       ...options,
-      retryCondition: (error: any) => {
+      retryCondition: (error: unknown) => {
         // Retry on network errors and specific Supabase errors
         if (!error) return false
         if (error.code === 'PGRST301') return true // Connection error

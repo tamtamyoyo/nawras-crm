@@ -13,8 +13,9 @@ let supabaseOperationalStatus = {
 };
 
 export function isOfflineMode(): boolean {
-  // Check if explicitly set to offline mode via environment variable
-  if (import.meta.env.VITE_OFFLINE_MODE === 'true') {
+  // Check if explicitly set to offline mode via environment variable or localStorage
+  if (import.meta.env.VITE_OFFLINE_MODE === 'true' || 
+      (typeof window !== 'undefined' && localStorage.getItem('VITE_OFFLINE_MODE') === 'true')) {
     return true;
   }
   

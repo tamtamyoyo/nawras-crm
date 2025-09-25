@@ -11,7 +11,7 @@ import { Plus, Search, Mail, Phone, Building, Edit, Trash2, Star, UserPlus, Cloc
 import { supabase } from '@/lib/supabase-client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '../hooks/useAuthHook'
-import { offlineDataService } from '../services/offlineDataService'
+import { leadService } from '../services/leadService'
 
 import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData } from '../utils/demo-data'
@@ -78,46 +78,15 @@ export default function Leads() {
     try {
       setLoading(true)
       protectFromExtensionInterference()
-      const offline = isOfflineMode()
-      console.log('🔧 [Leads] Loading data...', { offlineMode: offline })
       
-      // Check if we're in offline mode
-      if (offline) {
-        console.log('📱 Loading leads from offline storage')
-        const data = await offlineDataService.getLeads()
-        // Set leads data directly from offline service
-        setLeads(data || [])
-        return
+      const filters = {
+        search: searchTerm,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        source: sourceFilter !== 'all' ? sourceFilter : undefined
       }
       
-      // Try Supabase first, fallback to offline mode on error
-      try {
-        console.log('🔧 [Leads] Querying Supabase...')
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-        console.log('🔧 [Leads] Supabase response:', { leadsCount: data?.length || 0, data })
-        // Only replace data if we get a successful response from Supabase
-        if (data) {
-          setLeads(data)
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        if (handleSupabaseError(supabaseError)) {
-          const data = await offlineDataService.getLeads()
-          // Preserve existing data and merge with offline data
-          setLeads(prevLeads => {
-            const existingIds = new Set(prevLeads.map(l => l.id))
-            const newLeads = (data || []).filter(l => !existingIds.has(l.id))
-            return [...prevLeads, ...newLeads]
-          })
-        } else {
-          throw supabaseError
-        }
-      }
+      const data = await leadService.getLeads(filters)
+      setLeads(data)
     } catch (error) {
       console.error('Error loading leads:', error)
       toast({
@@ -128,7 +97,7 @@ export default function Leads() {
     } finally {
       setLoading(false)
     }
-  }, [setLoading, setLeads])
+  }, [searchTerm, statusFilter, sourceFilter, toast])
 
   useEffect(() => {
     loadLeads()
@@ -136,7 +105,7 @@ export default function Leads() {
 
   const handleOfflineOperation = async (data: LeadFormData, editingLead: Lead | null) => {
     if (editingLead) {
-      const updateData: Partial<Lead> = {
+      const updateData = {
         name: data.name,
         email: data.email || null,
         phone: data.phone || null,
@@ -149,15 +118,12 @@ export default function Leads() {
         lifecycle_stage: data.lifecycle_stage || null,
         priority_level: data.priority_level,
         contact_preferences: data.contact_preferences,
-        follow_up_date: data.follow_up_date || null,
-        assigned_to: null
+        follow_up_date: data.follow_up_date || null
       }
-      const updatedLead = await offlineDataService.updateLead(editingLead.id, updateData)
-      setLeads(leads.map(lead => lead.id === editingLead.id ? updatedLead : lead))
-      loadLeads().catch(console.error)
+      await leadService.updateLead(editingLead.id, updateData)
       setIsEditModalOpen(false)
     } else {
-      const insertData: Omit<Lead, 'id' | 'created_at' | 'updated_at'> = {
+      const insertData = {
         name: data.name,
         email: data.email || null,
         phone: data.phone || null,
@@ -171,17 +137,12 @@ export default function Leads() {
         priority_level: data.priority_level,
         contact_preferences: data.contact_preferences,
         follow_up_date: data.follow_up_date || null,
-        assigned_to: null,
-        created_by: user?.id || '00000000-0000-0000-0000-000000000000',
-        score: null,
-        lead_source_detail: null,
-        version: null
+        created_by: user?.id || null
       }
-      const newLead = await offlineDataService.createLead(insertData)
-      setLeads([newLead, ...leads])
-      loadLeads().catch(console.error)
+      await leadService.createLead(insertData)
       setIsAddModalOpen(false)
     }
+    await loadLeads()
     toast({
       title: editingLead ? "Lead updated" : "Lead created",
       description: editingLead ? "Lead has been updated successfully." : "New lead has been created successfully."
@@ -191,164 +152,61 @@ export default function Leads() {
   const handleSubmit = async (data: LeadFormData) => {
     try {
       setLoading(true)
-      protectFromExtensionInterference()
       
-      const offline = isOfflineMode()
-      console.log('🔧 [Leads] Saving data...', { offlineMode: offline })
-      
-      // Check if we're in offline mode
-      if (offline) {
-        console.log('📱 Using offline mode for lead operations')
-        
-        if (editingLead) {
-          // Update existing lead
-          const updateData: Partial<Lead> = {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            company: data.company || null,
-            source: data.source || null,
-            status: data.status,
-            lead_score: data.lead_score || null,
-            notes: data.notes || null,
-            responsible_person: data.responsible_person,
-            lifecycle_stage: data.lifecycle_stage || null,
-            priority_level: data.priority_level,
-            contact_preferences: data.contact_preferences,
-            follow_up_date: data.follow_up_date || null,
-            assigned_to: null
-          }
-          
-          const updatedLead = await offlineDataService.updateLead(editingLead.id, updateData)
-          // Use functional update to ensure we don't lose existing leads
-          setLeads(prevLeads => prevLeads.map(lead => lead.id === editingLead.id ? updatedLead : lead))
-          loadLeads().catch(console.error)
-          setIsEditModalOpen(false)
-          toast({
-            title: "Lead updated",
-            description: "Lead has been updated successfully."
-          })
-        } else {
-          // Create new lead
-          const insertData: Omit<Lead, 'id' | 'created_at' | 'updated_at'> = {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            company: data.company || null,
-            source: data.source || null,
-            status: data.status,
-            lead_score: data.lead_score || null,
-            notes: data.notes || null,
-            responsible_person: data.responsible_person,
-            lifecycle_stage: data.lifecycle_stage || null,
-            priority_level: data.priority_level,
-            contact_preferences: data.contact_preferences,
-            follow_up_date: data.follow_up_date || null,
-            assigned_to: null,
-            created_by: user?.id || '00000000-0000-0000-0000-000000000000', // Use default UUID for anonymous users
-            score: null,
-            lead_source_detail: null,
-            version: null
-          }
-          
-          const newLead = await offlineDataService.createLead(insertData)
-          // Use functional update to ensure we don't lose existing leads
-          setLeads(prevLeads => [newLead, ...prevLeads])
-          loadLeads().catch(console.error)
-          setIsAddModalOpen(false)
-          toast({
-            title: "Lead created",
-            description: "New lead has been created successfully."
-          })
+      if (editingLead) {
+        // Update existing lead
+        const updateData = {
+          name: data.name,
+          email: data.email || null,
+          phone: data.phone || null,
+          company: data.company || null,
+          source: data.source || null,
+          status: data.status,
+          lead_score: data.lead_score || null,
+          notes: data.notes || null,
+          responsible_person: data.responsible_person,
+          lifecycle_stage: data.lifecycle_stage || null,
+          priority_level: data.priority_level,
+          contact_preferences: data.contact_preferences,
+          follow_up_date: data.follow_up_date || null
         }
         
-        // Reset form
-        form.reset()
-        setEditingLead(null)
-        return
+        await leadService.updateLead(editingLead.id, updateData)
+        setIsEditModalOpen(false)
+        toast({
+          title: "Lead updated",
+          description: "Lead has been updated successfully."
+        })
+      } else {
+        // Create new lead
+        const insertData = {
+          name: data.name,
+          email: data.email || null,
+          phone: data.phone || null,
+          company: data.company || null,
+          source: data.source || null,
+          status: data.status,
+          lead_score: data.lead_score || null,
+          notes: data.notes || null,
+          responsible_person: data.responsible_person,
+          lifecycle_stage: data.lifecycle_stage || null,
+          priority_level: data.priority_level,
+          contact_preferences: data.contact_preferences,
+          follow_up_date: data.follow_up_date || null,
+          created_by: user?.id || null
+        }
+        
+        await leadService.createLead(insertData)
+        setIsAddModalOpen(false)
+        toast({
+          title: "Lead created",
+          description: "New lead has been created successfully."
+        })
       }
+
+      // Reload leads to get the updated list
+      await loadLeads()
       
-      // Try Supabase first, fallback to offline mode on error
-      try {
-        if (editingLead) {
-          // Update existing lead
-          const updateData: Database['public']['Tables']['leads']['Update'] = {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            company: data.company || null,
-            source: data.source || null,
-            status: data.status,
-            lead_score: data.lead_score || null,
-            notes: data.notes || null,
-            responsible_person: data.responsible_person,
-            lifecycle_stage: data.lifecycle_stage || null,
-            priority_level: data.priority_level,
-            contact_preferences: data.contact_preferences,
-            follow_up_date: data.follow_up_date || null
-          }
-          const { error } = await (supabase as any)
-            .from('leads')
-            .update(updateData)
-            .eq('id', editingLead.id)
-
-          if (error) throw error
-
-          setLeads(leads.map(lead => 
-            lead.id === editingLead.id 
-              ? { ...lead, ...data, updated_at: new Date().toISOString() }
-              : lead
-          ))
-          loadLeads().catch(console.error)
-          setIsEditModalOpen(false)
-          toast({
-            title: "Lead updated",
-            description: "Lead has been updated successfully."
-          })
-        } else {
-          // Create new lead
-          const insertData: Database['public']['Tables']['leads']['Insert'] = {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            company: data.company || null,
-            source: data.source || null,
-            status: data.status,
-            lead_score: data.lead_score || null,
-            notes: data.notes || null,
-            responsible_person: data.responsible_person,
-            lifecycle_stage: data.lifecycle_stage || null,
-            priority_level: data.priority_level,
-            contact_preferences: data.contact_preferences,
-            follow_up_date: data.follow_up_date || null,
-            created_by: user?.id || null // Use null if no authenticated user
-          }
-          const { error } = await (supabase as any)
-            .from('leads')
-            .insert([insertData])
-            .select()
-            .single()
-
-          if (error) throw error
-
-          // Reload leads to get the updated list
-          loadLeads()
-          setIsAddModalOpen(false)
-          toast({
-            title: "Lead created",
-            description: "New lead has been created successfully."
-          })
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        if (handleSupabaseError(supabaseError)) {
-          // Fallback to offline mode
-          await handleOfflineOperation(data, editingLead)
-        } else {
-          throw supabaseError
-        }
-      }
-
       // Reset form
       form.reset()
       setEditingLead(null)
@@ -369,49 +227,16 @@ export default function Leads() {
 
     try {
       setLoading(true)
-      protectFromExtensionInterference()
       
-      const offline = isOfflineMode()
-      console.log('🔧 [Leads] Deleting data...', { offlineMode: offline })
+      await leadService.deleteLead(lead.id)
       
-      // Check if we're in offline mode
-      if (offline) {
-        console.log('📱 Using offline mode for lead deletion')
-        await offlineDataService.deleteLead(lead.id)
-        setLeads(leads.filter(l => l.id !== lead.id))
-        toast({
-          title: "Success",
-          description: "Lead deleted successfully"
-        })
-        return
-      }
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully"
+      })
       
-      // Try Supabase first, fallback to offline mode on error
-      try {
-        const { error } = await supabase
-          .from('leads')
-          .delete()
-          .eq('id', lead.id)
-
-        if (error) throw error
-        setLeads(leads.filter(l => l.id !== lead.id))
-        toast({
-          title: "Success",
-          description: "Lead deleted successfully"
-        })
-      } catch (supabaseError) {
-        console.warn('Supabase failed, checking if should fallback to offline mode:', supabaseError)
-        if (handleSupabaseError(supabaseError)) {
-          await offlineDataService.deleteLead(lead.id)
-          setLeads(leads.filter(l => l.id !== lead.id))
-          toast({
-            title: "Success",
-            description: "Lead deleted successfully"
-          })
-        } else {
-          throw supabaseError
-        }
-      }
+      // Reload leads to get the updated list
+      await loadLeads()
     } catch (error) {
       console.error('Error deleting lead:', error)
       toast({
@@ -427,61 +252,16 @@ export default function Leads() {
   const handleConvertToCustomer = async (lead: Lead) => {
     try {
       setLoading(true)
-      protectFromExtensionInterference()
       
-      const offline = isOfflineMode()
-      console.log('🔧 [Leads] Converting lead to customer...', { offlineMode: offline })
+      await leadService.convertLeadToCustomer(lead.id)
       
-      if (offline) {
-        console.log('📱 Using offline mode for lead conversion')
-        // In offline mode, just update the lead status
-        const updateData: Partial<Lead> = { status: 'closed_won' }
-        const updatedLead = await offlineDataService.updateLead(lead.id, updateData)
-        setLeads(leads.map(l => l.id === lead.id ? updatedLead : l))
-        toast({
-          title: "Success",
-          description: "Lead converted to customer successfully (offline mode)"
-        })
-        return
-      }
-      
-      // Create customer from lead
-      const customerData: Database['public']['Tables']['customers']['Insert'] = {
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-        company: lead.company,
-        status: 'active' as const,
-        notes: `Converted from lead. Original notes: ${lead.notes || 'None'}`,
-        created_by: user?.id || null, // Use null if no authenticated user
-        responsible_person: (lead.responsible_person as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed') || 'Mr. Ali'
-      }
-      const { error: customerError } = await (supabase as any)
-          .from('customers')
-          .insert(customerData)
-          .select()
-          .single()
-
-      if (customerError) throw customerError
-
-      // Update lead status to closed_won (converted)
-      const leadUpdateData: Database['public']['Tables']['leads']['Update'] = { status: 'closed_won' }
-      const { error: leadError } = await (supabase as any)
-          .from('leads')
-          .update(leadUpdateData)
-          .eq('id', lead.id)
-
-      if (leadError) throw leadError
-
-      // Update local state
-      setLeads(leads.map(l => l.id === lead.id ? { ...l, status: 'closed_won' as const } : l))
       toast({
         title: "Success",
         description: "Lead converted to customer successfully"
       })
       
-      // Reload leads to reflect changes
-      loadLeads()
+      // Reload leads to get the updated list
+      await loadLeads()
     } catch (error) {
       console.error('Error converting lead:', error)
       toast({

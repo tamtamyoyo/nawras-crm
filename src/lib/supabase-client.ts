@@ -64,6 +64,25 @@ function createSupabaseClient(): SupabaseClient<Database> {
           'X-Client-Info': 'nawras-crm@1.0.0'
         },
         fetch: async (url, options = {}) => {
+          // Handle case where url parameter is an object instead of string
+          let actualUrl: string;
+          if (typeof url === 'string') {
+            actualUrl = url;
+          } else if (url && typeof url === 'object') {
+            // If url is an object, try to extract the actual URL
+            if ('url' in url) {
+              actualUrl = (url as any).url;
+            } else if ('href' in url) {
+              actualUrl = (url as any).href;
+            } else {
+              console.error('🚨 Invalid URL parameter received:', url);
+              actualUrl = String(url);
+            }
+          } else {
+            console.error('🚨 Invalid URL parameter type:', typeof url, url);
+            actualUrl = String(url);
+          }
+
           // Ensure API key is included in headers
           const headers: Record<string, string> = {
             'apikey': validKey,
@@ -78,8 +97,8 @@ function createSupabaseClient(): SupabaseClient<Database> {
           }
           
           // Fix malformed URL query parameters (double question marks)
-          if (typeof url === 'string' && url.includes('?')) {
-            let cleanUrl = url
+          if (typeof actualUrl === 'string' && actualUrl.includes('?')) {
+            let cleanUrl = actualUrl
             
             // Fix URLs with double question marks like "?select=*?order=" -> "?select=*&order="
             // But be careful not to modify table names in the path
@@ -102,26 +121,25 @@ function createSupabaseClient(): SupabaseClient<Database> {
             // Fix any table names that got corrupted with query parameters
             cleanUrl = cleanUrl.replace(/\/rest\/v1\/([^?]+)&select=([^&?]*)/g, '/rest/v1/$1?select=$2')
             
-            if (cleanUrl !== url) {
-              console.warn('🛡️ Fixed malformed URL:', { original: url, fixed: cleanUrl })
-              url = cleanUrl
+            if (cleanUrl !== actualUrl) {
+              console.warn('🛡️ Fixed malformed URL:', { original: actualUrl, fixed: cleanUrl })
+              actualUrl = cleanUrl
             }
           }
           
           try {
-            const response = await fetch(url, updatedOptions)
+            const response = await fetch(actualUrl, updatedOptions)
             
             // Handle specific error cases to prevent console noise
             if (!response.ok) {
               // Don't log 400 errors for auth endpoints as they're expected during invalid login attempts
-              if (response.status === 400 && typeof url === 'string' && url.includes('/auth/v1/token')) {
+              if (response.status === 400 && typeof actualUrl === 'string' && actualUrl.includes('/auth/v1/token')) {
                 // Silently handle auth token errors - they're expected for invalid credentials
                 return response
               }
               
-              // Don't log connection errors for user profile fetches - they're handled by retry logic
-              if (typeof url === 'string' && url.includes('/rest/v1/users')) {
-                // Let the retry logic handle these errors without console noise
+              // Don't log connection errors for user profile fetches - they're expected when offline
+              if (response.status >= 500 && typeof actualUrl === 'string' && actualUrl.includes('/auth/v1/user')) {
                 return response
               }
             }

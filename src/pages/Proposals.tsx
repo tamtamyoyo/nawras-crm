@@ -12,11 +12,10 @@ import {
 import { cn } from '../lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { ProposalTemplate } from '../components/proposals/ProposalTemplate'
-import { supabase } from '../lib/supabase-client'
-import { offlineDataService } from '../services/offlineDataService'
+import { proposalService } from '../services/proposalService'
 
 import { getStandardTemplate, createProposalFromStandardTemplate } from '../lib/standardTemplate'
-import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
+import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { Database } from '@/lib/database.types'
 
 type Proposal = Database['public']['Tables']['proposals']['Row']
@@ -42,48 +41,15 @@ export default function ProformaInvoices() {
 
   const loadProformaInvoices = useCallback(async () => {
     protectFromExtensionInterference()
-    const offline = isOfflineMode()
-    console.log('📋 Loading proforma invoices data...', { offlineMode: offline })
+    console.log('📋 Loading proforma invoices data...')
     
     try {
-      if (offline) {
-        // Load from offline storage
-        const offlineProformaInvoices = await offlineDataService.getProposals()
-        if (offlineProformaInvoices) {
-          setProformaInvoices(offlineProformaInvoices as any)
-        } else {
-          setProformaInvoices(getMockProformaInvoices())
-        }
-      } else {
-        // Try Supabase first
-        console.log('🔄 Querying Supabase for proforma invoices...')
-        const { data, error } = await supabase
-          .from('proposals')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-
-        if (data) {
-          console.log('✅ Supabase response for proforma invoices:', { count: data.length, data })
-          setProformaInvoices(data as any)
-        }
-      }
+      const proposals = await proposalService.getProposals()
+      setProformaInvoices(proposals as any)
     } catch (error) {
-      console.error('Error loading proforma invoices from Supabase:', error)
-      
-      // Check if should fallback to offline data
-      if (handleSupabaseError(error)) {
-        const offlineProformaInvoices = await offlineDataService.getProposals()
-        if (offlineProformaInvoices) {
-          setProformaInvoices(offlineProformaInvoices)
-        } else {
-          // Use mock data if no offline data
-          setProformaInvoices(getMockProformaInvoices())
-        }
-      } else {
-        throw error
-      }
+      console.error('Error loading proforma invoices:', error)
+      // Use mock data as fallback
+      setProformaInvoices(getMockProformaInvoices())
     }
   }, [])
 
@@ -181,25 +147,12 @@ export default function ProformaInvoices() {
     if (!confirm('Are you sure you want to delete this proforma invoice?')) return
 
     protectFromExtensionInterference()
-    const offline = isOfflineMode()
-    console.log('🗑️ Deleting proforma invoice...', { offlineMode: offline, proformaInvoiceId })
+    console.log('🗑️ Deleting proforma invoice...', { proformaInvoiceId })
 
     try {
-      if (offline) {
-        // Delete from offline storage
-        await offlineDataService.deleteProposal(proformaInvoiceId)
-        const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
-        setProformaInvoices(updatedProformaInvoices)
-      } else {
-        const { error } = await supabase
-          .from('proposals')
-          .delete()
-          .eq('id', proformaInvoiceId)
-
-        if (error) throw error
-
-        await loadProformaInvoices()
-      }
+      await proposalService.deleteProposal(proformaInvoiceId)
+      const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
+      setProformaInvoices(updatedProformaInvoices)
       
       toast({
         title: "Success",
@@ -207,31 +160,11 @@ export default function ProformaInvoices() {
       })
     } catch (error) {
       console.error('Error deleting proforma invoice:', error)
-      
-      // Check if should fallback to offline deletion
-      if (handleSupabaseError(error)) {
-        try {
-          await offlineDataService.deleteProposal(proformaInvoiceId)
-          const updatedProformaInvoices = proformaInvoices.filter(p => p.id !== proformaInvoiceId)
-          setProformaInvoices(updatedProformaInvoices)
-          toast({
-            title: "Success",
-            description: "Proposal deleted offline"
-          })
-        } catch (offlineError) {
-          toast({
-            title: "Error",
-            description: "Failed to delete proposal",
-            variant: "destructive"
-          })
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to delete proposal",
-          variant: "destructive"
-        })
-      }
+      toast({
+        title: "Error",
+        description: "Failed to delete proposal",
+        variant: "destructive"
+      })
     }
   }
 
@@ -239,32 +172,14 @@ export default function ProformaInvoices() {
 
   const handleSendProformaInvoice = async (proformaInvoiceId: string) => {
     protectFromExtensionInterference()
-    const offline = isOfflineMode()
     
     try {
-      if (offline) {
-        // Update offline storage
-        const proposalToUpdate = proformaInvoices.find(p => p.id === proformaInvoiceId)
-        if (proposalToUpdate) {
-          const updates = { status: 'sent' as const, updated_at: new Date().toISOString() }
-          await offlineDataService.updateProposal(proformaInvoiceId, updates)
-          setProformaInvoices(proformaInvoices.map(p => 
-            p.id === proformaInvoiceId ? { ...p, ...updates } : p
-          ))
-        }
-      } else {
-        const { error } = await (supabase as any)
-         .from('proposals')
-         .update({
-           status: 'sent' as const,
-           updated_at: new Date().toISOString()
-         })
-         .eq('id', proformaInvoiceId)
-
-        if (error) throw error
-
-        await loadProformaInvoices()
-      }
+      const updates = { status: 'sent' as const, updated_at: new Date().toISOString() }
+      await proposalService.updateProposal(proformaInvoiceId, updates)
+      
+      setProformaInvoices(proformaInvoices.map(p => 
+        p.id === proformaInvoiceId ? { ...p, ...updates } : p
+      ))
       
       toast({
         title: "Success",
@@ -272,41 +187,11 @@ export default function ProformaInvoices() {
       })
     } catch (error) {
       console.error('Error sending proforma invoice:', error)
-      
-      // Check if should fallback to offline update
-      if (handleSupabaseError(error)) {
-        try {
-          const updatedProformaInvoices = proformaInvoices.map(p => 
-            p.id === proformaInvoiceId 
-              ? { ...p, status: 'sent' as const, updated_at: new Date().toISOString() }
-              : p
-          )
-          const updatedProposal = updatedProformaInvoices.find(p => p.id === proformaInvoiceId)
-          if (updatedProposal) {
-            await offlineDataService.updateProposal(proformaInvoiceId, {
-              status: 'sent' as const,
-              updated_at: new Date().toISOString()
-            })
-          }
-          setProformaInvoices(updatedProformaInvoices)
-          toast({
-            title: "Success",
-            description: "Proposal sent offline"
-          })
-        } catch (offlineError) {
-          toast({
-            title: "Error",
-            description: "Failed to send proposal",
-            variant: "destructive"
-          })
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to send proposal",
-          variant: "destructive"
-        })
-      }
+      toast({
+        title: "Error",
+        description: "Failed to send proposal",
+        variant: "destructive"
+      })
     }
   }
 
@@ -544,7 +429,6 @@ export default function ProformaInvoices() {
             dealData={selectedProformaInvoice}
             onSave={async (template) => {
               try {
-                const offline = isOfflineMode()
                 const proformaInvoiceData = {
                   id: selectedProformaInvoice?.id || `proforma-invoice-${Date.now()}`,
                   title: template.name,
@@ -569,52 +453,12 @@ export default function ProformaInvoices() {
                   delivery_method: 'email'
                 }
 
-                if (offline) {
-                  // Save to offline storage
-                  if (selectedProformaInvoice) {
-                    await offlineDataService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
-                    setProformaInvoices(proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } as any : p))
-                  } else {
-                    const newProposal = await offlineDataService.createProposal(proformaInvoiceData as any)
-                    setProformaInvoices([...proformaInvoices, newProposal as any])
-                  }
+                if (selectedProformaInvoice) {
+                  const updatedProposal = await proposalService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
+                  setProformaInvoices(proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? updatedProposal as any : p))
                 } else {
-                  // Save to Supabase
-                  if (selectedProformaInvoice) {
-                    const { error } = await (supabase as any)
-                      .from('proposals')
-                      .update({
-                        title: proformaInvoiceData.title,
-                        description: proformaInvoiceData.description,
-                        content: JSON.stringify(proformaInvoiceData.content),
-                        variables: proformaInvoiceData.variables,
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq('id', selectedProformaInvoice.id)
-                    if (error) throw error
-                  } else {
-                    const { error } = await (supabase as any)
-                      .from('proposals')
-                      .insert({
-                        title: proformaInvoiceData.title,
-                        description: proformaInvoiceData.description,
-                        status: proformaInvoiceData.status,
-                        customer_id: proformaInvoiceData.customer_id,
-                        deal_id: proformaInvoiceData.deal_id,
-                        content: proformaInvoiceData.content,
-                        variables: proformaInvoiceData.variables,
-                        total_amount: proformaInvoiceData.total_amount,
-                        valid_until: proformaInvoiceData.valid_until,
-                        responsible_person: proformaInvoiceData.responsible_person,
-                        source: 'manual',
-                        created_by: 'user-1',
-                        proposal_type: 'proforma',
-                        validity_period: 30,
-                        delivery_method: 'email'
-                      })
-                    if (error) throw error
-                  }
-                  await loadProformaInvoices()
+                  const newProposal = await proposalService.createProposal(proformaInvoiceData as any)
+                  setProformaInvoices([...proformaInvoices, newProposal as any])
                 }
                 
                 setShowProformaInvoiceDialog(false)
@@ -633,7 +477,6 @@ export default function ProformaInvoices() {
             }}
             onGenerate={async (template) => {
               try {
-                const offline = isOfflineMode()
                 const proformaInvoiceData = {
                   id: selectedProformaInvoice?.id || `proforma-invoice-${Date.now()}`,
                   title: template.name,
@@ -658,57 +501,13 @@ export default function ProformaInvoices() {
                   delivery_method: 'email'
                 }
 
-                if (offline) {
-                  // Save to offline storage
-                  if (selectedProformaInvoice) {
-                    await offlineDataService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
-                    setProformaInvoices(proformaInvoices.map(p => p.id === selectedProformaInvoice.id ? { ...p, ...proformaInvoiceData } as any : p))
-                  } else {
-                    const newProposal = await offlineDataService.createProposal(proformaInvoiceData as any)
-                    setProformaInvoices([...proformaInvoices, newProposal as any])
-                  }
+                if (selectedProformaInvoice) {
+                  await proposalService.updateProposal(selectedProformaInvoice.id, proformaInvoiceData as any)
                 } else {
-                  // Save to Supabase
-                  if (selectedProformaInvoice) {
-                    const { error } = await (supabase as any)
-                      .from('proposals')
-                      .update({
-                        title: proformaInvoiceData.title,
-                        description: proformaInvoiceData.description,
-                        status: proformaInvoiceData.status,
-                        content: JSON.stringify(proformaInvoiceData.content),
-                        variables: proformaInvoiceData.variables,
-                        sent_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq('id', selectedProformaInvoice.id)
-                    if (error) throw error
-                  } else {
-                    const { error } = await (supabase as any)
-                      .from('proposals')
-                      .insert({
-                        title: proformaInvoiceData.title,
-                        description: proformaInvoiceData.description,
-                        status: proformaInvoiceData.status,
-                        customer_id: proformaInvoiceData.customer_id,
-                        deal_id: proformaInvoiceData.deal_id,
-                        content: proformaInvoiceData.content,
-                        variables: proformaInvoiceData.variables,
-                        total_amount: proformaInvoiceData.total_amount,
-                        valid_until: proformaInvoiceData.valid_until,
-                        sent_at: proformaInvoiceData.sent_at,
-                        responsible_person: proformaInvoiceData.responsible_person,
-                        source: 'manual',
-                        created_by: 'user-1',
-                        proposal_type: 'proforma',
-                        validity_period: 30,
-                        delivery_method: 'email'
-                      })
-                    if (error) throw error
-                  }
-                  await loadProformaInvoices()
+                  await proposalService.createProposal(proformaInvoiceData as any)
                 }
                 
+                await loadProformaInvoices()
                 setShowProformaInvoiceDialog(false)
                 toast({
                   title: "Success",

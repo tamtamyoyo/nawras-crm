@@ -6,12 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { BarChart3, TrendingUp, DollarSign, Users, Target, Download, Filter, Settings, RefreshCw, Eye, EyeOff } from 'lucide-react'
 
-import { supabase } from '../lib/supabase-client'
-import { offlineDataService } from '../services/offlineDataService'
+import { analyticsService } from '../services/analyticsService'
 
 import type { Database } from '../lib/database.types'
 import { toast } from 'sonner'
-import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
+import { protectFromExtensionInterference } from '../utils/offlineMode'
 
 import { useStore } from '../store/useStore'
 import { cn } from '../lib/utils'
@@ -184,8 +183,7 @@ export default function Analytics() {
 
   const fetchAnalyticsData = useCallback(async () => {
     protectFromExtensionInterference()
-    const offline = isOfflineMode()
-    console.log('📊 Loading Analytics data...', { offlineMode: offline })
+    console.log('📊 Loading Analytics data...')
     setLoading(true)
     try {
       // Calculate date range
@@ -193,81 +191,14 @@ export default function Analytics() {
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - parseInt(dateRange))
 
-      let deals: Deal[] | null = null
-      let clients: Customer[] | null = null
-      let events: Event[] | null = null
-
-      if (offline) {
-        // Use offline data
-        const allDeals = await offlineDataService.getDeals()
-        const allCustomers = await offlineDataService.getCustomers()
-        const allEvents = [] // Mock events data for offline mode
-        
-        // Filter by date range
-        deals = allDeals.filter(deal => {
-          const dealDate = new Date(deal.created_at)
-          return dealDate >= startDate && dealDate <= endDate
-        })
-        
-        clients = allCustomers.filter(customer => {
-          const customerDate = new Date(customer.created_at)
-          return customerDate >= startDate && customerDate <= endDate
-        })
-        
-        events = allEvents
-      } else {
-        console.log('📊 Querying Supabase for analytics data...')
-        try {
-          // Fetch deals data
-          const dealsResponse = await supabase
-            .from('deals')
-            .select('*')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-          deals = dealsResponse.data
-
-          // Fetch customers data
-          const customersResponse = await supabase
-            .from('customers')
-            .select('*')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-          clients = customersResponse.data
-
-          // Events functionality removed
-          events = []
-        } catch (supabaseError) {
-          console.warn('Supabase error, checking if should fallback to offline mode:', supabaseError)
-          
-          // Check if should fallback to offline data
-          if (handleSupabaseError(supabaseError)) {
-            // Use offline data as fallback
-            const allDeals = await offlineDataService.getDeals()
-            const allCustomers = await offlineDataService.getCustomers()
-            const allEvents = [] // Mock events data for offline mode
-            
-            // Filter by date range
-            deals = allDeals.filter(deal => {
-              const dealDate = new Date(deal.created_at)
-              return dealDate >= startDate && dealDate <= endDate
-            })
-            
-            clients = allCustomers.filter(customer => {
-              const customerDate = new Date(customer.created_at)
-              return customerDate >= startDate && customerDate <= endDate
-            })
-            
-            events = allEvents
-          } else {
-            throw supabaseError
-          }
-        }
-      }
+      // Use analyticsService to get data
+      const { deals, customers } = await analyticsService.getAnalyticsData(startDate, endDate)
+      const events: Event[] = [] // Events functionality removed
 
       // Process data
       const totalDeals = deals?.length || 0
       const totalRevenue = deals?.reduce((sum, deal) => sum + (deal.value || 0), 0) || 0
-      const totalClients = clients?.length || 0
+      const totalClients = customers?.length || 0
       const totalEvents = events?.length || 0
 
       // Deals by status

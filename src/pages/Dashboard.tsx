@@ -1,10 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuthHook'
 import { useStore } from '../store/useStore'
-import { supabase } from '../lib/supabase-client'
-import { offlineDataService } from '../services/offlineDataService'
-import { isOfflineMode } from '../utils/offlineMode'
-import { handleSupabaseError } from '../utils/errorHandling'
+import { dashboardService } from '../services/dashboardService'
 import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,85 +50,22 @@ export default function Dashboard() {
       } else {
         setLoading(true)
       }
+
+      const data = await dashboardService.loadDashboardData()
       
-      // Check if we're in offline mode
-      const offlineMode = isOfflineMode()
-      console.log('🔧 [Dashboard] Loading data - offlineMode:', offlineMode)
-      
-      if (offlineMode) {
-        console.log('📱 Loading dashboard data from offline service')
-        
-        // Load data from offline service
-        const [customersData, dealsData, leadsData, proposalsData] = await Promise.all([
-          await offlineDataService.getCustomers(),
-          await offlineDataService.getDeals(),
-          await offlineDataService.getLeads(),
-          await offlineDataService.getProposals()
-        ])
+      setCustomers(data.customers)
+      setDeals(data.deals)
+      setLeads(data.leads)
+      setProposals(data.proposals)
 
-        setCustomers(customersData as Customer[])
-        setDeals(dealsData as Deal[])
-        setLeads(leadsData as Lead[])
-        setProposals(proposalsData as Proposal[])
+      // Generate chart data
+      const chartData = dashboardService.generateChartData(data.deals, data.leads)
+      setChartData(chartData)
 
-        // Generate chart data
-        generateChartData(dealsData, leadsData)
-        
-        toast.success('Dashboard loaded (offline mode)')
-      } else {
-        console.log('🔧 [Dashboard] Loading data from Supabase...')
-        // Load all data in parallel from Supabase
-        const [customersRes, dealsRes, leadsRes, proposalsRes] = await Promise.all([
-          supabase.from('customers').select('*'),
-          supabase.from('deals').select('*'),
-          supabase.from('leads').select('*'),
-          supabase.from('proposals').select('*')
-        ])
-        console.log('🔧 [Dashboard] Supabase responses:', { customersRes, dealsRes, leadsRes, proposalsRes })
-
-        if (customersRes.error) throw customersRes.error
-        if (dealsRes.error) throw dealsRes.error
-        if (leadsRes.error) throw leadsRes.error
-        if (proposalsRes.error) throw proposalsRes.error
-
-        setCustomers(customersRes.data as Customer[] || [])
-        setDeals(dealsRes.data as Deal[] || [])
-        setLeads(leadsRes.data as Lead[] || [])
-        setProposals(proposalsRes.data as Proposal[] || [])
-
-        // Generate chart data
-        generateChartData(dealsRes.data || [], leadsRes.data || [])
-      }
+      toast.success(data.isOffline ? 'Dashboard loaded (offline mode)' : 'Dashboard loaded')
     } catch (error) {
       console.error('Error loading dashboard data:', error)
-      
-      // Use centralized error handling to determine fallback
-      const shouldFallback = handleSupabaseError(error, 'dashboard data loading')
-      
-      if (shouldFallback) {
-        try {
-          console.log('🔄 Falling back to offline mode due to error')
-          const [customersData, dealsData, leadsData, proposalsData] = await Promise.all([
-            await offlineDataService.getCustomers(),
-            await offlineDataService.getDeals(),
-            await offlineDataService.getLeads(),
-            await offlineDataService.getProposals()
-          ])
-
-          setCustomers(customersData as Customer[])
-          setDeals(dealsData as Deal[])
-          setLeads(leadsData as Lead[])
-          setProposals(proposalsData as Proposal[])
-          generateChartData(dealsData, leadsData)
-          
-          toast.warning('Using offline data due to connection issues')
-        } catch (offlineError) {
-          console.error('Offline fallback failed:', offlineError)
-          toast.error('Failed to load dashboard data')
-        }
-      } else {
-        toast.error('Failed to load dashboard data')
-      }
+      toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -146,111 +80,47 @@ export default function Dashboard() {
     loadDashboardData(true)
   }
 
-  const generateChartData = (dealsData: Deal[], leadsData: Lead[]) => {
-    // Monthly revenue from closed deals
-    const monthlyRevenue = Array.from({ length: 6 }, (_, i) => {
-      const date = new Date()
-      date.setMonth(date.getMonth() - i)
-      const monthName = date.toLocaleDateString('en-US', { month: 'short' })
-      const revenue = dealsData
-        .filter(deal => deal.stage === 'closed_won' && 
-          deal.updated_at && new Date(deal.updated_at).getMonth() === date.getMonth())
-        .reduce((sum, deal) => sum + (deal.value || 0), 0)
-      return { month: monthName, revenue }
-    }).reverse()
-
-    // Deals by stage
-    const stageGroups = dealsData.reduce((acc: Record<string, number>, deal) => {
-      const stage = deal.stage || 'unknown'
-      acc[stage] = (acc[stage] || 0) + 1
-      return acc
-    }, {})
-    const dealsByStage = Object.entries(stageGroups).map(([stage, count]) => ({
-      stage: stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      count: count as number
-    }))
-
-    // Leads by source
-    const sourceGroups = leadsData.reduce((acc: Record<string, number>, lead) => {
-      const source = lead.source || 'Unknown'
-      acc[source] = (acc[source] || 0) + 1
-      return acc
-    }, {})
-    const leadsBySource = Object.entries(sourceGroups).map(([source, count]) => ({
-      source,
-      count: count as number,
-      value: count as number
-    }))
-
-    setChartData({ monthlyRevenue, dealsByStage, leadsBySource })
-  }
-
   const totalRevenue = deals.filter(deal => deal.stage === 'closed_won').reduce((sum, deal) => sum + (deal.value || 0), 0)
   const activeDeals = deals.filter(deal => deal.stage && !['closed_won', 'closed_lost'].includes(deal.stage))
   // Calculate conversion rate from leads to deals
   const conversionRate = leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0
-  
-  // Calculate proposal statistics
-  const totalProposals = proposals.length
-  const acceptedProposals = proposals.filter(proposal => proposal.status === 'accepted').length
-  const pendingProposals = proposals.filter(proposal => proposal.status === 'draft').length
-  const totalProposalValue = proposals.reduce((sum, proposal) => {
-    try {
-      const content = typeof proposal.content === 'string' ? JSON.parse(proposal.content) : proposal.content
-      if (Array.isArray(content)) {
-        return sum + content.reduce((sectionSum, section) => {
-          if (section.type === 'pricing' && section.content?.items) {
-            return sectionSum + section.content.items.reduce((itemSum, item) => itemSum + (item.total || 0), 0)
-          }
-          return sectionSum
-        }, 0)
-      }
-    } catch (e) {
-      console.warn('Error parsing proposal content:', e)
-    }
-    return sum
-  }, 0)
 
   const stats = [
     {
-      title: 'Total Proposals',
-      value: totalProposals.toString(),
-      change: '+15%',
-      changeType: 'positive' as const,
-      icon: FileText,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      description: 'All proposals'
-    },
-    {
-      title: 'Accepted Proposals',
-      value: acceptedProposals.toString(),
+      title: 'Total Revenue',
+      value: `$${totalRevenue.toLocaleString()}`,
       change: '+12%',
       changeType: 'positive' as const,
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      description: 'Approved proposals'
-    },
-    {
-      title: 'Pending Proposals',
-      value: pendingProposals.toString(),
-      change: '+3%',
-      changeType: 'positive' as const,
-      icon: Calendar,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      description: 'Awaiting response'
-    },
-    {
-      title: 'Proposal Value',
-      value: `$${totalProposalValue.toLocaleString()}`,
-      change: '+18%',
-      changeType: 'positive' as const,
       icon: DollarSign,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      description: 'Total proposal worth'
+      bgColor: 'bg-green-100',
+      color: 'text-green-600'
+    },
+    {
+      title: 'Active Deals',
+      value: activeDeals.length.toString(),
+      change: '+3',
+      changeType: 'positive' as const,
+      icon: TrendingUp,
+      bgColor: 'bg-blue-100',
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Conversion Rate',
+      value: `${conversionRate}%`,
+      change: '+2%',
+      changeType: 'positive' as const,
+      icon: Target,
+      bgColor: 'bg-purple-100',
+      color: 'text-purple-600'
+    },
+    {
+      title: 'Total Proposals',
+      value: proposals.length.toString(),
+      change: '+5',
+      changeType: 'positive' as const,
+      icon: FileText,
+      bgColor: 'bg-orange-100',
+      color: 'text-orange-600'
     }
   ]
 
@@ -373,10 +243,7 @@ export default function Dashboard() {
                   aria-label={`${stat.title}: ${stat.value}, ${stat.change} change`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      // Defensive programming for preventDefault
-                      if (e && typeof e.preventDefault === 'function') {
-                        e.preventDefault()
-                      }
+                      e.preventDefault()
                       // Handle card interaction if needed
                     }
                   }}
@@ -677,10 +544,7 @@ export default function Dashboard() {
                       aria-label={`${activity.title}: ${activity.description}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                          // Defensive programming for preventDefault
-                          if (e && typeof e.preventDefault === 'function') {
-                            e.preventDefault()
-                          }
+                          e.preventDefault()
                           // Handle activity interaction if needed
                         }
                       }}

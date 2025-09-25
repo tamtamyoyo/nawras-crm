@@ -4,9 +4,18 @@ declare global {
     gtag?: (
       command: 'config' | 'set' | 'event' | 'get',
       targetId: string | Date | boolean,
-      config?: any
+      config?: Record<string, unknown>
     ) => void;
   }
+}
+
+interface ErrorReportConfig {
+  apiEndpoint?: string
+  apiKey?: string
+  enableConsoleLogging?: boolean
+  enableLocalStorage?: boolean
+  maxStoredReports?: number
+  config?: Record<string, unknown>
 }
 
 interface ErrorContext {
@@ -21,15 +30,16 @@ interface ErrorContext {
   sessionId: string
   context?: string
   retryCount: number
-  browserInfo: any
-  performanceMetrics: any
+  browserInfo: Record<string, unknown>
+  performanceMetrics: Record<string, unknown>
+  stored_at?: number
 }
 
 interface UserErrorReport {
   errorId: string
   userDescription: string
   error: Error
-  errorInfo: any
+  errorInfo: Record<string, unknown>
 }
 
 class ErrorReportingService {
@@ -154,7 +164,7 @@ class ErrorReportingService {
     }
   }
 
-  private storeUserReportLocally(reportData: any) {
+  private storeUserReportLocally(reportData: UserErrorReport) {
     try {
       const userReports = JSON.parse(localStorage.getItem('crm_user_reports') || '[]')
       userReports.push({
@@ -173,7 +183,7 @@ class ErrorReportingService {
     }
   }
 
-  private getStoredErrors(): any[] {
+  private getStoredErrors(): ErrorContext[] {
     try {
       return JSON.parse(localStorage.getItem(this.storageKey) || '[]')
     } catch {
@@ -243,7 +253,7 @@ class ErrorReportingService {
     }
   }
 
-  private async sendToSupportSystem(reportData: any) {
+  private async sendToSupportSystem(reportData: UserErrorReport) {
     try {
       // Send user reports to support system
       // This could be integrated with:
@@ -325,7 +335,7 @@ class ErrorReportingService {
   }
 
   // Public methods for manual error reporting
-  public reportCustomError(message: string, context?: string, additionalData?: any) {
+  public reportCustomError(message: string, context?: string, additionalData?: Record<string, unknown>) {
     const errorContext: ErrorContext = {
       errorId: `custom_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       message,
@@ -359,7 +369,7 @@ class ErrorReportingService {
     }
   }
 
-  private groupErrorsByContext(errors: any[]) {
+  private groupErrorsByContext(errors: ErrorContext[]) {
     return errors.reduce((acc, error) => {
       const context = error.context || 'Unknown'
       acc[context] = (acc[context] || 0) + 1

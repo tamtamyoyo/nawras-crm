@@ -2,7 +2,7 @@ interface OfflineQueueItem {
   id: string
   type: 'CREATE' | 'UPDATE' | 'DELETE'
   table: string
-  data: any
+  data: unknown
   timestamp: number
   retryCount: number
   maxRetries: number
@@ -103,7 +103,7 @@ class OfflineService {
   /**
    * Store data locally
    */
-  setLocalData(key: string, data: any): void {
+  setLocalData(key: string, data: unknown): void {
     try {
       const storageKey = `${this.config.storagePrefix}${key}`
       localStorage.setItem(storageKey, JSON.stringify({
@@ -167,7 +167,7 @@ class OfflineService {
   queueOperation(
     type: 'CREATE' | 'UPDATE' | 'DELETE',
     table: string,
-    data: any
+    data: unknown
   ): string {
     const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
@@ -363,7 +363,7 @@ class OfflineService {
     }
   }
 
-  setCachedData(key: string, data: any): void {
+  setCachedData(key: string, data: unknown): void {
     try {
       const storageKey = `${this.config.storagePrefix}cache_${key}`
       localStorage.setItem(storageKey, JSON.stringify({

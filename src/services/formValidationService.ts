@@ -9,7 +9,7 @@ interface ValidationRule {
   number?: boolean
   min?: number
   max?: number
-  custom?: (value: any) => string | null
+  custom?: (value: unknown) => string | null
   message?: string
 }
 
@@ -45,7 +45,7 @@ class FormValidationService {
   /**
    * Validate a single field
    */
-  validateField(value: any, rules: ValidationRule): string | null {
+  validateField(value: unknown, rules: ValidationRule): string | null {
     // Required validation
     if (rules.required && this.isEmpty(value)) {
       return rules.message || 'This field is required'
@@ -153,7 +153,7 @@ class FormValidationService {
    */
   validateFormDebounced(
     formId: string,
-    formData: Record<string, any>,
+    formData: Record<string, unknown>,
     callback: (result: ValidationResult) => void,
     debounceMs: number = 300
   ): void {
@@ -208,7 +208,7 @@ class FormValidationService {
   /**
    * Utility methods
    */
-  private isEmpty(value: any): boolean {
+  private isEmpty(value: unknown): boolean {
     if (value === null || value === undefined) return true
     if (typeof value === 'string') return value.trim() === ''
     if (Array.isArray(value)) return value.length === 0
@@ -237,8 +237,13 @@ class FormValidationService {
     }
   }
 
-  private isValidNumber(value: any): boolean {
-    return !isNaN(Number(value)) && isFinite(Number(value))
+  private isValidNumber(value: unknown): boolean {
+    if (typeof value === 'number') return !isNaN(value) && isFinite(value)
+    if (typeof value === 'string') {
+      const num = parseFloat(value)
+      return !isNaN(num) && isFinite(num)
+    }
+    return false
   }
 
   /**
@@ -381,7 +386,7 @@ class FormValidationService {
   createValidationHook(formId: string, initialData: Record<string, any> = {}) {
     return {
       validate: (data: Record<string, any>) => this.validateForm(formId, data),
-      validateField: (fieldName: string, value: any) => {
+      validateField: (fieldName: string, value: unknown) => {
         const schema = this.validationSchemas.get(formId)
         if (!schema || !schema[fieldName]) return null
         return this.validateField(value, schema[fieldName])

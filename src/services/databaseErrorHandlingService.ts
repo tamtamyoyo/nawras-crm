@@ -7,21 +7,21 @@ interface DatabaseError {
   message: string
   details?: string
   hint?: string
-  originalError?: any
+  originalError?: unknown
 }
 
 interface DatabaseOperation {
   table: string
-  operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT'
-  data?: any
-  filters?: any
-  options?: any
+  operation: 'select' | 'insert' | 'update' | 'delete'
+  data?: unknown
+  filters?: Record<string, unknown>
+  options?: Record<string, unknown>
 }
 
 interface FallbackStrategy {
   useCache?: boolean
   useOfflineQueue?: boolean
-  useDefaultValue?: any
+  useDefaultValue?: unknown
   retryCount?: number
   customFallback?: (error: DatabaseError, operation: DatabaseOperation) => Promise<any>
 }
@@ -149,10 +149,11 @@ class DatabaseErrorHandlingService {
     return apiRetryService.executeWithRetry(databaseCall, {
       maxRetries,
       baseDelay: this.config.retryDelay,
-      retryCondition: (error: any) => {
+      retryCondition: (error: unknown) => {
         // Retry on network errors and specific database errors
-        if (!error.error) return false
-        const dbError = error.error as PostgrestError
+        if (!error || typeof error !== 'object' || !('error' in error)) return false
+        const errorObj = error as { error: PostgrestError }
+        const dbError = errorObj.error
         
         // Don't retry on client errors (4xx)
         if (dbError.code && dbError.code.startsWith('4')) return false
@@ -173,7 +174,7 @@ class DatabaseErrorHandlingService {
    * Handle database errors with fallback strategies
    */
   private async handleDatabaseError<T>(
-    error: any,
+    error: unknown,
     operation: DatabaseOperation,
     strategy: FallbackStrategy
   ): Promise<T> {
@@ -244,14 +245,15 @@ class DatabaseErrorHandlingService {
   /**
    * Create standardized database error
    */
-  private createDatabaseError(error: any): DatabaseError {
-    if (error.code && error.message) {
+  private createDatabaseError(error: unknown): DatabaseError {
+    if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+      const errorObj = error as { code: string; message: string; details?: string; hint?: string }
       // Already a PostgrestError
       return {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
+        code: errorObj.code,
+        message: errorObj.message,
+        details: errorObj.details,
+        hint: errorObj.hint,
         originalError: error
       }
     }
@@ -359,12 +361,12 @@ class DatabaseErrorHandlingService {
 
   async safeInsert<T>(
     table: string,
-    data: any,
+    data: unknown,
     databaseCall: () => Promise<{ data: T | null; error: PostgrestError | null }>,
     fallbackStrategy?: FallbackStrategy
   ): Promise<T> {
     return this.executeWithErrorHandling(
-      { table, operation: 'INSERT', data },
+      { table, operation: 'insert', data },
       databaseCall,
       fallbackStrategy
     )
@@ -372,12 +374,12 @@ class DatabaseErrorHandlingService {
 
   async safeUpdate<T>(
     table: string,
-    data: any,
+    data: unknown,
     databaseCall: () => Promise<{ data: T | null; error: PostgrestError | null }>,
     fallbackStrategy?: FallbackStrategy
   ): Promise<T> {
     return this.executeWithErrorHandling(
-      { table, operation: 'UPDATE', data },
+      { table, operation: 'update', data },
       databaseCall,
       fallbackStrategy
     )
@@ -397,12 +399,12 @@ class DatabaseErrorHandlingService {
 
   async safeUpsert<T>(
     table: string,
-    data: any,
+    data: unknown,
     databaseCall: () => Promise<{ data: T | null; error: PostgrestError | null }>,
     fallbackStrategy?: FallbackStrategy
   ): Promise<T> {
     return this.executeWithErrorHandling(
-      { table, operation: 'UPSERT', data },
+      { table, operation: 'upsert', data },
       databaseCall,
       fallbackStrategy
     )
@@ -414,8 +416,8 @@ class DatabaseErrorHandlingService {
   async safeBatch<T>(
     operations: Array<{
       table: string
-      operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT'
-      data?: any
+      operation: 'select' | 'insert' | 'update' | 'delete' | 'upsert'
+      data?: unknown
       databaseCall: () => Promise<{ data: T | null; error: PostgrestError | null }>
       fallbackStrategy?: FallbackStrategy
     }>
@@ -447,7 +449,7 @@ class DatabaseErrorHandlingService {
    * Health check for database connectivity
    */
   async healthCheck(
-    testCall: () => Promise<{ data: any; error: PostgrestError | null }>
+    testCall: () => Promise<{ data: unknown; error: PostgrestError | null }>
   ): Promise<{
     healthy: boolean
     latency: number

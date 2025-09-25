@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { AuthContext, UserProfile } from './auth-context';
 import { supabase } from '../lib/supabase-client';
@@ -28,8 +28,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if we're in offline mode using centralized detection
-  const offlineModeActive = isOfflineMode();
+  // Check if we're in offline mode using centralized detection (memoized to prevent re-renders)
+  const offlineModeActive = useMemo(() => isOfflineMode(), []);
 
   const createFallbackProfile = useCallback((userId: string, email: string): UserProfile => {
     logDev('Creating fallback profile for:', email);
@@ -49,13 +49,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
 
-  const fetchUserProfile = useCallback(async (userId: string): Promise<void> => {
+  const fetchUserProfile = useCallback(async (userId: string, userEmail?: string): Promise<void> => {
     try {
       logDev('Creating user profile from auth data for:', userId);
       
       // Always use fallback profile since we don't have a users table
-      if (user?.email) {
-        const fallbackProfile = createFallbackProfile(userId, user.email);
+      if (userEmail) {
+        const fallbackProfile = createFallbackProfile(userId, userEmail);
         setProfile(fallbackProfile);
       }
       
@@ -63,13 +63,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       logDev('❌ Failed to create user profile:', error instanceof Error ? error.message : 'Unknown error');
       // Use fallback profile on any error
-      if (user?.email) {
-        const fallbackProfile = createFallbackProfile(userId, user.email);
+      if (userEmail) {
+        const fallbackProfile = createFallbackProfile(userId, userEmail);
         setProfile(fallbackProfile);
       }
       setLoading(false);
     }
-  }, [user, createFallbackProfile]);
+  }, [createFallbackProfile]);
 
   useEffect(() => {
     const isTestEnvironment = typeof window !== 'undefined' && (import.meta.env.MODE === 'test' || import.meta.env.VITEST === 'true');
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(session?.user ?? null);
             
             if (session?.user) {
-              await fetchUserProfile(session.user.id);
+              await fetchUserProfile(session.user.id, session.user.email);
             } else {
               setProfile(null);
               setLoading(false);
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(session?.user ?? null);
           
           if (session?.user) {
-            await fetchUserProfile(session.user.id);
+            await fetchUserProfile(session.user.id, session.user.email);
           } else {
             setLoading(false);
           }
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         subscription.unsubscribe();
       }
     };
-  }, [fetchUserProfile, createFallbackProfile, isOfflineMode]);
+  }, [fetchUserProfile, offlineModeActive]);
 
   const signIn = async (email: string, password: string) => {
     try {

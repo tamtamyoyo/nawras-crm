@@ -376,6 +376,21 @@ class PerformanceMonitoringService {
   }
 
   /**
+   * Start a performance operation
+   */
+  startOperation(operationId: string): void {
+    this.mark(`${operationId}-start`)
+  }
+
+  /**
+   * End a performance operation
+   */
+  endOperation(operationId: string): void {
+    this.mark(`${operationId}-end`)
+    this.measure(operationId, `${operationId}-start`, `${operationId}-end`)
+  }
+
+  /**
    * Mark a performance point
    */
   mark(name: string): void {
