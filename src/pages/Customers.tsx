@@ -141,7 +141,10 @@ export default function Customers() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    // Defensive programming for preventDefault
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
     
     // Use form validation service
     const validationResult = formValidationService.validateForm('customer', formData)

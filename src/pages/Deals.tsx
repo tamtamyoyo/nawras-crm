@@ -148,7 +148,10 @@ export default function Deals() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    // Defensive programming for preventDefault
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
     
     if (!validateForm()) {
       return

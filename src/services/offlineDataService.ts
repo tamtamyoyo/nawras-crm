@@ -1,4 +1,5 @@
 import { Database } from '@/lib/database.types';
+import { isOfflineMode } from '../utils/offlineMode';
 
 // Use Database types for consistency
 export type Customer = Database['public']['Tables']['customers']['Row'];
@@ -273,47 +274,8 @@ const MOCK_INVOICES: Invoice[] = [
 ];
 
 class OfflineDataService {
-  private isOfflineMode(): boolean {
-    // Check if explicitly set to offline mode via environment variable
-    if (import.meta.env.VITE_OFFLINE_MODE === 'true') {
-      return true;
-    }
-    
-    // Check if Supabase is not properly configured (fallback to offline)
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    // Check for demo/placeholder URLs that should trigger offline mode
-    const isDemoConfig = (
-      !supabaseUrl || 
-      !supabaseKey || 
-      supabaseUrl === 'https://your-project-id.supabase.co' ||
-      supabaseUrl === 'your_supabase_project_url' ||
-      supabaseUrl === 'https://demo-project.supabase.co' ||
-      supabaseKey === 'your-supabase-anon-key-here' ||
-      supabaseKey === 'your_supabase_anon_key' ||
-      supabaseKey.startsWith('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIi') // Demo JWT
-    );
-    
-    // If using demo/invalid config, use offline mode
-    if (isDemoConfig) {
-      return true;
-    }
-    
-    // Additional validation for real Supabase config
-    const isValidSupabase = (
-      supabaseUrl.startsWith('https://') &&
-      supabaseUrl.includes('.supabase.co') &&
-      supabaseKey.length > 50 &&
-      !supabaseKey.includes('demo')
-    );
-    
-    // If Supabase is not properly configured, use offline mode
-    return !isValidSupabase;
-  }
-
   private initializeStorage(): void {
-    if (!this.isOfflineMode()) return;
+    if (!isOfflineMode()) return;
     
     const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
     if (!initialized) {

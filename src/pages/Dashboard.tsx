@@ -373,7 +373,10 @@ export default function Dashboard() {
                   aria-label={`${stat.title}: ${stat.value}, ${stat.change} change`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
+                      // Defensive programming for preventDefault
+                      if (e && typeof e.preventDefault === 'function') {
+                        e.preventDefault()
+                      }
                       // Handle card interaction if needed
                     }
                   }}
@@ -674,7 +677,10 @@ export default function Dashboard() {
                       aria-label={`${activity.title}: ${activity.description}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
+                          // Defensive programming for preventDefault
+                          if (e && typeof e.preventDefault === 'function') {
+                            e.preventDefault()
+                          }
                           // Handle activity interaction if needed
                         }
                       }}

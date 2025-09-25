@@ -23,7 +23,7 @@ import { useAuth } from '../hooks/useAuthHook'
 import { Database, Json } from '@/lib/database.types'
 import { offlineDataService } from '../services/offlineDataService'
 import { isOfflineMode } from '../utils/offlineMode'
-import { handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
+import { handleSupabaseError, protectFromExtensionInterference, setSupabaseOffline } from '../utils/offlineMode'
 import { PAYMENT_TERMS } from '../lib/standardTemplate'
 import { InvoiceItem } from '@/types/invoice'
 
@@ -366,6 +366,7 @@ export default function Invoices() {
         }
       } catch (supabaseError) {
         console.warn('Supabase error, falling back to offline mode:', supabaseError)
+        setSupabaseOffline() // Mark Supabase as offline for future operations
         
         try {
           if (showEditModal && selectedInvoice) {
@@ -455,9 +456,10 @@ export default function Invoices() {
           description: 'Invoice deleted successfully'
         })
       } catch (supabaseError) {
-        console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        
-        try {
+          console.warn('Supabase error, falling back to offline mode:', supabaseError)
+          setSupabaseOffline() // Mark Supabase as offline for future operations
+          
+          try {
           await offlineDataService.deleteInvoice(invoice.id)
           const updatedInvoices = await offlineDataService.getInvoices()
           setInvoices(updatedInvoices as unknown as Invoice[])
@@ -524,9 +526,10 @@ export default function Invoices() {
           description: `Invoice status updated to ${newStatus}`
         })
       } catch (supabaseError) {
-        console.warn('Supabase error, falling back to offline mode:', supabaseError)
-        
-        try {
+          console.warn('Supabase error, falling back to offline mode:', supabaseError)
+          setSupabaseOffline() // Mark Supabase as offline for future operations
+          
+          try {
           const updatedInvoice = { ...invoice, status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled', updated_at: new Date().toISOString() }
           await offlineDataService.updateInvoice(invoice.id, updatedInvoice as any)
           const updatedInvoices = await offlineDataService.getInvoices()
