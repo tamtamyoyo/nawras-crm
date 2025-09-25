@@ -283,10 +283,10 @@ function EnhancedKanbanColumn({
   isOver = false,
   isDraggedOver = false
 }: EnhancedKanbanColumnProps) {
-  const stageDeals = deals.filter(deal => deal.stage === stage.id)
-  const totalValue = stageDeals.reduce((sum, deal) => sum + (deal.value || 0), 0)
+  const stageDeals = deals.filter(deal => deal && deal.stage === stage.id)
+  const totalValue = stageDeals.reduce((sum, deal) => sum + (deal?.value || 0), 0)
   const avgProbability = stageDeals.length > 0 
-    ? Math.round(stageDeals.reduce((sum, deal) => sum + (deal.probability || 0), 0) / stageDeals.length)
+    ? Math.round(stageDeals.reduce((sum, deal) => sum + (deal?.probability || 0), 0) / stageDeals.length)
     : 0
 
   const IconComponent = stage.icon
@@ -473,7 +473,7 @@ export function EnhancedPipeline({
   }
 
   const handleSelectAll = (stage: string, selected: boolean) => {
-    const stageDeals = filteredDeals.filter(deal => deal.stage === stage)
+    const stageDeals = filteredDeals.filter(deal => deal && deal.stage === stage)
     const newSelected = new Set(selectedDeals)
     
     stageDeals.forEach(deal => {

@@ -148,22 +148,30 @@ export default function Deals() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 handleSubmit called', { formData, showAddModal, showEditModal, user })
+    
     // Defensive programming for preventDefault
     if (e && typeof e.preventDefault === 'function') {
       e.preventDefault()
     }
     
+    console.log('📝 Validating form...')
     if (!validateForm()) {
+      console.log('❌ Form validation failed')
       return
     }
+    console.log('✅ Form validation passed')
     
     if (!user) {
+      console.log('❌ User not logged in', { user, userType: typeof user })
       toast.error('You must be logged in to save deals')
       return
     }
+    console.log('✅ User is logged in', { userId: user.id })
 
     setIsSubmitting(true)
     setLoading(true)
+    console.log('🔄 Set submitting and loading states')
 
     try {
       protectFromExtensionInterference()
@@ -210,7 +218,9 @@ export default function Deals() {
           toast.success('Deal added successfully')
         }
         
+        console.log('🎯 About to call resetForm in offline mode')
         resetForm()
+        console.log('✅ resetForm called successfully in offline mode')
         return
       }
       
@@ -303,16 +313,23 @@ export default function Deals() {
             loadData().catch(console.error)
             toast.success('Deal added successfully')
           }
-        } else {
+          resetForm()
+            console.log('✅ resetForm called successfully in fallback offline mode')
+          } else {
           throw supabaseError
         }
       }
       
+      console.log('🎯 About to call resetForm in online mode')
       resetForm()
+      console.log('✅ resetForm called successfully in online mode')
     } catch (error) {
       console.error('Error saving deal:', error)
       toast.error('Failed to save deal')
     } finally {
+      console.log('🏁 In finally block, about to call resetForm')
+      resetForm()
+      console.log('✅ resetForm called successfully in finally block')
       setIsSubmitting(false)
       setLoading(false)
     }
@@ -367,6 +384,8 @@ export default function Deals() {
   }
 
   const resetForm = () => {
+    console.log('🔄 resetForm called - current state:', { showAddModal, showEditModal })
+    
     setFormData({
       title: '',
       customer_id: '',
@@ -382,9 +401,12 @@ export default function Deals() {
       deal_type: 'new_business'
     })
     setFormErrors({})
+    
+    console.log('🚪 Setting modals to false...')
     setShowAddModal(false)
     setShowEditModal(false)
     setSelectedDeal(null)
+    console.log('✅ resetForm completed - modals should be closed')
   }
 
   const openEditModal = (deal: Deal) => {
@@ -411,9 +433,9 @@ export default function Deals() {
     setShowExportModal(true)
   }
 
-  const totalPipelineValue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0)
-  const wonDeals = deals.filter(deal => deal.stage === 'closed_won')
-  const totalWonValue = wonDeals.reduce((sum, deal) => sum + (deal.value || 0), 0)
+  const totalPipelineValue = (deals || []).reduce((sum, deal) => sum + (deal?.value || 0), 0)
+  const wonDeals = (deals || []).filter(deal => deal && deal.stage === 'closed_won')
+  const totalWonValue = wonDeals.reduce((sum, deal) => sum + (deal?.value || 0), 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
