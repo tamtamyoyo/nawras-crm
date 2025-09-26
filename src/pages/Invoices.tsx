@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Eye, Trash2, Send, Clock, CheckCircle, XCircle, TestTube, Receipt, AlertCircle, DollarSign } from 'lucide-react'
+import { Plus, Trash2, Send, Clock, CheckCircle, XCircle, TestTube, Receipt, AlertCircle, DollarSign } from 'lucide-react'
 import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData } from '../utils/demo-data'
 import { InvoicesTable } from '@/components/invoices/invoices-table'
@@ -20,11 +20,13 @@ import { LogoUpload } from '@/components/invoices/LogoUpload'
 import { useStore } from '@/store/useStore'
 import { useAuth } from '../hooks/useAuthHook'
 import { Database } from '@/lib/database.types'
-import { invoiceService } from '../services/invoiceService'
+import { invoiceService, InvoiceFormData } from '@/services/invoiceService'
 import { dealService } from '../services/dealService'
 import { customerService } from '../services/customerService'
 import { PAYMENT_TERMS } from '../lib/standardTemplate'
 import { InvoiceItem } from '@/types/invoice'
+import { isOfflineMode, setSupabaseOffline } from '../utils/offlineMode'
+import { supabase } from '@/lib/supabase-client'
 
 type Invoice = Database['public']['Tables']['invoices']['Row']
 type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
@@ -33,15 +35,15 @@ type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
 const INVOICE_STATUS = [
   { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-800', icon: Clock },
   { value: 'sent', label: 'Sent', color: 'bg-blue-100 text-blue-800', icon: Send },
-  { value: 'viewed', label: 'Viewed', color: 'bg-yellow-100 text-yellow-800', icon: Eye },
   { value: 'paid', label: 'Paid', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  { value: 'overdue', label: 'Overdue', color: 'bg-red-100 text-red-800', icon: XCircle },
+  { value: 'overdue', label: 'Overdue', color: 'bg-red-100 text-red-800', icon: AlertCircle },
   { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-100 text-gray-800', icon: XCircle },
 ]
 
 const invoiceSchema = z.object({
   invoice_number: z.string().min(1, 'Invoice number is required'),
-  deal_id: z.string().min(1, 'Deal is required'),
+  customer_id: z.string().optional(),
+  deal_id: z.string().min(1, 'Deal ID is required'),
   status: z.string().min(1, 'Status is required'),
   payment_terms: z.string().min(1, 'Payment terms are required'),
   due_date: z.string().optional(),
@@ -59,7 +61,7 @@ const invoiceSchema = z.object({
   payment_method: z.string().optional()
 })
 
-type InvoiceFormData = z.infer<typeof invoiceSchema>
+type FormData = z.infer<typeof invoiceSchema>
 
 export default function Invoices() {
 
@@ -90,13 +92,16 @@ export default function Invoices() {
   const { user } = useAuth()
   const { toast } = useToast()
   
-  const form = useForm<InvoiceFormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
+      invoice_number: '',
+      customer_id: '',
       deal_id: '',
       status: 'draft',
       payment_terms: 'net_30',
       due_date: '',
+      source: '',
       notes: '',
       amount: 0,
       tax_amount: 0,
@@ -174,14 +179,34 @@ export default function Invoices() {
     }
   }
 
-  const handleSubmit = async (data: InvoiceFormData) => {
+  const handleSubmit = async (data: FormData) => {
     if (!user) return
 
     setLoading(true)
     try {
+      // Convert FormData to InvoiceFormData
+      const invoiceData: InvoiceFormData = {
+        invoice_number: data.invoice_number,
+        customer_id: data.customer_id,
+        deal_id: data.deal_id,
+        status: data.status,
+        payment_terms: data.payment_terms,
+        due_date: data.due_date,
+        source: data.source,
+        notes: data.notes,
+        amount: data.amount,
+        tax_amount: data.tax_amount,
+        total_amount: data.total_amount,
+        tax_rate: data.tax_rate,
+        responsible_person: data.responsible_person,
+        billing_address: data.billing_address,
+        purchase_order_number: data.purchase_order_number,
+        payment_method: data.payment_method
+      }
+
       if (showEditModal && selectedInvoice) {
         // Update existing invoice
-        const updatedInvoice = await invoiceService.updateInvoice(selectedInvoice.id, data, invoiceItems, selectedInvoice)
+        const updatedInvoice = await invoiceService.updateInvoice(selectedInvoice.id, invoiceData, invoiceItems, selectedInvoice)
         updateInvoice(selectedInvoice.id, updatedInvoice as any)
         // Refresh the invoice list
         await loadData()
@@ -191,7 +216,7 @@ export default function Invoices() {
         })
       } else {
         // Create new invoice
-        const newInvoice = await invoiceService.createInvoice(data, invoiceItems, user?.id)
+        const newInvoice = await invoiceService.createInvoice(invoiceData, invoiceItems, user?.id)
         addInvoice(newInvoice as any)
         // Refresh the invoice list
         await loadData()
@@ -251,7 +276,26 @@ export default function Invoices() {
           purchase_order_number: invoice.purchase_order_number || null,
           payment_method: invoice.payment_method || null
         }
-        await invoiceService.updateInvoice(invoice.id, { status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' })
+        const formData: InvoiceFormData = {
+          invoice_number: invoice.invoice_number,
+          customer_id: invoice.customer_id,
+          deal_id: invoice.deal_id || '',
+          status: newStatus,
+          payment_terms: invoice.payment_terms,
+          due_date: invoice.due_date,
+          source: invoice.source,
+          notes: invoice.notes,
+          amount: invoice.amount,
+          tax_amount: invoice.tax_amount,
+          total_amount: invoice.total_amount,
+          tax_rate: invoice.tax_rate || 0,
+          responsible_person: (invoice.responsible_person || 'Mr. Ali') as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+          billing_address: invoice.billing_address,
+          purchase_order_number: invoice.purchase_order_number,
+          payment_method: invoice.payment_method
+        }
+        const invoiceItems = invoice.items ? JSON.parse(invoice.items as string) : []
+        await invoiceService.updateInvoice(invoice.id, formData, invoiceItems, invoice)
         const updatedInvoices = await invoiceService.getInvoices()
         setInvoices(updatedInvoices as unknown as Invoice[])
         updateInvoice(invoice.id, updatedInvoice as any)
@@ -282,7 +326,26 @@ export default function Invoices() {
           setSupabaseOffline() // Mark Supabase as offline for future operations
           
           try {
-          const updatedInvoice = await invoiceService.updateInvoice(invoice.id, { status: newStatus as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' })
+          const formData: InvoiceFormData = {
+            invoice_number: invoice.invoice_number,
+            customer_id: invoice.customer_id,
+            deal_id: invoice.deal_id || '',
+            status: newStatus,
+            payment_terms: invoice.payment_terms,
+            due_date: invoice.due_date,
+            source: invoice.source,
+            notes: invoice.notes,
+            amount: invoice.amount,
+            tax_amount: invoice.tax_amount,
+            total_amount: invoice.total_amount,
+            tax_rate: invoice.tax_rate || 0,
+            responsible_person: (invoice.responsible_person || 'Mr. Ali') as 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed',
+            billing_address: invoice.billing_address,
+            purchase_order_number: invoice.purchase_order_number,
+            payment_method: invoice.payment_method
+          }
+          const invoiceItems = invoice.items ? JSON.parse(invoice.items as string) : []
+          const updatedInvoice = await invoiceService.updateInvoice(invoice.id, formData, invoiceItems, invoice)
           const updatedInvoices = await invoiceService.getInvoices()
           setInvoices(updatedInvoices as unknown as Invoice[])
           updateInvoice(invoice.id, { status: newStatus, updated_at: new Date().toISOString() } as any)
@@ -359,10 +422,12 @@ export default function Invoices() {
     setSelectedInvoice(invoice)
     form.reset({
       invoice_number: invoice.invoice_number,
+      customer_id: invoice.customer_id || '',
       deal_id: invoice.deal_id || '',
       status: invoice.status,
       payment_terms: invoice.payment_terms,
       due_date: invoice.due_date || '',
+      source: invoice.source || '',
       notes: invoice.notes || '',
       amount: invoice.amount,
       tax_amount: invoice.tax_amount,

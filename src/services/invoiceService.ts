@@ -10,6 +10,7 @@ type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
 
 export interface InvoiceFormData {
   invoice_number: string
+  customer_id?: string
   deal_id: string
   status: string
   payment_terms: string
@@ -78,7 +79,7 @@ class InvoiceService {
     try {
       const invoiceData: InvoiceInsert = {
         invoice_number: data.invoice_number || this.generateInvoiceNumber(),
-        customer_id: data.deal_id || '',
+        customer_id: data.customer_id || '',
         deal_id: data.deal_id || null,
         amount: data.amount || 0,
         tax_amount: data.tax_amount || 0,
@@ -154,7 +155,7 @@ class InvoiceService {
     try {
       const invoiceData: Partial<InvoiceInsert> = {
         invoice_number: data.invoice_number,
-        customer_id: data.deal_id || '',
+        customer_id: data.customer_id || '',
         deal_id: data.deal_id || null,
         amount: data.amount || 0,
         tax_amount: data.tax_amount || 0,

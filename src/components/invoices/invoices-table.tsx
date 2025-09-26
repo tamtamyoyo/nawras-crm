@@ -32,7 +32,8 @@ const INVOICE_STATUS = [
   { value: 'draft', label: 'Draft' },
   { value: 'sent', label: 'Sent' },
   { value: 'paid', label: 'Paid' },
-  { value: 'overdue', label: 'Overdue' }
+  { value: 'overdue', label: 'Overdue' },
+  { value: 'cancelled', label: 'Cancelled' }
 ]
 
 export function InvoicesTable({

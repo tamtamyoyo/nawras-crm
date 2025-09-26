@@ -59,15 +59,8 @@ export default function Customers() {
   const { executeWithRetry } = useApiRetry()
   const { startLoading, finishLoading, updateLoading } = useLoading()
   
-  // Register validation schema for customer form
-  useEffect(() => {
-    formValidationService.registerSchema('customer', {
-      name: { required: true, message: 'Name is required' },
-      email: { email: true, message: 'Valid email is required' },
-      phone: { phone: true, message: 'Valid phone number is required' },
-      company: { required: true, message: 'Company is required' }
-    })
-  }, [])
+  // Customer validation schema is already initialized in formValidationService
+  // No need to override the default schema
 
   const loadCustomers = useCallback(async () => {
     console.log('🔄 Loading customers...')
@@ -145,14 +138,14 @@ export default function Customers() {
         updateLoading(operationId, { progress: 50, message: 'Updating customer...' })
         const updatedCustomer = await customerService.updateCustomer(selectedCustomer.id, data)
         
-        setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? updatedCustomer : c))
+        updateCustomer(selectedCustomer.id, updatedCustomer)
         toast.success('Customer updated successfully!')
       } else {
         // Create new customer
         updateLoading(operationId, { progress: 50, message: 'Creating customer...' })
         const newCustomer = await customerService.createCustomer(data)
         
-        setCustomers(prev => [newCustomer, ...prev])
+        addCustomer(newCustomer)
         toast.success('Customer created successfully!')
       }
       
@@ -184,7 +177,7 @@ export default function Customers() {
       
       await customerService.deleteCustomer(customer.id)
       
-      setCustomers(prev => prev.filter(c => c.id !== customer.id))
+      removeCustomer(customer.id)
       updateLoading(operationId, { progress: 100, message: 'Complete!' })
       toast.success('Customer deleted successfully!')
       

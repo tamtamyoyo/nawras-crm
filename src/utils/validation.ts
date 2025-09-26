@@ -16,7 +16,8 @@ export const customerSchema = z.object({
   company: z.string().max(100, 'Company name too long').optional(),
   address: z.string().max(500, 'Address too long').optional(),
   notes: z.string().max(1000, 'Notes too long').optional(),
-  status: z.enum(['active', 'inactive', 'prospect']).default('active')
+  status: z.enum(['active', 'inactive', 'prospect']).default('active'),
+  responsible_person: z.enum(['Mr. Ali', 'Mr. Mustafa', 'Mr. Taha', 'Mr. Mohammed']).default('Mr. Ali')
 })
 
 // Lead validation schema
