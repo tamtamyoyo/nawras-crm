@@ -259,9 +259,8 @@ class FormValidationService {
           message: 'Customer name is required and must be 2-100 characters'
         },
         email: {
-          required: true,
           email: true,
-          message: 'Valid email address is required'
+          message: 'Please enter a valid email address'
         },
         phone: {
           phone: true,

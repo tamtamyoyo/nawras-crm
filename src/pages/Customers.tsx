@@ -25,6 +25,19 @@ export default function Customers() {
   console.log('🚀 Customers component is mounting')
   console.log('📡 Supabase client available:', !!supabase)
   
+  // Get auth state first before using it
+  const { user, profile } = useAuth();
+  console.log('🔐 Auth state - User email:', user?.email, 'Profile email:', profile?.email, 'User exists:', !!user)
+  
+  // Show authentication state via toast for debugging
+  useEffect(() => {
+    if (user) {
+      toast.success(`Authenticated as: ${user.email || 'Unknown'} (ID: ${user.id})`)
+    } else {
+      toast.error('Not authenticated - user is null')
+    }
+  }, [user])
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'prospect'>('all')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -46,7 +59,7 @@ export default function Customers() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const { customers, setCustomers, addCustomer, updateCustomer, removeCustomer, loading, setLoading } = useStore()
-  const { user } = useAuth()
+  console.log('🔍 Auth state in Customers:', { user: user?.email, profile: profile?.email, hasUser: !!user });
   
   // Initialize error handling services
   const { startLoading, stopLoading } = useLoading()

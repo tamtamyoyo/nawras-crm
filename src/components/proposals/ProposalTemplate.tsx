@@ -206,16 +206,16 @@ export function ProposalTemplate({
   )
   
   // Form validation
-  const { errors, validateAll: validateForm } = useFormValidation(proposalSchema)
   const [formData, setFormData] = useState({
     title: template.name || '',
-    customer_id: '',
-    content: '',
+    customer_id: customerData?.id || '',
+    content: template.name || '',
     total_amount: 0,
-    valid_until: '',
-    deal_id: '',
+    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    deal_id: dealData?.id || '',
     terms: ''
   })
+  const { errors, validateAll: validateForm } = useFormValidation(proposalSchema, formData)
 
   useEffect(() => {
     if (dealData || customerData) {
@@ -304,8 +304,10 @@ export function ProposalTemplate({
   }
   
   const calculateTotal = (): number => {
-    // Calculate total from pricing sections
+    // Calculate total from pricing sections and variables
     let total = 0
+    
+    // Calculate from template sections
     template.sections.forEach(section => {
       if (section.type === 'pricing' && section.content && typeof section.content === 'object') {
         const pricingContent = section.content as { items?: Array<{ quantity?: number; price?: number; rate?: number }> }
@@ -317,6 +319,21 @@ export function ProposalTemplate({
         }
       }
     })
+    
+    // Calculate from variables (items 1-3)
+    for (let i = 1; i <= 3; i++) {
+      const quantity = parseInt(String(variables[`item_${i}_quantity`] || '0')) || 0
+      const price = parseFloat(String(variables[`item_${i}_price`] || '0').replace('$', '')) || 0
+      total += quantity * price
+    }
+    
+    // Add shipping cost
+    const shippingCost = parseFloat(String(variables.shipping_cost || '0').replace('$', '')) || 0
+    total += shippingCost
+    
+    // Update formData with calculated total
+    setFormData(prev => ({ ...prev, total_amount: total }))
+    
     return total
   }
 
@@ -636,8 +653,7 @@ export function ProposalTemplate({
                     value={String(variables.customer_name || '')}
                     onChange={(e) => {
                       setVariables(prev => ({ ...prev, customer_name: e.target.value }))
-                      setFormData(prev => ({ ...prev, customer_id: e.target.value }))
-                      // Field validation removed
+                      setFormData(prev => ({ ...prev, customer_id: customerData?.id || 'customer-1' }))
                     }}
                     placeholder="Enter customer name"
                     className={errors.customer_id ? 'border-red-500' : ''}
@@ -653,12 +669,14 @@ export function ProposalTemplate({
                     value={String(variables.proforma_title || '')}
                     onChange={(e) => {
                       setVariables(prev => ({ ...prev, proforma_title: e.target.value }))
-                      setFormData(prev => ({ ...prev, content: e.target.value }))
-                      // Field validation removed
+                      setFormData(prev => ({ ...prev, title: e.target.value, content: e.target.value }))
                     }}
                     placeholder="Enter proforma invoice title"
-                    className={errors.content ? 'border-red-500' : ''}
+                    className={errors.title ? 'border-red-500' : ''}
                   />
+                  {errors.title && (
+                    <p className="text-sm text-red-500 mt-1">{errors.title}</p>
+                  )}
                   {errors.content && (
                     <p className="text-sm text-red-500 mt-1">{errors.content}</p>
                   )}
@@ -749,6 +767,8 @@ export function ProposalTemplate({
                               [`item_${num}_quantity`]: e.target.value,
                               [`item_${num}_total`]: `$${total.toFixed(2)}`
                             }))
+                            // Recalculate total after state update
+                            setTimeout(() => calculateTotal(), 0)
                           }}
                           placeholder="1"
                         />
@@ -768,6 +788,8 @@ export function ProposalTemplate({
                               [`item_${num}_price`]: formattedPrice,
                               [`item_${num}_total`]: `$${total.toFixed(2)}`
                             }))
+                            // Recalculate total after state update
+                            setTimeout(() => calculateTotal(), 0)
                           }}
                           placeholder="$0.00"
                         />
@@ -831,6 +853,8 @@ export function ProposalTemplate({
                     onChange={(e) => {
                       const cost = e.target.value.startsWith('$') ? e.target.value : `$${e.target.value}`
                       setVariables(prev => ({ ...prev, shipping_cost: cost }))
+                      // Recalculate total after state update
+                      setTimeout(() => calculateTotal(), 0)
                     }}
                     placeholder="$0.00"
                   />

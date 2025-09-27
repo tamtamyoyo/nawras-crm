@@ -1,0 +1,1 @@
+console.log('Checking offline mode status...'); console.log('localStorage VITE_OFFLINE_MODE:', localStorage.getItem('VITE_OFFLINE_MODE')); console.log('import.meta.env.VITE_OFFLINE_MODE:', import.meta.env.VITE_OFFLINE_MODE);

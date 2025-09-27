@@ -44,8 +44,10 @@ export default function ProformaInvoices() {
     console.log('📋 Loading proforma invoices data...')
     
     try {
-      const proposals = await proposalService.getProposals()
-      setProformaInvoices(proposals as any)
+      const result = await proposalService.getProposals()
+      // Handle the correct return structure from proposalService
+      const proposals = result.proposals || []
+      setProformaInvoices(proposals)
     } catch (error) {
       console.error('Error loading proforma invoices:', error)
       // Use mock data as fallback
@@ -197,17 +199,21 @@ export default function ProformaInvoices() {
 
   // Memoized proposal statistics for performance
   const proposalStats = useMemo(() => {
-    const total = proformaInvoices.length
-    const pending = proformaInvoices.filter(p => p.status === 'draft' || p.status === 'sent').length
-    const accepted = proformaInvoices.filter(p => p.status === 'accepted').length
-    const totalValue = proformaInvoices.reduce((sum, p) => sum + ((p as any).total_amount || 0), 0)
+    // Ensure proformaInvoices is always an array
+    const invoices = Array.isArray(proformaInvoices) ? proformaInvoices : []
+    const total = invoices.length
+    const pending = invoices.filter(p => p.status === 'draft' || p.status === 'sent').length
+    const accepted = invoices.filter(p => p.status === 'accepted').length
+    const totalValue = invoices.reduce((sum, p) => sum + ((p as any).total_amount || 0), 0)
     
     return { total, pending, accepted, totalValue }
   }, [proformaInvoices])
 
   // Memoized filtered proposals for performance
   const filteredProformaInvoices = useMemo(() => {
-    return proformaInvoices.filter(proformaInvoice => {
+    // Ensure proformaInvoices is always an array
+    const invoices = Array.isArray(proformaInvoices) ? proformaInvoices : []
+    return invoices.filter(proformaInvoice => {
       const searchLower = searchTerm.toLowerCase()
       const matchesSearch = proformaInvoice.title.toLowerCase().includes(searchLower) ||
                            ((proformaInvoice as any).description || '').toLowerCase().includes(searchLower)

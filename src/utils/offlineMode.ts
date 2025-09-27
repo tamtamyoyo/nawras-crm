@@ -15,7 +15,9 @@ let supabaseOperationalStatus = {
 export function isOfflineMode(): boolean {
   // Check if explicitly set to offline mode via environment variable or localStorage
   if (import.meta.env.VITE_OFFLINE_MODE === 'true' || 
-      (typeof window !== 'undefined' && localStorage.getItem('VITE_OFFLINE_MODE') === 'true')) {
+      (typeof window !== 'undefined' && localStorage.getItem('VITE_OFFLINE_MODE') === 'true') ||
+      (typeof window !== 'undefined' && localStorage.getItem('force_offline_mode') === 'true')) {
+    console.log('🔧 Offline mode explicitly enabled');
     return true;
   }
   
@@ -49,13 +51,22 @@ export function isOfflineMode(): boolean {
     supabaseKey.length > 50
   );
   
+  console.log('🔍 Supabase config check:', { 
+    url: supabaseUrl?.substring(0, 30) + '...', 
+    keyLength: supabaseKey?.length, 
+    isValid: isValidSupabase 
+  });
+  
   // If Supabase is not properly configured, use offline mode
   if (!isValidSupabase) {
+    console.log('🔴 Invalid Supabase config - using offline mode');
     return true;
   }
   
   // In development mode with demo/invalid Supabase config, use offline mode
-  return import.meta.env.MODE === 'development' && !isValidSupabase;
+  const shouldUseOffline = import.meta.env.MODE === 'development' && !isValidSupabase;
+  console.log('🔍 Final offline mode decision:', shouldUseOffline);
+  return shouldUseOffline;
 }
 
 /**

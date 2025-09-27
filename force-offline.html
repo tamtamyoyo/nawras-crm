@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Offline Mode</title>
+</head>
+<body>
+    <h1>Setting Offline Mode</h1>
+    <p>Click the button to force offline mode and redirect to the app.</p>
+    <button onclick="forceOfflineMode()">Force Offline Mode</button>
+    
+    <script>
+        function forceOfflineMode() {
+            // Force offline mode
+            localStorage.setItem('force_offline_mode', 'true');
+            console.log('✅ Offline mode forced');
+            
+            // Clear any existing session to start fresh
+            localStorage.removeItem('offline_session');
+            console.log('🧹 Cleared existing offline session');
+            
+            // Redirect to the app
+            window.location.href = 'http://localhost:5173/customers';
+        }
+        
+        // Auto-execute on load
+        window.onload = function() {
+            setTimeout(forceOfflineMode, 1000);
+        };
+    </script>

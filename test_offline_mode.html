@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Offline Mode</title>
+</head>
+<body>
+    <h1>Testing Offline Mode Detection</h1>
+    <div id="results"></div>
+    <script>
+        const results = document.getElementById('results');
+        
+        // Check localStorage flag
+        const localStorageFlag = localStorage.getItem('VITE_OFFLINE_MODE');
+        results.innerHTML += `<p>localStorage VITE_OFFLINE_MODE: ${localStorageFlag}</p>`;
+        
+        // Set the flag if not set
+        if (!localStorageFlag) {
+            localStorage.setItem('VITE_OFFLINE_MODE', 'true');
+            results.innerHTML += `<p>✅ Set VITE_OFFLINE_MODE to 'true'</p>`;
+        }
+        
+        // Check again
+        const updatedFlag = localStorage.getItem('VITE_OFFLINE_MODE');
+        results.innerHTML += `<p>Updated localStorage VITE_OFFLINE_MODE: ${updatedFlag}</p>`;
+        
+        // Add button to navigate to customers page
+        results.innerHTML += `<br><button onclick="window.location.href='http://localhost:5173/customers'">Go to Customers Page</button>`;
+        
+        console.log('✅ Offline mode flag set:', updatedFlag);
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Offline Mode</title>
+</head>
+<body>
+    <h1>Setting Offline Mode...</h1>
+    <script>
+        // Set offline mode flag in localStorage for this domain
+        localStorage.setItem('VITE_OFFLINE_MODE', 'true');
+        console.log('✅ Offline mode enabled for localhost:5173');
+        
+        // Show confirmation
+        document.body.innerHTML += '<p>✅ Offline mode enabled!</p>';
+        document.body.innerHTML += '<p>Redirecting to customers page...</p>';
+        
+        // Redirect to customers page
+        setTimeout(() => {
+            window.location.href = '/customers';
+        }, 2000);
+    </script>
+</body>
+</html>

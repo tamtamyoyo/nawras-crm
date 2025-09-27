@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <script>
+        // Wait for page to load, then fill login form
+        setTimeout(() => {
+            const emailInput = document.querySelector('input[type="email"]');
+            const passwordInput = document.querySelector('input[type="password"]');
+            const submitButton = document.querySelector('button[type="submit"]');
+            
+            if (emailInput && passwordInput && submitButton) {
+                emailInput.value = 'test@example.com';
+                passwordInput.value = 'TestPassword123!';
+                
+                // Trigger input events
+                emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Submit form
+                setTimeout(() => {
+                    submitButton.click();
+                }, 100);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

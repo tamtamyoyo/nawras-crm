@@ -17,7 +17,7 @@ interface AuthProviderProps {
 }
 
 const logDev = (...args: unknown[]) => {
-  if (devConfig.enableAuthLogs) {
+  if (devConfig.enableDebugLogs) {
     console.log('[Auth]', ...args);
   }
 };
@@ -28,8 +28,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if we're in offline mode using centralized detection (memoized to prevent re-renders)
-  const offlineModeActive = useMemo(() => isOfflineMode(), []);
+  // Check if we're in offline mode using centralized detection (re-check on each render to detect localStorage changes)
+  const offlineModeActive = isOfflineMode();
 
   const createFallbackProfile = useCallback((userId: string, email: string): UserProfile => {
     logDev('Creating fallback profile for:', email);
@@ -88,6 +88,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.error('❌ Failed to parse offline session:', error);
           localStorage.removeItem('offline_session');
         }
+      } else {
+        // Auto-authenticate with test user in offline mode
+        logDev('🔧 Auto-authenticating test user in offline mode');
+        const mockUserData = {
+          id: `offline-user-${Date.now()}`,
+          email: 'test@example.com',
+          user_metadata: {
+            full_name: 'Test User'
+          },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        };
+        
+        const mockSessionData = {
+          access_token: 'offline-token',
+          refresh_token: 'offline-refresh',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: mockUserData
+        };
+        
+        const mockProfileData = {
+          id: mockUserData.id,
+          email: mockUserData.email,
+          full_name: mockUserData.user_metadata.full_name,
+          avatar_url: null,
+          phone: null,
+          company: 'Nawras CRM',
+          bio: 'Offline development user',
+          role: 'admin' as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        const offlineSession = {
+          user: mockUserData,
+          session: mockSessionData,
+          profile: mockProfileData
+        };
+        
+        localStorage.setItem('offline_session', JSON.stringify(offlineSession));
+        
+        setUser(mockUserData as unknown as User);
+        setSession(mockSessionData as unknown as Session);
+        setProfile(mockProfileData);
+        logDev('✅ Auto-authentication successful:', mockUserData.email);
       }
       setLoading(false);
       return;
