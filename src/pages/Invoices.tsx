@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -482,15 +482,20 @@ export default function Invoices() {
 
   // Removed unused getStatusConfig function
 
-  const isOverdue = (invoice: Invoice) => {
+  const isOverdue = useCallback((invoice: Invoice) => {
     if (invoice.status === 'paid' || !invoice.due_date) return false
     return new Date(invoice.due_date) < new Date()
-  }
+  }, [])
 
-  const totalInvoices = invoices.length
-  const paidInvoices = invoices.filter(i => i.status === 'paid').length
-  const overdueInvoices = invoices.filter(i => isOverdue(i)).length
-  const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total_amount, 0)
+  // Memoized invoice statistics for performance
+  const invoiceStats = useMemo(() => {
+    const totalInvoices = invoices.length
+    const paidInvoices = invoices.filter(i => i.status === 'paid').length
+    const overdueInvoices = invoices.filter(i => isOverdue(i)).length
+    const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total_amount, 0)
+    
+    return { totalInvoices, paidInvoices, overdueInvoices, totalRevenue }
+  }, [invoices, isOverdue])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -598,7 +603,7 @@ export default function Invoices() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Commercial Invoices</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalInvoices}</p>
+                  <p className="text-2xl font-bold text-gray-900">{invoiceStats.totalInvoices}</p>
                 </div>
               </div>
             </CardContent>
@@ -612,7 +617,7 @@ export default function Invoices() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Paid</p>
-                  <p className="text-2xl font-bold text-gray-900">{paidInvoices}</p>
+                  <p className="text-2xl font-bold text-gray-900">{invoiceStats.paidInvoices}</p>
                 </div>
               </div>
             </CardContent>
@@ -626,7 +631,7 @@ export default function Invoices() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Overdue</p>
-                  <p className="text-2xl font-bold text-gray-900">{overdueInvoices}</p>
+                  <p className="text-2xl font-bold text-gray-900">{invoiceStats.overdueInvoices}</p>
                 </div>
               </div>
             </CardContent>
@@ -640,7 +645,7 @@ export default function Invoices() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalRevenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">${invoiceStats.totalRevenue.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>

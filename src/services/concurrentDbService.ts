@@ -64,7 +64,7 @@ export class ConcurrentDbService {
       
       return OperationLock.withLock(lockKey, async () => {
         // First, get the current record to check version
-        const { data: currentRecord, error: fetchError } = await supabase
+        const { data: currentRecord, error: fetchError } = await (supabase as any)
           .from(table)
           .select('*')
           .eq('id', id)
@@ -131,7 +131,7 @@ export class ConcurrentDbService {
           return `${field}.eq.${value}`;
         }).join(',');
         
-        const { data: existing } = await supabase
+        const { data: existing } = await (supabase as any)
           .from(table)
           .select('id')
           .or(conditions)
@@ -142,7 +142,7 @@ export class ConcurrentDbService {
         }
       }
       
-      const { data: created, error } = await supabase
+      const { data: created, error } = await (supabase as any)
         .from(table)
         .insert({
           ...data,
@@ -172,7 +172,7 @@ export class ConcurrentDbService {
       const lockKey = `${table}-${id}`;
       
       return OperationLock.withLock(lockKey, async () => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from(table)
           .delete()
           .eq('id', id)

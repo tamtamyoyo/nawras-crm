@@ -12,7 +12,7 @@ interface DatabaseError {
 
 interface DatabaseOperation {
   table: string
-  operation: 'select' | 'insert' | 'update' | 'delete'
+  operation: 'select' | 'insert' | 'update' | 'delete' | 'upsert'
   data?: unknown
   filters?: Record<string, unknown>
   options?: Record<string, unknown>
@@ -62,29 +62,29 @@ class DatabaseErrorHandlingService {
    */
   private setupDefaultFallbackStrategies(): void {
     // Read operations - use cache as fallback
-    this.fallbackStrategies.set('SELECT', {
+    this.fallbackStrategies.set('select', {
       useCache: true,
       useDefaultValue: [],
       retryCount: 2
     })
 
     // Write operations - use offline queue
-    this.fallbackStrategies.set('INSERT', {
+    this.fallbackStrategies.set('insert', {
       useOfflineQueue: true,
       retryCount: 3
     })
 
-    this.fallbackStrategies.set('UPDATE', {
+    this.fallbackStrategies.set('update', {
       useOfflineQueue: true,
       retryCount: 3
     })
 
-    this.fallbackStrategies.set('DELETE', {
+    this.fallbackStrategies.set('delete', {
       useOfflineQueue: true,
       retryCount: 2
     })
 
-    this.fallbackStrategies.set('UPSERT', {
+    this.fallbackStrategies.set('upsert', {
       useOfflineQueue: true,
       retryCount: 3
     })
@@ -103,7 +103,7 @@ class DatabaseErrorHandlingService {
 
     try {
       // Try to get from cache first for read operations
-      if (operation.operation === 'SELECT' && strategy.useCache && this.config.enableCaching) {
+      if (operation.operation === 'select' && strategy.useCache && this.config.enableCaching) {
         const cached = offlineService.getCachedData<T>(operationKey, this.config.cacheTimeout)
         if (cached) {
           return cached
@@ -122,7 +122,7 @@ class DatabaseErrorHandlingService {
       }
 
       // Cache successful read operations
-      if (operation.operation === 'SELECT' && this.config.enableCaching) {
+      if (operation.operation === 'select' && this.config.enableCaching) {
         offlineService.setCachedData(operationKey, result.data)
       }
 
@@ -203,9 +203,9 @@ class DatabaseErrorHandlingService {
     // Handle write operations with offline queue
     if (this.isWriteOperation(operation.operation) && strategy.useOfflineQueue && this.config.enableOfflineQueue) {
       let queueOperationType: 'CREATE' | 'UPDATE' | 'DELETE'
-      if (operation.operation === 'INSERT') {
+      if (operation.operation === 'insert') {
         queueOperationType = 'CREATE'
-      } else if (operation.operation === 'UPSERT') {
+      } else if (operation.operation === 'upsert') {
         queueOperationType = 'UPDATE'
       } else {
         queueOperationType = operation.operation as 'UPDATE' | 'DELETE'
@@ -224,7 +224,7 @@ class DatabaseErrorHandlingService {
     }
 
     // Handle read operations with cache fallback
-    if (operation.operation === 'SELECT' && strategy.useCache && this.config.enableCaching) {
+    if (operation.operation === 'select' && strategy.useCache && this.config.enableCaching) {
       const cached = offlineService.getCachedData<T>(operationKey)
       if (cached) {
         console.log(`Using cached data for ${operationKey}`)
@@ -235,7 +235,7 @@ class DatabaseErrorHandlingService {
     // Use default value if provided
     if (strategy.useDefaultValue !== undefined) {
       console.log(`Using default value for ${operationKey}`)
-      return strategy.useDefaultValue
+      return strategy.useDefaultValue as T
     }
 
     // If no fallback worked, throw the original error
@@ -277,7 +277,7 @@ class DatabaseErrorHandlingService {
    * Check if operation is a write operation
    */
   private isWriteOperation(operation: string): boolean {
-    return ['INSERT', 'UPDATE', 'DELETE', 'UPSERT'].includes(operation)
+    return ['insert', 'update', 'delete', 'upsert'].includes(operation)
   }
 
   /**
@@ -353,7 +353,7 @@ class DatabaseErrorHandlingService {
     fallbackStrategy?: FallbackStrategy
   ): Promise<T> {
     return this.executeWithErrorHandling(
-      { table, operation: 'SELECT' },
+      { table, operation: 'select' },
       databaseCall,
       fallbackStrategy
     )
@@ -391,7 +391,7 @@ class DatabaseErrorHandlingService {
     fallbackStrategy?: FallbackStrategy
   ): Promise<T> {
     return this.executeWithErrorHandling(
-      { table, operation: 'DELETE' },
+      { table, operation: 'delete' },
       databaseCall,
       fallbackStrategy
     )

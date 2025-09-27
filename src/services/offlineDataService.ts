@@ -3,8 +3,11 @@ import { isOfflineMode } from '../utils/offlineMode';
 
 // Use Database types for consistency
 export type Customer = Database['public']['Tables']['customers']['Row'];
+export type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
 export type Lead = Database['public']['Tables']['leads']['Row'];
+export type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 export type Deal = Database['public']['Tables']['deals']['Row'];
+export type DealInsert = Database['public']['Tables']['deals']['Insert'];
 export type Proposal = Database['public']['Tables']['proposals']['Row'];
 export type Invoice = Database['public']['Tables']['invoices']['Row'];
 
@@ -144,6 +147,7 @@ const MOCK_DEALS: Deal[] = [
     customer_id: '1',
     lead_id: 'lead-1',
     stage: 'proposal',
+    amount: 50000,
     value: 50000,
     probability: 75,
     expected_close_date: '2024-02-15',
@@ -168,6 +172,7 @@ const MOCK_DEALS: Deal[] = [
     customer_id: '2',
     lead_id: null,
     stage: 'negotiation',
+    amount: 15000,
     value: 15000,
     probability: 60,
     expected_close_date: '2024-02-20',
@@ -238,6 +243,7 @@ const MOCK_INVOICES: Invoice[] = [
     billing_address: '123 Main St, City, State 12345',
     purchase_order_number: 'PO-2024-001',
     payment_method: 'bank_transfer',
+    payment_status: 'pending',
     currency_code: 'USD',
     discount_amount: null,
     discount_percentage: null,
@@ -266,6 +272,7 @@ const MOCK_INVOICES: Invoice[] = [
     billing_address: '456 Oak Ave, City, State 12346',
     purchase_order_number: null,
     payment_method: 'credit_card',
+    payment_status: 'paid',
     currency_code: 'USD',
     discount_amount: null,
     discount_percentage: null,
@@ -326,10 +333,30 @@ class OfflineDataService {
     return customers.find(c => c.id === id) || null;
   }
 
-  async createCustomer(customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>): Promise<Customer> {
+  async createCustomer(customer: CustomerInsert): Promise<Customer> {
     const customers = await this.getCustomers();
     const newCustomer: Customer = {
-      ...customer,
+      name: customer.name,
+      address: customer.address || null,
+      company: customer.company || null,
+      compliance_notes: customer.compliance_notes || null,
+      created_by: customer.created_by || null,
+      credit_limit_usd: customer.credit_limit_usd || null,
+      customs_broker: customer.customs_broker || null,
+      email: customer.email || null,
+      export_documentation_language: customer.export_documentation_language || null,
+      export_license_expiry: customer.export_license_expiry || null,
+      export_license_number: customer.export_license_number || null,
+      notes: customer.notes || null,
+      payment_terms_export: customer.payment_terms_export || null,
+      phone: customer.phone || null,
+      preferred_currency: customer.preferred_currency || null,
+      responsible_person: customer.responsible_person || null,
+      source: customer.source || null,
+      special_handling_requirements: customer.special_handling_requirements || null,
+      status: customer.status || null,
+      tags: customer.tags || null,
+      version: customer.version || null,
       id: this.generateId(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -339,7 +366,7 @@ class OfflineDataService {
     return newCustomer;
   }
 
-  async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
+  async updateCustomer(id: string, updates: Partial<CustomerInsert>): Promise<Customer> {
     const customers = await this.getCustomers();
     const index = customers.findIndex(c => c.id === id);
     if (index === -1) throw new Error('Customer not found');
@@ -364,10 +391,27 @@ class OfflineDataService {
     return this.getFromStorage<Lead>(STORAGE_KEYS.LEADS);
   }
 
-  async createLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead> {
+  async createLead(lead: LeadInsert): Promise<Lead> {
     const leads = await this.getLeads();
     const newLead: Lead = {
-      ...lead,
+      name: lead.name,
+      assigned_to: lead.assigned_to || null,
+      company: lead.company || null,
+      contact_preferences: lead.contact_preferences || null,
+      created_by: lead.created_by || null,
+      email: lead.email || null,
+      follow_up_date: lead.follow_up_date || null,
+      lead_score: lead.lead_score || null,
+      lead_source_detail: lead.lead_source_detail || null,
+      lifecycle_stage: lead.lifecycle_stage || null,
+      notes: lead.notes || null,
+      phone: lead.phone || null,
+      priority_level: lead.priority_level || null,
+      responsible_person: lead.responsible_person || null,
+      score: lead.score || null,
+      source: lead.source || null,
+      status: lead.status || null,
+      version: lead.version || null,
       id: this.generateId(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -377,7 +421,7 @@ class OfflineDataService {
     return newLead;
   }
 
-  async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
+  async updateLead(id: string, updates: Partial<LeadInsert>): Promise<Lead> {
     const leads = await this.getLeads();
     const index = leads.findIndex(l => l.id === id);
     if (index === -1) throw new Error('Lead not found');
@@ -402,10 +446,29 @@ class OfflineDataService {
     return this.getFromStorage<Deal>(STORAGE_KEYS.DEALS);
   }
 
-  async createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated_at'>): Promise<Deal> {
+  async createDeal(deal: DealInsert): Promise<Deal> {
     const deals = await this.getDeals();
     const newDeal: Deal = {
-      ...deal,
+      amount: deal.amount,
+      title: deal.title || null,
+      assigned_to: deal.assigned_to || null,
+      competitor_info: deal.competitor_info || null,
+      created_by: deal.created_by || null,
+      customer_id: deal.customer_id || null,
+      deal_source_detail: deal.deal_source_detail || null,
+      deal_type: deal.deal_type || null,
+      decision_maker_email: deal.decision_maker_email || null,
+      decision_maker_name: deal.decision_maker_name || null,
+      decision_maker_phone: deal.decision_maker_phone || null,
+      description: deal.description || null,
+      expected_close_date: deal.expected_close_date || null,
+      lead_id: deal.lead_id || null,
+      probability: deal.probability || null,
+      responsible_person: deal.responsible_person || null,
+      source: deal.source || null,
+      stage: deal.stage || null,
+      value: deal.value || null,
+      version: deal.version || null,
       id: this.generateId(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -415,7 +478,7 @@ class OfflineDataService {
     return newDeal;
   }
 
-  async updateDeal(id: string, updates: Partial<Deal>): Promise<Deal> {
+  async updateDeal(id: string, updates: Partial<DealInsert>): Promise<Deal> {
     const deals = await this.getDeals();
     const index = deals.findIndex(d => d.id === id);
     if (index === -1) throw new Error('Deal not found');

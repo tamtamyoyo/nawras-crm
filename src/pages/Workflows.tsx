@@ -19,18 +19,25 @@ interface Workflow {
   id: string
   name: string
   description: string
-  status: 'active' | 'inactive' | 'draft'
-  trigger_type: 'manual' | 'scheduled' | 'event'
+  config: any
   created_at: string
   updated_at: string
+  // Add computed properties for UI
+  status?: 'active' | 'inactive' | 'draft'
+  trigger_type?: 'manual' | 'scheduled' | 'event'
 }
 
 interface WorkflowExecution {
   id: string
-  workflow_id: string
-  status: 'running' | 'completed' | 'failed'
+  template_id: string
+  status: string
   started_at: string
-  completed_at?: string
+  completed_at: string
+  result: any
+  created_at: string
+  updated_at: string
+  // Add computed properties for UI
+  workflow_id?: string
   error_message?: string
 }
 
@@ -55,13 +62,19 @@ const Workflows: React.FC = () => {
   const loadWorkflows = async () => {
     try {
       const { data, error } = await supabase
-        .from('workflows')
+        .from('workflow_templates')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50)
 
       if (error) throw error
-      setWorkflows(data || [])
+      // Map database schema to UI interface
+      const mappedWorkflows = (data || []).map(workflow => ({
+        ...workflow,
+        status: 'active' as const, // Default status
+        trigger_type: 'manual' as const // Default trigger type
+      }))
+      setWorkflows(mappedWorkflows)
     } catch (error) {
       console.error('Error loading workflows:', error)
       toast({ title: 'Error', description: 'Failed to load workflows' })
@@ -79,7 +92,12 @@ const Workflows: React.FC = () => {
         .limit(100)
 
       if (error) throw error
-      setExecutions(data || [])
+      // Map database schema to UI interface
+      const mappedExecutions = (data || []).map(execution => ({
+        ...execution,
+        workflow_id: execution.template_id // Map template_id to workflow_id for UI
+      }))
+      setExecutions(mappedExecutions)
     } catch (error) {
       console.error('Error loading executions:', error)
     }
@@ -115,7 +133,7 @@ const Workflows: React.FC = () => {
   const handleDeleteWorkflow = async (workflowId: string) => {
     try {
       const { error } = await supabase
-        .from('workflows')
+        .from('workflow_templates')
         .delete()
         .eq('id', workflowId)
 

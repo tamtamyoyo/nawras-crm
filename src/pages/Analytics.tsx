@@ -192,76 +192,21 @@ export default function Analytics() {
       startDate.setDate(startDate.getDate() - parseInt(dateRange))
 
       // Use analyticsService to get data
-      const { deals, customers } = await analyticsService.getAnalyticsData(startDate, endDate)
-      const events: Event[] = [] // Events functionality removed
+      const analyticsResult = await analyticsService.getAnalyticsData(dateRange)
+      
+      // Use the processed data from analytics service
+      const totalDeals = analyticsResult.totalDeals
+      const totalRevenue = analyticsResult.totalRevenue
+      const totalClients = analyticsResult.totalClients
+      const totalEvents = analyticsResult.totalEvents
+      const dealsByStatus = analyticsResult.dealsByStatus
 
-      // Process data
-      const totalDeals = deals?.length || 0
-      const totalRevenue = deals?.reduce((sum, deal) => sum + (deal.value || 0), 0) || 0
-      const totalClients = customers?.length || 0
-      const totalEvents = events?.length || 0
+      // Use revenue by month from analytics service
+      const monthlyData = analyticsResult.revenueByMonth
 
-      // Deals by status
-      const statusCounts = deals?.reduce((acc, deal) => {
-        acc[deal.stage] = (acc[deal.stage] || 0) + 1
-        return acc
-      }, {} as Record<string, number>) || {}
-
-      const dealsByStatus = Object.entries(statusCounts).map(([status, count], index) => ({
-        name: status.charAt(0).toUpperCase() + status.slice(1),
-        value: count,
-        color: COLORS[index % COLORS.length]
-      }))
-
-      // Revenue by month (last 6 months)
-      const monthlyData = []
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date()
-        date.setMonth(date.getMonth() - i)
-        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
-        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-        
-        const monthDeals = deals?.filter(deal => {
-          const dealDate = new Date(deal.created_at)
-          return dealDate >= monthStart && dealDate <= monthEnd
-        }) || []
-        
-        monthlyData.push({
-          month: date.toLocaleDateString('en-US', { month: 'short' }),
-          revenue: monthDeals.reduce((sum, deal) => sum + (deal.value || 0), 0),
-          deals: monthDeals.length
-        })
-      }
-
-      // Clients by source (mock data for demonstration)
-      const clientsBySource = [
-        { source: 'Website', count: Math.floor(totalClients * 0.4) },
-        { source: 'Referral', count: Math.floor(totalClients * 0.3) },
-        { source: 'Social Media', count: Math.floor(totalClients * 0.2) },
-        { source: 'Direct', count: Math.floor(totalClients * 0.1) }
-      ]
-
-      // Performance metrics
-      const performanceMetrics = [
-        {
-          metric: 'Conversion Rate',
-          current: totalDeals > 0 ? Math.round((deals?.filter(d => d.stage === 'closed_won').length || 0) / totalDeals * 100) : 0,
-          previous: 15,
-          change: 5
-        },
-        {
-          metric: 'Avg Deal Size',
-          current: totalDeals > 0 ? Math.round(totalRevenue / totalDeals) : 0,
-          previous: 8500,
-          change: -2
-        },
-        {
-          metric: 'Client Retention',
-          current: 85,
-          previous: 82,
-          change: 3
-        }
-      ]
+      // Use data from analytics service
+      const clientsBySource = analyticsResult.clientsBySource
+      const performanceMetrics = analyticsResult.performanceMetrics
 
       setAnalyticsData({
         totalDeals,

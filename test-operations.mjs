@@ -1,14 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import { config } from 'dotenv';
-
-// Load environment variables
-config();
-
-// Use the correct API keys
-const supabaseUrl = 'https://ayxrdxjwyjhthkimtdja.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHJkeGp3eWpodGhraW10ZGphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0ODczMTUsImV4cCI6MjA3MzA2MzMxNX0.SwVSA7h-QwZ3km3ms5ENUx6fl1n_EdJhx8XQNI044rg';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './test-config.js';
 
 console.log('🔍 Testing database operations...');
 console.log('Supabase URL:', supabaseUrl);

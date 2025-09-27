@@ -3,7 +3,10 @@ import { offlineDataService } from './offlineDataService'
 import errorHandlingService from './errorHandlingService'
 import performanceMonitoringService from './performanceMonitoringService'
 import { isOfflineMode } from '../utils/offlineMode'
-import type { Customer, CustomerInsert } from '../types/database'
+import type { Database } from '../lib/database.types'
+
+type Customer = Database['public']['Tables']['customers']['Row']
+type CustomerInsert = Database['public']['Tables']['customers']['Insert']
 
 export interface CustomerFilters {
   search?: string
@@ -53,10 +56,7 @@ export class CustomerService {
 
       return data || []
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'CustomerService.getCustomers',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'CustomerService.getCustomers')
 
       if (shouldFallback) {
         const customers = await offlineDataService.getCustomers()
@@ -92,10 +92,7 @@ export class CustomerService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'CustomerService.createCustomer',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'CustomerService.createCustomer')
 
       if (shouldFallback) {
         return offlineDataService.createCustomer(customerData)
@@ -131,10 +128,7 @@ export class CustomerService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'CustomerService.updateCustomer',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'CustomerService.updateCustomer')
 
       if (shouldFallback) {
         return offlineDataService.updateCustomer(id, customerData)
@@ -167,10 +161,7 @@ export class CustomerService {
         throw error
       }
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'CustomerService.deleteCustomer',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'CustomerService.deleteCustomer')
 
       if (shouldFallback) {
         offlineDataService.deleteCustomer(id)

@@ -148,7 +148,9 @@ class ErrorBoundary extends Component<Props, State> {
         errorId: this.state.errorId,
         userDescription: 'User manually reported this error',
         error: this.state.error,
-        errorInfo: this.state.errorInfo
+        errorInfo: {
+          componentStack: this.state.errorInfo?.componentStack || ''
+        }
       })
       alert('Error report sent. Thank you for helping us improve!')
     }

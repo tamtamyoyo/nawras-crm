@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'https://ayxrdxjwyjhthkimtdja.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHJkeGp3eWpodGhraW10ZGphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzQ4NzMxNSwiZXhwIjoyMDczMDYzMzE1fQ.TMGlYTFnaYdheM1cj7Sk9me1MvjrFDkfRhayBUaHsEg'
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+import { supabase } from './test-config.js'
 
 async function checkTriggersAndFunctions() {
   try {

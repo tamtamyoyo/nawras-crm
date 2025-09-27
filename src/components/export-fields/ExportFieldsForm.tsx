@@ -82,7 +82,10 @@ export function ExportFieldsForm({ initialData, onSave, onCancel }: ExportFields
       ]);
 
       if (hsCodesRes.data) setHSCodes(hsCodesRes.data);
-      if (portsRes.data) setExportPorts(portsRes.data);
+      if (portsRes.data) setExportPorts(portsRes.data.map(port => ({
+        ...port,
+        port_type: port.port_type as 'seaport' | 'airport' | 'land_border'
+      })));
       if (certsRes.data) setCertificates(certsRes.data);
       if (incotermsRes.data) setIncoterms(incotermsRes.data);
       if (marketsRes.data) setTargetMarkets(marketsRes.data);

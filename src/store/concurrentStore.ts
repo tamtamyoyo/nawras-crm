@@ -735,7 +735,7 @@ export const useConcurrentStore = create<ConcurrentStoreState>()(subscribeWithSe
     refreshEntity: async (table: string, id: string) => {
       try {
         const { data, error } = await supabase
-          .from(table)
+          .from(table as any)
           .select('*')
           .eq('id', id)
           .single();

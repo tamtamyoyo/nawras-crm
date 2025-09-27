@@ -146,6 +146,7 @@ export default function Deals() {
         const insertData = {
           title: formData.title || '',
           customer_id: formData.customer_id || null,
+          amount: formData.value || 0,
           value: formData.value || 0,
           probability: formData.probability || 0,
           stage: formData.stage || 'prospecting',

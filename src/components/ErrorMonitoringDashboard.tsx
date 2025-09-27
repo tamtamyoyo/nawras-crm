@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { AlertTriangle, TrendingUp, TrendingDown, RefreshCw, Download, Search, X, Bug, Zap, Globe, Database } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -60,7 +60,6 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
   compact = false
 }) => {
   const [errors, setErrors] = useState<ErrorSummary[]>([])
-  const [filteredErrors, setFilteredErrors] = useState<ErrorSummary[]>([])
   const [errorTrends, setErrorTrends] = useState<ErrorTrend[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -230,14 +229,15 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
     setErrorTrends(trendData)
   }
 
-  // Filter errors
-  useEffect(() => {
+  // Memoized filtered errors for performance
+  const filteredErrors = useMemo(() => {
     let filtered = errors
 
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(error => 
-        error.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        error.stack?.toLowerCase().includes(searchTerm.toLowerCase())
+        error.message.toLowerCase().includes(searchLower) ||
+        error.stack?.toLowerCase().includes(searchLower)
       )
     }
 
@@ -254,7 +254,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
       filtered = filtered.filter(error => !!error.resolved === isResolved)
     }
 
-    setFilteredErrors(filtered)
+    return filtered
   }, [errors, searchTerm, typeFilter, severityFilter, resolvedFilter])
 
   // Auto-refresh
@@ -320,28 +320,32 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
     }
   }
 
-  // Calculate error statistics
-  const totalErrors = errors.reduce((sum, error) => sum + error.count, 0)
-  const criticalErrors = errors.filter(error => error.severity === 'critical').length
-  const resolvedErrors = errors.filter(error => error.resolved).length
-  const errorRate = errors.length > 0 ? (resolvedErrors / errors.length) * 100 : 0
+  // Memoized error statistics for performance
+  const errorStats = useMemo(() => {
+    const totalErrors = errors.reduce((sum, error) => sum + error.count, 0)
+    const criticalErrors = errors.filter(error => error.severity === 'critical').length
+    const resolvedErrors = errors.filter(error => error.resolved).length
+    const errorRate = errors.length > 0 ? (resolvedErrors / errors.length) * 100 : 0
+    
+    return { totalErrors, criticalErrors, resolvedErrors, errorRate }
+  }, [errors])
 
   if (compact) {
     return (
       <div className={`flex items-center space-x-4 ${className}`}>
         <div className="flex items-center space-x-2">
           <AlertTriangle className="h-4 w-4 text-red-500" />
-          <span className="text-sm font-medium">{totalErrors} errors</span>
+          <span className="text-sm font-medium">{errorStats.totalErrors} errors</span>
         </div>
         
-        {criticalErrors > 0 && (
+        {errorStats.criticalErrors > 0 && (
           <Badge variant="destructive">
-            {criticalErrors} critical
+            {errorStats.criticalErrors} critical
           </Badge>
         )}
         
         <div className="text-sm text-muted-foreground">
-          {errorRate.toFixed(1)}% resolved
+          {errorStats.errorRate.toFixed(1)}% resolved
         </div>
       </div>
     )
@@ -388,7 +392,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Errors</p>
-                <p className="text-2xl font-bold">{totalErrors}</p>
+                <p className="text-2xl font-bold">{errorStats.totalErrors}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
@@ -400,7 +404,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Critical</p>
-                <p className="text-2xl font-bold text-red-600">{criticalErrors}</p>
+                <p className="text-2xl font-bold text-red-600">{errorStats.criticalErrors}</p>
               </div>
               <Bug className="h-8 w-8 text-red-600" />
             </div>
@@ -412,10 +416,10 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Resolved</p>
-                <p className="text-2xl font-bold text-green-600">{resolvedErrors}</p>
+                <p className="text-2xl font-bold text-green-600">{errorStats.resolvedErrors}</p>
               </div>
               <div className="flex items-center">
-                {errorRate > 50 ? (
+                {errorStats.errorRate > 50 ? (
                   <TrendingUp className="h-8 w-8 text-green-600" />
                 ) : (
                   <TrendingDown className="h-8 w-8 text-red-600" />
@@ -430,10 +434,10 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Resolution Rate</p>
-                <p className="text-2xl font-bold">{errorRate.toFixed(1)}%</p>
+                <p className="text-2xl font-bold">{errorStats.errorRate.toFixed(1)}%</p>
               </div>
               <div className="w-16">
-                <Progress value={errorRate} className="h-2" />
+                <Progress value={errorStats.errorRate} className="h-2" />
               </div>
             </div>
           </CardContent>

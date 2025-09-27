@@ -1,14 +1,7 @@
 // Comprehensive Proposals Page Test Script
 // Tests database connectivity, dashboard integration, analytics, leads management, and cross-page synchronization
 
-import { createClient } from '@supabase/supabase-js'
-import { chromium } from 'playwright'
-import fs from 'fs'
-
-// Supabase configuration
-const supabaseUrl = 'https://ayxrdxjwyjhthkimtdja.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHJkeGp3eWpodGhraW10ZGphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0ODczMTUsImV4cCI6MjA3MzA2MzMxNX0.SwVSA7h-QwZ3km3ms5ENUx6fl1n_EdJhx8XQNI044rg'
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { supabase } from './test-config.js'
 
 class ProposalsTestSuite {
   constructor() {

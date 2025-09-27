@@ -3,7 +3,10 @@ import { offlineDataService } from './offlineDataService'
 import errorHandlingService from './errorHandlingService'
 import performanceMonitoringService from './performanceMonitoringService'
 import { isOfflineMode } from '../utils/offlineMode'
-import type { Deal, DealInsert } from '../types/database'
+import type { Database } from '../lib/database.types'
+
+type Deal = Database['public']['Tables']['deals']['Row']
+type DealInsert = Database['public']['Tables']['deals']['Insert']
 
 export interface DealFilters {
   search?: string
@@ -29,7 +32,7 @@ export class DealService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        const deals = offlineDataService.getDeals()
+        const deals = await offlineDataService.getDeals()
         return this.applyFilters(deals, filters)
       }
 
@@ -58,13 +61,10 @@ export class DealService {
 
       return data || []
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'DealService.getDeals',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'DealService.getDeals')
 
       if (shouldFallback) {
-        const deals = offlineDataService.getDeals()
+        const deals = await offlineDataService.getDeals()
         return this.applyFilters(deals, filters)
       }
 
@@ -82,7 +82,7 @@ export class DealService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        return offlineDataService.addDeal(dealData)
+        return offlineDataService.createDeal(dealData)
       }
 
       const { data, error } = await supabase
@@ -97,13 +97,10 @@ export class DealService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'DealService.createDeal',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'DealService.createDeal')
 
       if (shouldFallback) {
-        return offlineDataService.addDeal(dealData)
+        return offlineDataService.createDeal(dealData)
       }
 
       throw error
@@ -136,10 +133,7 @@ export class DealService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'DealService.updateDeal',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'DealService.updateDeal')
 
       if (shouldFallback) {
         return offlineDataService.updateDeal(id, dealData)
@@ -172,10 +166,7 @@ export class DealService {
         throw error
       }
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'DealService.deleteDeal',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'DealService.deleteDeal')
 
       if (shouldFallback) {
         offlineDataService.deleteDeal(id)

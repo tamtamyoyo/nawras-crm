@@ -57,7 +57,7 @@ export function useAdvancedSearch(): UseAdvancedSearchReturn {
   const [lastSearchOptions, setLastSearchOptions] = useState<SearchOptions | null>(null)
 
   const buildSearchQuery = useCallback((table: string, options: SearchOptions) => {
-    let query = supabase.from(table).select('*', { count: 'exact' })
+    let query = (supabase as any).from(table).select('*', { count: 'exact' })
 
     // Text search
     if (options.query) {

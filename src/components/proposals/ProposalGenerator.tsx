@@ -896,6 +896,7 @@ We are excited about the opportunity to partner with ${customVariables.customer_
           title: deal?.title || '',
           customer_id: deal?.customer_id || '',
           lead_id: deal?.lead_id || null,
+          amount: deal?.value || 0,
           value: deal?.value || 0,
           stage: deal?.stage || 'prospecting',
           probability: deal?.probability || 0,

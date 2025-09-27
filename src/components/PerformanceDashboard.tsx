@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Activity, Zap, Clock, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Gauge } from 'lucide-react'
 import performanceMonitoringService from '../services/performanceMonitoringService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -157,8 +157,8 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     return `${(ms / 1000).toFixed(2)}s`
   }
 
-  // Get performance score
-  const getPerformanceScore = () => {
+  // Memoized performance score calculation
+  const performanceScore = useMemo(() => {
     if (!webVitals.lcp && !webVitals.fid && !webVitals.cls) return null
     
     let score = 100
@@ -179,19 +179,19 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     }
     
     return Math.max(0, score)
-  }
+  }, [webVitals.lcp, webVitals.fid, webVitals.cls, thresholds])
 
-  // Get score color
-  const getScoreColor = (score: number) => {
+  // Memoized score color calculation
+  const getScoreColor = useCallback((score: number) => {
     if (score >= 90) return 'text-green-600'
     if (score >= 70) return 'text-yellow-600'
     return 'text-red-600'
-  }
+  }, [])
 
-  // Clear alerts
-  const clearAlerts = () => {
+  // Clear alerts callback
+  const clearAlerts = useCallback(() => {
     setAlerts([])
-  }
+  }, [])
 
   // Setup auto-refresh
   useEffect(() => {
@@ -212,7 +212,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     )
   }
 
-  const performanceScore = getPerformanceScore()
+  // performanceScore is now memoized above
 
   if (compact) {
     return (

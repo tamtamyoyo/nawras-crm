@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -195,16 +195,31 @@ export default function ProformaInvoices() {
     }
   }
 
-  const filteredProformaInvoices = proformaInvoices.filter(proformaInvoice => {
-    const matchesSearch = proformaInvoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ((proformaInvoice as any).description || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || proformaInvoice.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  // Memoized proposal statistics for performance
+  const proposalStats = useMemo(() => {
+    const total = proformaInvoices.length
+    const pending = proformaInvoices.filter(p => p.status === 'draft' || p.status === 'sent').length
+    const accepted = proformaInvoices.filter(p => p.status === 'accepted').length
+    const totalValue = proformaInvoices.reduce((sum, p) => sum + ((p as any).total_amount || 0), 0)
+    
+    return { total, pending, accepted, totalValue }
+  }, [proformaInvoices])
 
-  const getStatusConfig = (status: string) => {
+  // Memoized filtered proposals for performance
+  const filteredProformaInvoices = useMemo(() => {
+    return proformaInvoices.filter(proformaInvoice => {
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch = proformaInvoice.title.toLowerCase().includes(searchLower) ||
+                           ((proformaInvoice as any).description || '').toLowerCase().includes(searchLower)
+      const matchesStatus = statusFilter === 'all' || proformaInvoice.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [proformaInvoices, searchTerm, statusFilter])
+
+  // Memoized status config lookup
+  const getStatusConfig = useCallback((status: string) => {
     return PROFORMA_INVOICE_STATUSES.find(s => s.value === status) || PROFORMA_INVOICE_STATUSES[0]
-  }
+  }, [])
 
   if (loading) {
     return (
@@ -247,7 +262,7 @@ export default function ProformaInvoices() {
               <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Total Proforma Invoices</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{proformaInvoices.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{proposalStats.total}</p>
               </div>
             </div>
           </CardContent>
@@ -258,9 +273,7 @@ export default function ProformaInvoices() {
               <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {proformaInvoices.filter(p => p.status === 'draft' || p.status === 'sent').length}
-                </p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{proposalStats.pending}</p>
               </div>
             </div>
           </CardContent>
@@ -271,9 +284,7 @@ export default function ProformaInvoices() {
               <CheckSquare className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Accepted</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {proformaInvoices.filter(p => p.status === 'accepted').length}
-                </p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{proposalStats.accepted}</p>
               </div>
             </div>
           </CardContent>
@@ -284,9 +295,7 @@ export default function ProformaInvoices() {
               <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Total Value</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  ${proformaInvoices.reduce((sum, p) => sum + ((p as any).total_amount || 0), 0).toLocaleString()}
-                </p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">${proposalStats.totalValue.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>

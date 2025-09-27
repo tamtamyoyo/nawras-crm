@@ -65,7 +65,7 @@ class InvoiceService {
       }
     } catch (error) {
       console.error('Error loading invoices:', error)
-      await errorHandlingService.handleError(error, 'InvoiceService.getInvoices')
+      await errorHandlingService.handleError(error, { showToast: true, logToConsole: true, reportError: true })
       throw error
     } finally {
       const endTime = performance.now()
@@ -141,7 +141,7 @@ class InvoiceService {
       }
     } catch (error) {
       console.error('Error creating invoice:', error)
-      await errorHandlingService.handleError(error, 'InvoiceService.createInvoice')
+      await errorHandlingService.handleError(error, { showToast: true, logToConsole: true, reportError: true })
       throw error
     } finally {
       const endTime = performance.now()
@@ -219,7 +219,7 @@ class InvoiceService {
       }
     } catch (error) {
       console.error('Error updating invoice:', error)
-      await errorHandlingService.handleError(error, 'InvoiceService.updateInvoice')
+      await errorHandlingService.handleError(error, { showToast: true, logToConsole: true, reportError: true })
       throw error
     } finally {
       const endTime = performance.now()
@@ -250,7 +250,7 @@ class InvoiceService {
       }
     } catch (error) {
       console.error('Error deleting invoice:', error)
-      await errorHandlingService.handleError(error, 'InvoiceService.deleteInvoice')
+      await errorHandlingService.handleError(error, { showToast: true, logToConsole: true, reportError: true })
       throw error
     } finally {
       const endTime = performance.now()

@@ -6,14 +6,14 @@ import { protectFromExtensionInterference } from '../utils/extensionProtection'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 
-import { Users, TrendingUp, DollarSign, Calendar, Plus, Phone, Mail, FileText, ArrowUpRight, ArrowDownRight, Activity, Target, UserPlus, RefreshCw } from 'lucide-react'
+import { TrendingUp, DollarSign, Calendar, Plus, Phone, Mail, FileText, Activity, Target, UserPlus, RefreshCw, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { toast } from 'sonner'
 import { cn } from '../lib/utils'
 import { ResponsiveContainer as ResponsiveWrapper, ResponsiveGrid, ResponsiveCard } from '@/components/ui/responsive'
 import { PageLoadingOverlay, StatsLoadingSkeleton, ChartLoadingSkeleton } from '@/components/ui/loading-states'
+import { Skeleton } from '@/components/ui/skeleton'
 import { VisuallyHidden, AccessibleButton } from '@/components/ui/accessibility'
 
 import type { Database } from '../lib/database.types'
@@ -62,7 +62,7 @@ export default function Dashboard() {
       const chartData = dashboardService.generateChartData(data.deals, data.leads)
       setChartData(chartData)
 
-      toast.success(data.isOffline ? 'Dashboard loaded (offline mode)' : 'Dashboard loaded')
+      toast.success('Dashboard loaded')
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       toast.error('Failed to load dashboard data')
@@ -254,7 +254,7 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                           <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                            {stat.description}
+                            Live
                           </Badge>
                         </div>
                         <p className="text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>

@@ -425,6 +425,7 @@ export function ProposalTemplate({
         deal: {
           id: 'deal-1',
           title: variables.invoice_number ? `Proforma Invoice ${variables.invoice_number}` : template.name,
+          amount: calculateTotal(),
           value: calculateTotal(),
           customer_id: 'customer-1',
           lead_id: null,

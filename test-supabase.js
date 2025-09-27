@@ -1,19 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
-
-// Use the values directly from .env file
-const supabaseUrl = 'https://ayxrdxjwyjhthkimtdja.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHJkeGp3eWpodGhraW10ZGphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0ODczMTUsImV4cCI6MjA3MzA2MzMxNX0.SwVSA7h-QwZ3km3ms5ENUx6fl1n_EdJhx8XQNI044rg'
+import { supabase, supabaseUrl, supabaseAnonKey } from './test-config.js'
 
 console.log('🔧 Testing Supabase connection...')
 console.log('URL:', supabaseUrl ? 'Present' : 'Missing')
 console.log('Key:', supabaseAnonKey ? 'Present' : 'Missing')
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables')
-  process.exit(1)
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 async function testConnection() {
   try {

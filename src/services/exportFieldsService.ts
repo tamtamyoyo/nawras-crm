@@ -145,7 +145,8 @@ export class ExportFieldsService {
           code,
           description,
           category,
-          duty_rate
+          duty_rate,
+          created_at
         )
       `)
       .eq('customer_id', customerId);
@@ -188,13 +189,18 @@ export class ExportFieldsService {
           port_name,
           city,
           country,
-          port_type
+          port_type,
+          is_active,
+          created_at
         )
       `)
       .eq('customer_id', customerId);
 
     if (error) throw error;
-    return data?.map((item: { export_ports: ExportPort }) => item.export_ports).filter(Boolean) || [];
+    return data?.map((item: { export_ports: any }) => ({
+      ...item.export_ports,
+      port_type: item.export_ports.port_type as 'seaport' | 'airport' | 'land_border'
+    })).filter(Boolean) || [];
   }
 
   // Certificates management
@@ -232,7 +238,8 @@ export class ExportFieldsService {
           description,
           issuing_body,
           validity_period_months,
-          is_mandatory
+          is_mandatory,
+          created_at
         )
       `)
       .eq('customer_id', customerId);
@@ -275,7 +282,8 @@ export class ExportFieldsService {
           term_name,
           description,
           risk_transfer_point,
-          cost_responsibility
+          cost_responsibility,
+          created_at
         )
       `)
       .eq('customer_id', customerId);
@@ -318,7 +326,9 @@ export class ExportFieldsService {
           market_name,
           region,
           regulatory_requirements,
-          market_notes
+          market_notes,
+          is_active,
+          created_at
         )
       `)
       .eq('customer_id', customerId)
@@ -362,7 +372,8 @@ export class ExportFieldsService {
           category_name,
           parent_category_id,
           description,
-          export_restrictions
+          export_restrictions,
+          created_at
         )
       `)
       .eq('customer_id', customerId);
@@ -398,12 +409,12 @@ export class ExportFieldsService {
   static async getReferenceData() {
     try {
       const [hsCodes, exportPorts, certificates, incoterms, targetMarkets, productCategories] = await Promise.all([
-        supabase.from('hs_codes').select('id, code, description'),
-        supabase.from('export_ports').select('id, port_code, port_name, city, country'),
-        supabase.from('certificates').select('id, certificate_code, certificate_name, description'),
-        supabase.from('incoterms').select('id, term_code, term_name, description'),
-        supabase.from('target_markets').select('id, market_code, market_name, region'),
-        supabase.from('product_categories').select('id, category_code, category_name, description')
+        supabase.from('hs_codes').select('id, code, description, category, duty_rate, created_at'),
+        supabase.from('export_ports').select('id, port_code, port_name, city, country, port_type, is_active, created_at'),
+        supabase.from('certificates').select('id, certificate_code, certificate_name, description, is_mandatory, issuing_body, validity_period_months, created_at'),
+        supabase.from('incoterms').select('id, term_code, term_name, description, risk_transfer_point, cost_responsibility, created_at'),
+        supabase.from('target_markets').select('id, market_code, market_name, region, regulatory_requirements, market_notes, is_active, created_at'),
+        supabase.from('product_categories').select('id, category_code, category_name, description, created_at')
       ]);
 
       if (hsCodes.error) throw hsCodes.error;
@@ -415,7 +426,10 @@ export class ExportFieldsService {
 
       return {
         hs_codes: hsCodes.data || [],
-        export_ports: exportPorts.data || [],
+        export_ports: (exportPorts.data || []).map(port => ({
+          ...port,
+          port_type: port.port_type as 'seaport' | 'airport' | 'land_border'
+        })),
         certificates: certificates.data || [],
         incoterms: incoterms.data || [],
         target_markets: targetMarkets.data || [],

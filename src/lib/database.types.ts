@@ -6,419 +6,1101 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      users: {
+      analytics_events: {
         Row: {
-          id: string
-          email: string
-          full_name: string | null
-          avatar_url: string | null
-          role: 'admin' | 'manager' | 'sales_rep' | null
           created_at: string | null
-          updated_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          email: string
-          full_name?: string | null
-          avatar_url?: string | null
-          role?: 'admin' | 'manager' | 'sales_rep' | null
           created_at?: string | null
-          updated_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          avatar_url?: string | null
-          role?: 'admin' | 'manager' | 'sales_rep' | null
           created_at?: string | null
-          updated_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
         }
+        Relationships: []
+      }
+      calendar_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_time: string
+          id: string
+          start_time: string
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          start_time: string
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          start_time?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      certificates: {
+        Row: {
+          certificate_code: string
+          certificate_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_mandatory: boolean | null
+          issuing_body: string | null
+          updated_at: string | null
+          validity_period_months: number | null
+        }
+        Insert: {
+          certificate_code: string
+          certificate_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          issuing_body?: string | null
+          updated_at?: string | null
+          validity_period_months?: number | null
+        }
+        Update: {
+          certificate_code?: string
+          certificate_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          issuing_body?: string | null
+          updated_at?: string | null
+          validity_period_months?: number | null
+        }
+        Relationships: []
+      }
+      customer_certificates: {
+        Row: {
+          certificate_id: string
+          created_at: string | null
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          certificate_id: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          certificate_id?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_certificates_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_certificates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      customer_export_ports: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          export_port_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          export_port_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          export_port_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_export_ports_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_export_ports_export_port_id_fkey"
+            columns: ["export_port_id"]
+            isOneToOne: false
+            referencedRelation: "export_ports"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      customer_hs_codes: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          hs_code_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          hs_code_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          hs_code_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_hs_codes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_hs_codes_hs_code_id_fkey"
+            columns: ["hs_code_id"]
+            isOneToOne: false
+            referencedRelation: "hs_codes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      customer_incoterms: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          incoterm_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          incoterm_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          incoterm_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_incoterms_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_incoterms_incoterm_id_fkey"
+            columns: ["incoterm_id"]
+            isOneToOne: false
+            referencedRelation: "incoterms"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      customer_product_categories: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          product_category_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          product_category_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          product_category_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_product_categories_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_product_categories_product_category_id_fkey"
+            columns: ["product_category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      customer_target_markets: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          target_market_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          target_market_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          target_market_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_target_markets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_target_markets_target_market_id_fkey"
+            columns: ["target_market_id"]
+            isOneToOne: false
+            referencedRelation: "target_markets"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       customers: {
         Row: {
-          id: string
-          name: string
-          email: string | null
-          phone: string | null
-          company: string | null
           address: string | null
-          status: 'active' | 'inactive' | 'prospect' | null
-          tags: string[] | null
-          notes: string | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
-          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          export_license_number: string | null
-          export_license_expiry: string | null
-          customs_broker: string | null
-          preferred_currency: string | null
-          payment_terms_export: string | null
-          credit_limit_usd: number | null
-          export_documentation_language: string | null
-          special_handling_requirements: string | null
+          company: string | null
           compliance_notes: string | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          version: number | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          address?: string | null
-          status?: 'active' | 'inactive' | 'prospect' | null
-          tags?: string[] | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          export_license_number?: string | null
-          export_license_expiry?: string | null
-          customs_broker?: string | null
-          preferred_currency?: string | null
-          payment_terms_export?: string | null
-          credit_limit_usd?: number | null
-          export_documentation_language?: string | null
-          special_handling_requirements?: string | null
-          compliance_notes?: string | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          version?: number | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          address?: string | null
-          status?: 'active' | 'inactive' | 'prospect' | null
-          tags?: string[] | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          export_license_number?: string | null
-          export_license_expiry?: string | null
-          customs_broker?: string | null
-          preferred_currency?: string | null
-          payment_terms_export?: string | null
-          credit_limit_usd?: number | null
-          export_documentation_language?: string | null
-          special_handling_requirements?: string | null
-          compliance_notes?: string | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          version?: number | null
-        }
-      }
-      leads: {
-        Row: {
+          created_at: string | null
+          created_by: string | null
+          credit_limit_usd: number | null
+          customs_broker: string | null
+          email: string | null
+          export_documentation_language: string | null
+          export_license_expiry: string | null
+          export_license_number: string | null
           id: string
           name: string
-          email: string | null
-          phone: string | null
-          company: string | null
-          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          score: number | null
           notes: string | null
-          assigned_to: string | null
-          created_by: string | null
-          created_at: string | null
+          payment_terms_export: string | null
+          phone: string | null
+          preferred_currency: string | null
+          responsible_person: string | null
+          source: string | null
+          special_handling_requirements: string | null
+          status: string | null
+          tags: string[] | null
           updated_at: string | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
-          lead_score: number | null
-          priority_level: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preferences: string[] | null
-          follow_up_date: string | null
-          lead_source_detail: string | null
           version: number | null
         }
         Insert: {
+          address?: string | null
+          company?: string | null
+          compliance_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credit_limit_usd?: number | null
+          customs_broker?: string | null
+          email?: string | null
+          export_documentation_language?: string | null
+          export_license_expiry?: string | null
+          export_license_number?: string | null
           id?: string
           name: string
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          score?: number | null
           notes?: string | null
-          assigned_to?: string | null
-          created_by?: string | null
-          created_at?: string | null
+          payment_terms_export?: string | null
+          phone?: string | null
+          preferred_currency?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          special_handling_requirements?: string | null
+          status?: string | null
+          tags?: string[] | null
           updated_at?: string | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage?: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
-          lead_score?: number | null
-          priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preferences?: string[] | null
-          follow_up_date?: string | null
-          lead_source_detail?: string | null
           version?: number | null
         }
         Update: {
+          address?: string | null
+          company?: string | null
+          compliance_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credit_limit_usd?: number | null
+          customs_broker?: string | null
+          email?: string | null
+          export_documentation_language?: string | null
+          export_license_expiry?: string | null
+          export_license_number?: string | null
           id?: string
           name?: string
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          status?: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          score?: number | null
           notes?: string | null
-          assigned_to?: string | null
-          created_by?: string | null
-          created_at?: string | null
+          payment_terms_export?: string | null
+          phone?: string | null
+          preferred_currency?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          special_handling_requirements?: string | null
+          status?: string | null
+          tags?: string[] | null
           updated_at?: string | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          lifecycle_stage?: 'subscriber' | 'lead' | 'marketing_qualified_lead' | 'sales_qualified_lead' | 'opportunity' | 'customer' | 'evangelist' | 'other' | null
-          lead_score?: number | null
-          priority_level?: 'low' | 'medium' | 'high' | 'urgent' | null
-          contact_preferences?: string[] | null
-          follow_up_date?: string | null
-          lead_source_detail?: string | null
           version?: number | null
         }
+        Relationships: []
+      }
+      dashboard_widgets: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          position: Json | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          position?: Json | null
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          position?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       deals: {
         Row: {
-          id: string
-          title: string
-          customer_id: string | null
-          lead_id: string | null
-          value: number
-          stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          probability: number | null
-          expected_close_date: string | null
-          description: string | null
+          amount: number
           assigned_to: string | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
-          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          deal_source_detail: string | null
           competitor_info: string | null
-          decision_maker_name: string | null
-          decision_maker_email: string | null
-          decision_maker_phone: string | null
-          deal_type: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
-          version: number | null
-        }
-        Insert: {
-          id?: string
-          title: string
-          customer_id?: string | null
-          lead_id?: string | null
-          value?: number
-          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          probability?: number | null
-          expected_close_date?: string | null
-          description?: string | null
-          assigned_to?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          deal_source_detail?: string | null
-          competitor_info?: string | null
-          decision_maker_name?: string | null
-          decision_maker_email?: string | null
-          decision_maker_phone?: string | null
-          deal_type?: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
-          version?: number | null
-        }
-        Update: {
-          id?: string
-          title?: string
-          customer_id?: string | null
-          lead_id?: string | null
-          value?: number
-          stage?: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost' | null
-          probability?: number | null
-          expected_close_date?: string | null
-          description?: string | null
-          assigned_to?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          deal_source_detail?: string | null
-          competitor_info?: string | null
-          decision_maker_name?: string | null
-          decision_maker_email?: string | null
-          decision_maker_phone?: string | null
-          deal_type?: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell' | null
-          version?: number | null
-        }
-      }
-      proposals: {
-        Row: {
-          id: string
-          title: string
-          deal_id: string | null
-          customer_id: string | null
-          content: string
-          status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
-          valid_until: string | null
-          created_by: string | null
           created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          deal_source_detail: string | null
+        deal_type: string | null
+        decision_maker_email: string | null
+          decision_maker_name: string | null
+        decision_maker_phone: string | null
+        description: string | null
+          expected_close_date: string | null
+          id: string
+          lead_id: string | null
+          probability: number | null
+          responsible_person: string | null
+          source: string | null
+          stage: string | null
+          title: string | null
           updated_at: string | null
-          notes: string | null
-          total_amount: number | null
-          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
-          validity_period: number | null
-          approval_workflow: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
-          template_used: string | null
-          delivery_method: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
-          estimated_value: number | null
-          version: number | null
+        value: number | null
+        version: number | null
         }
         Insert: {
-          id?: string
-          title: string
-          deal_id?: string | null
-          customer_id?: string | null
-          content: string
-          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
-          valid_until?: string | null
-          created_by?: string | null
+          amount: number
+          assigned_to?: string | null
+          competitor_info?: string | null
           created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_source_detail?: string | null
+        deal_type?: string | null
+        decision_maker_email?: string | null
+          decision_maker_name?: string | null
+        decision_maker_phone?: string | null
+        description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          probability?: number | null
+          responsible_person?: string | null
+          source?: string | null
+          stage?: string | null
+          title: string
           updated_at?: string | null
-          notes?: string | null
-          total_amount?: number | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type?: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
-          validity_period?: number | null
-          approval_workflow?: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
-          template_used?: string | null
-          delivery_method?: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
-          estimated_value?: number | null
-          version?: number | null
+        value?: number | null
+        version?: number | null
         }
         Update: {
-          id?: string
-          title?: string
-          deal_id?: string | null
-          customer_id?: string | null
-          content?: string
-          status?: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | null
-          valid_until?: string | null
-          created_by?: string | null
+          amount?: number
+          assigned_to?: string | null
+          competitor_info?: string | null
           created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_source_detail?: string | null
+        deal_type?: string | null
+        decision_maker_email?: string | null
+        decision_maker_name?: string | null
+        decision_maker_phone?: string | null
+        description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          probability?: number | null
+          responsible_person?: string | null
+          source?: string | null
+          stage?: string | null
+          title?: string
           updated_at?: string | null
-          notes?: string | null
-          total_amount?: number | null
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
-          proposal_type?: 'standard' | 'custom' | 'template' | 'rfp_response' | 'quote' | null
-          validity_period?: number | null
-          approval_workflow?: 'single_approval' | 'multi_level_approval' | 'committee_approval' | 'auto_approval' | null
-          template_used?: string | null
-          delivery_method?: 'email' | 'portal' | 'physical_mail' | 'in_person' | 'fax' | null
-          estimated_value?: number | null
+          value?: number | null
           version?: number | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "deals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      export_licenses: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      export_ports: {
+        Row: {
+          city: string
+          country: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          port_code: string
+          port_name: string
+          port_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          port_code: string
+          port_name: string
+          port_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          port_code?: string
+          port_name?: string
+          port_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hs_codes: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          duty_rate: number | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          duty_rate?: number | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          duty_rate?: number | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      incoterms: {
+        Row: {
+          cost_responsibility: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          risk_transfer_point: string | null
+          term_code: string
+          term_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          cost_responsibility?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          risk_transfer_point?: string | null
+          term_code: string
+          term_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          cost_responsibility?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          risk_transfer_point?: string | null
+          term_code?: string
+          term_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       invoices: {
         Row: {
-          id: string
-          invoice_number: string
-          customer_id: string
-          deal_id: string | null
           amount: number
-          tax_amount: number
-          total_amount: number
-          status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
-          due_date: string
-          paid_date: string | null
-          items: any
-          notes: string | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
-          payment_terms: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
-          tax_rate: number
-          source: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           billing_address: string | null
-          purchase_order_number: string | null
-          payment_method: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
-          currency_code: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          created_at: string | null
+          created_by: string | null
+          currency_code: string | null
+          customer_id: string | null
+          deal_id: string | null
           discount_amount: number | null
           discount_percentage: number | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          items: Json | null
+          notes: string | null
+          paid_date: string | null
+          payment_method: string | null
+          payment_status: string | null
+          payment_terms: string | null
+          purchase_order_number: string | null
+          responsible_person: string | null
+          source: string | null
+          status: string | null
+          tax_amount: number | null
+          tax_rate: number | null
+          total_amount: number | null
+          updated_at: string | null
           version: number | null
         }
         Insert: {
-          id?: string
-          invoice_number: string
-          customer_id: string
-          deal_id?: string | null
-          amount?: number
-          tax_amount?: number
-          total_amount?: number
-          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
-          due_date: string
-          paid_date?: string | null
-          items?: any
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
-          tax_rate?: number
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
+          amount: number
           billing_address?: string | null
-          purchase_order_number?: string | null
-          payment_method?: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
-          currency_code?: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          items?: Json | null
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          payment_terms?: string | null
+          purchase_order_number?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          status?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
           version?: number | null
         }
         Update: {
-          id?: string
-          invoice_number?: string
-          customer_id?: string
-          deal_id?: string | null
           amount?: number
-          tax_amount?: number
-          total_amount?: number
-          status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | null
-          due_date?: string
-          paid_date?: string | null
-          items?: any
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          payment_terms?: 'net_15' | 'net_30' | 'net_45' | 'net_60' | 'due_on_receipt' | null
-          tax_rate?: number
-          source?: 'Website' | 'Referral' | 'Social Media' | 'Cold Call' | 'Email Campaign' | 'Trade Show' | 'Other' | null
-          responsible_person?: 'Mr. Ali' | 'Mr. Mustafa' | 'Mr. Taha' | 'Mr. Mohammed'
           billing_address?: string | null
-          purchase_order_number?: string | null
-          payment_method?: 'bank_transfer' | 'credit_card' | 'debit_card' | 'cash' | 'check' | 'paypal' | 'stripe' | 'other' | null
-          currency_code?: 'USD' | 'EUR' | 'GBP' | 'AED' | 'SAR' | 'CNY' | 'JPY' | null
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          items?: Json | null
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_terms?: string | null
+          purchase_order_number?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          status?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
           version?: number | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      leads: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          contact_preferences: string[] | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          follow_up_date: string | null
+          id: string
+          lead_score: number | null
+          lead_source_detail: string | null
+          lifecycle_stage: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          priority_level: string | null
+          responsible_person: string | null
+          score: number | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          contact_preferences?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          follow_up_date?: string | null
+          id?: string
+          lead_score?: number | null
+          lead_source_detail?: string | null
+          lifecycle_stage?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          priority_level?: string | null
+          responsible_person?: string | null
+          score?: number | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          contact_preferences?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          follow_up_date?: string | null
+          id?: string
+          lead_score?: number | null
+          lead_source_detail?: string | null
+          lifecycle_stage?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          priority_level?: string | null
+          responsible_person?: string | null
+          score?: number | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      product_categories: {
+        Row: {
+          category_code: string
+          category_name: string
+          created_at: string | null
+          description: string | null
+          export_restrictions: string | null
+          id: string
+          parent_category_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_code: string
+          category_name: string
+          created_at?: string | null
+          description?: string | null
+          export_restrictions?: string | null
+          id?: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_code?: string
+          category_name?: string
+          created_at?: string | null
+          description?: string | null
+          export_restrictions?: string | null
+          id?: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      proposal_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      proposals: {
+        Row: {
+          approval_workflow: string | null
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          deal_id: string | null
+          delivery_method: string | null
+          estimated_value: number | null
+          id: string
+          notes: string | null
+          proposal_type: string | null
+          responsible_person: string | null
+          source: string | null
+          status: string | null
+          template_used: string | null
+          title: string | null
+          total_amount: number | null
+          updated_at: string | null
+          valid_until: string | null
+          validity_period: number | null
+          version: number | null
+        }
+        Insert: {
+          approval_workflow?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
+          delivery_method?: string | null
+          estimated_value?: number | null
+          id?: string
+          notes?: string | null
+          proposal_type?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          status?: string | null
+          template_used?: string | null
+          title: string
+          total_amount?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          validity_period?: number | null
+          version?: number | null
+        }
+        Update: {
+          approval_workflow?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
+          delivery_method?: string | null
+          estimated_value?: number | null
+          id?: string
+          notes?: string | null
+          proposal_type?: string | null
+          responsible_person?: string | null
+          source?: string | null
+          status?: string | null
+          template_used?: string | null
+          title?: string
+          total_amount?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          validity_period?: number | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      search_index: {
+        Row: {
+          content: string
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      target_markets: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean
+          market_code: string
+          market_name: string
+          market_notes: string | null
+          region: string | null
+          regulatory_requirements: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          market_code: string
+          market_name: string
+          market_notes?: string | null
+          region?: string | null
+          regulatory_requirements?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          market_code?: string
+          market_name?: string
+          market_notes?: string | null
+          region?: string | null
+          regulatory_requirements?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          result: Json | null
+          started_at: string | null
+          status: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_templates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      workflow_templates: {
+        Row: {
+          config: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -435,3 +1117,85 @@ export interface Database {
     }
   }
 }
+
+type PublicSchema = Database[keyof Database]
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
+        Database[PublicTableNameOrOptions['schema']]['Views'])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
+      Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
+        PublicSchema['Views'])
+    ? (PublicSchema['Tables'] &
+        PublicSchema['Views'])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
+    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
+    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema['Enums']
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
+    ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+    : never

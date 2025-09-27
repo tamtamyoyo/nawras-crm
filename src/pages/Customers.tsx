@@ -4,25 +4,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Users, Plus, Search, Edit, Trash2, Mail, Phone, Building, MapPin, TestTube, Globe } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
-import { offlineDataService } from '../services/offlineDataService'
-
 import { useStore } from '../store/useStore'
 import { useAuth } from '../hooks/useAuthHook'
 import { toast } from 'sonner'
-import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData, clearDemoData } from '../utils/demo-data'
-import { ExportFieldsForm } from '../components/export-fields/ExportFieldsForm'
-import { isOfflineMode, handleSupabaseError, protectFromExtensionInterference } from '../utils/offlineMode'
+import { runInvoiceTests } from '../utils/invoice-test-suite'
+import { ExportFieldsForm } from '../components/ExportFieldsForm'
+import { useLoading } from '../hooks/useLoading'
 import type { Database } from '../lib/database.types'
 
-// Import error handling services
-import { useApiRetry } from '../components/ApiRetryWrapper'
-import { useLoading } from '../components/LoadingIndicator'
-import formValidationService from '../services/formValidationService'
-import databaseErrorHandlingService from '../services/databaseErrorHandlingService'
-import performanceMonitoringService from '../services/performanceMonitoringService'
 import ValidatedForm, { ValidatedInput, ValidatedSelect, ValidatedTextarea } from '../components/ValidatedForm'
 import { customerService } from '../services/customerService'
+import formValidationService from '../services/formValidationService'
 
 
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -48,16 +41,15 @@ export default function Customers() {
     status: 'prospect',
     responsible_person: 'Mr. Ali'
   })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [isRunningTests, setIsRunningTests] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const { customers, setCustomers, addCustomer, updateCustomer, removeCustomer, loading, setLoading } = useStore()
   const { user } = useAuth()
   
   // Initialize error handling services
-  const { executeWithRetry } = useApiRetry()
-  const { startLoading, finishLoading, updateLoading } = useLoading()
+  const { startLoading, stopLoading } = useLoading()
   
   // Customer validation schema is already initialized in formValidationService
   // No need to override the default schema
@@ -76,30 +68,25 @@ export default function Customers() {
       showProgress: true
     }
     
-    startLoading(operation)
+    startLoading()
     
     try {
-      updateLoading(operationId, { progress: 25, message: 'Fetching customers...' })
-      
       const customers = await customerService.getCustomers({
         search: searchTerm,
         status: statusFilter
       })
       
-      updateLoading(operationId, { progress: 75, message: 'Processing data...' })
       setCustomers(customers)
-      
-      updateLoading(operationId, { progress: 100, message: 'Complete!' })
       toast.success(`Loaded ${customers.length} customers successfully`)
       
     } catch (err) {
       console.error('💥 Error in loadCustomers:', err)
       toast.error('Failed to load customers. Please try again.')
     } finally {
-      finishLoading(operationId)
+      stopLoading()
       setLoading(false)
     }
-  }, [searchTerm, statusFilter, setCustomers, setLoading, startLoading, finishLoading, updateLoading])
+  }, [searchTerm, statusFilter, setCustomers, setLoading, startLoading, stopLoading])
 
   // Initial load on component mount
   useEffect(() => {
@@ -126,30 +113,24 @@ export default function Customers() {
       return
     }
     
-    setIsSubmitting(true)
     const operationId = 'save-customer-' + Date.now()
-    startLoading(operationId, { message: 'Saving customer...' })
+    startLoading()
     
     try {
-      updateLoading(operationId, { progress: 25, message: 'Validating data...' })
-      
       if (selectedCustomer) {
         // Update existing customer
-        updateLoading(operationId, { progress: 50, message: 'Updating customer...' })
         const updatedCustomer = await customerService.updateCustomer(selectedCustomer.id, data)
         
         updateCustomer(selectedCustomer.id, updatedCustomer)
         toast.success('Customer updated successfully!')
       } else {
         // Create new customer
-        updateLoading(operationId, { progress: 50, message: 'Creating customer...' })
         const newCustomer = await customerService.createCustomer(data)
         
         addCustomer(newCustomer)
         toast.success('Customer created successfully!')
       }
       
-      updateLoading(operationId, { progress: 100, message: 'Complete!' })
       resetForm()
       
       // Reload customers to ensure UI is in sync with data
@@ -159,8 +140,7 @@ export default function Customers() {
       console.error('💥 Error in handleSubmit:', err)
       toast.error('Failed to save customer. Please try again.')
     } finally {
-      finishLoading(operationId)
-      setIsSubmitting(false)
+      stopLoading()
     }
   }
 
@@ -170,37 +150,23 @@ export default function Customers() {
     }
     
     const operationId = 'delete-customer-' + Date.now()
-    startLoading(operationId, { message: 'Deleting customer...' })
+    startLoading()
     
     try {
-      updateLoading(operationId, { progress: 50, message: 'Removing customer...' })
-      
       await customerService.deleteCustomer(customer.id)
       
       removeCustomer(customer.id)
-      updateLoading(operationId, { progress: 100, message: 'Complete!' })
       toast.success('Customer deleted successfully!')
       
     } catch (err) {
       console.error('💥 Error in handleDelete:', err)
       toast.error('Failed to delete customer. Please try again.')
     } finally {
-      finishLoading(operationId)
+      stopLoading()
     }
   }
 
-  const validateForm = () => {
-    // Use the form validation service
-    const validationResult = formValidationService.validateForm('customer', formData);
-    
-    if (!validationResult.isValid) {
-      setFormErrors(validationResult.errors);
-      return false;
-    }
-    
-    setFormErrors({});
-    return true;
-  }
+
 
   const resetForm = () => {
     setFormData({
@@ -213,8 +179,6 @@ export default function Customers() {
       status: 'prospect',
       responsible_person: 'Mr. Ali'
     })
-    setFormErrors({})
-    setIsSubmitting(false)
     setShowAddModal(false)
     setShowEditModal(false)
     setSelectedCustomer(null)
@@ -247,12 +211,99 @@ export default function Customers() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-red-100 text-red-800'
-      case 'prospect': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'inactive':
+        return 'bg-red-100 text-red-800'
+      case 'prospect':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
+
+  // Memoized CustomerCard component for better performance
+  const CustomerCard = React.memo(({ customer }: { customer: Customer }) => (
+    <Card key={customer.id} className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">{customer.name}</h3>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
+                {customer.status}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+              {customer.email && (
+                <div className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4" />
+                  <span>{customer.email}</span>
+                </div>
+              )}
+              {customer.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4" />
+                  <span>{customer.phone}</span>
+                </div>
+              )}
+              {customer.company && (
+                <div className="flex items-center space-x-2">
+                  <Building className="h-4 w-4" />
+                  <span>{customer.company}</span>
+                </div>
+              )}
+              {customer.address && (
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>{customer.address}</span>
+                </div>
+              )}
+            </div>
+            
+            {customer.notes && (
+              <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                {customer.notes}
+              </p>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2 ml-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedCustomer(customer)
+                setShowExportModal(true)
+              }}
+              data-testid="export-fields-button"
+              title="Manage Export Fields"
+            >
+              <Globe className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEditModal(customer)}
+              data-testid="edit-customer-button"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDelete(customer)}
+              className="text-red-600 hover:text-red-700"
+              data-testid="delete-customer-button"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  ))
 
   return (
     <div className="p-6">
@@ -278,13 +329,18 @@ export default function Customers() {
                 console.log('🚀 Starting comprehensive CRM test suite...')
                 toast.info('Running comprehensive tests... Check console for details')
                 
-                const report = await runComprehensiveTests(user.id)
+                const report = await runInvoiceTests()
+                
+                // Calculate summary from results array
+                const passed = report.filter(r => r.status === 'pass').length
+                const failed = report.filter(r => r.status === 'fail').length
+                const totalTests = report.length
                 
                 // Show summary toast
-                if (report.failed === 0) {
-                  toast.success(`All tests passed! ${report.passed}/${report.totalTests} successful`)
+                if (failed === 0) {
+                  toast.success(`All tests passed! ${passed}/${totalTests} successful`)
                 } else {
-                  toast.error(`${report.failed} tests failed. Check console for details.`)
+                  toast.error(`${failed} tests failed. Check console for details.`)
                 }
                 
                 // Refresh customers to show demo data
@@ -416,85 +472,7 @@ export default function Customers() {
         ) : (
           <div className="grid gap-6">
             {filteredCustomers.map((customer) => (
-              <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{customer.name}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
-                          {customer.status}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                        {customer.email && (
-                          <div className="flex items-center space-x-2">
-                            <Mail className="h-4 w-4" />
-                            <span>{customer.email}</span>
-                          </div>
-                        )}
-                        {customer.phone && (
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4" />
-                            <span>{customer.phone}</span>
-                          </div>
-                        )}
-                        {customer.company && (
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4" />
-                            <span>{customer.company}</span>
-                          </div>
-                        )}
-                        {customer.address && (
-                          <div className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{customer.address}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {customer.notes && (
-                        <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                          {customer.notes}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCustomer(customer)
-                          setShowExportModal(true)
-                        }}
-                        data-testid="export-fields-button"
-                        title="Manage Export Fields"
-                      >
-                        <Globe className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal(customer)}
-                        data-testid="edit-customer-button"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(customer)}
-                        className="text-red-600 hover:text-red-700"
-                        data-testid="delete-customer-button"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <CustomerCard key={customer.id} customer={customer} />
             ))}
           </div>
         )}

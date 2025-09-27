@@ -110,7 +110,7 @@ interface EnhancedDealCardProps {
   isDragging?: boolean
 }
 
-function EnhancedDealCard({ 
+const EnhancedDealCard = React.memo(function EnhancedDealCard({ 
   deal, 
   customer, 
   onEdit, 
@@ -254,7 +254,7 @@ function EnhancedDealCard({
       </CardContent>
     </Card>
   )
-}
+})
 
 interface EnhancedKanbanColumnProps {
   stage: typeof DEAL_STAGES[0]
@@ -270,7 +270,7 @@ interface EnhancedKanbanColumnProps {
   isDraggedOver?: boolean
 }
 
-function EnhancedKanbanColumn({
+const EnhancedKanbanColumn = React.memo(function EnhancedKanbanColumn({
   stage,
   deals,
   customers,
@@ -383,7 +383,7 @@ function EnhancedKanbanColumn({
       </div>
     </div>
   )
-}
+})
 
 interface EnhancedPipelineProps {
   deals: Deal[]

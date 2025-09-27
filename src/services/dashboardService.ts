@@ -112,11 +112,11 @@ class DashboardService {
           }
         } catch (offlineError) {
           console.error('Offline fallback failed:', offlineError)
-          errorHandlingService.handleError(offlineError, 'Failed to load dashboard data from offline storage')
+          errorHandlingService.handleError(offlineError, { showToast: true })
           throw offlineError
         }
       } else {
-        errorHandlingService.handleError(error, 'Failed to load dashboard data')
+        errorHandlingService.handleError(error, { showToast: true })
         throw error
       }
     }

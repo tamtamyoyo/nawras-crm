@@ -40,6 +40,129 @@ const leadSchema = z.object({
 
 type LeadFormData = z.infer<typeof leadSchema>
 
+interface LeadCardProps {
+  lead: Lead
+  onEdit: (lead: Lead) => void
+  onDelete: (lead: Lead) => void
+  onConvertToCustomer: (lead: Lead) => void
+  onExport: (leadId: string) => void
+  getStatusColor: (status: string) => string
+  getStatusIcon: (status: string) => React.ReactNode
+  getScoreColor: (score: number) => string
+}
+
+const LeadCard = React.memo<LeadCardProps>(({ 
+  lead, 
+  onEdit, 
+  onDelete, 
+  onConvertToCustomer, 
+  onExport, 
+  getStatusColor, 
+  getStatusIcon, 
+  getScoreColor 
+}) => {
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
+              <div className="flex items-center space-x-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(lead.status)}`}>
+                  {getStatusIcon(lead.status)}
+                  <span>{lead.status}</span>
+                </span>
+                <div className="flex items-center space-x-1">
+                  <Star className={`h-4 w-4 ${getScoreColor(lead.score || 0)}`} />
+                  <span className={`text-sm font-medium ${getScoreColor(lead.score || 0)}`}>
+                    {lead.score || 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+              {lead.email && (
+                <div className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4" />
+                  <span>{lead.email}</span>
+                </div>
+              )}
+              {lead.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4" />
+                  <span>{lead.phone}</span>
+                </div>
+              )}
+              {lead.company && (
+                <div className="flex items-center space-x-2">
+                  <Building className="h-4 w-4" />
+                  <span>{lead.company}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+              <span>Source: {lead.source?.replace('_', ' ')}</span>
+              <span>•</span>
+              <span>Created: {new Date(lead.created_at).toLocaleDateString()}</span>
+            </div>
+            
+            {lead.notes && (
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                {lead.notes}
+              </p>
+            )}
+          </div>
+          
+          <div className="flex flex-col items-end space-y-2 ml-4">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onExport(lead.id)}
+                title="Manage Export Fields"
+              >
+                <Globe className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(lead)}
+                data-testid="edit-lead-button"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(lead)}
+                className="text-red-600 hover:text-red-700"
+                data-testid="delete-lead-button"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {lead.status === 'qualified' && (
+              <Button
+                size="sm"
+                onClick={() => onConvertToCustomer(lead)}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="convert-lead-button"
+              >
+                Convert to Customer
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
+LeadCard.displayName = 'LeadCard'
+
 export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
@@ -253,7 +376,16 @@ export default function Leads() {
     try {
       setLoading(true)
       
-      await leadService.convertLeadToCustomer(lead.id)
+      // Create customer data from lead data
+      const customerData = {
+        name: lead.name,
+        email: lead.email || '',
+        phone: lead.phone || '',
+        company: lead.company || '',
+        created_by: user?.id || ''
+      }
+      
+      await leadService.convertLeadToCustomer(lead.id, customerData)
       
       toast({
         title: "Success",
@@ -283,13 +415,13 @@ export default function Leads() {
       email: lead.email || '',
       phone: lead.phone || '',
       company: lead.company || '',
-      source: lead.source || 'Other',
-      status: lead.status,
+      source: (lead.source as any) || 'Other',
+      status: lead.status as any,
       lead_score: lead.lead_score || 50,
       notes: lead.notes || '',
-      responsible_person: lead.responsible_person || 'Mr. Ali',
-      lifecycle_stage: lead.lifecycle_stage || 'lead',
-      priority_level: lead.priority_level || 'medium',
+      responsible_person: (lead.responsible_person as any) || 'Mr. Ali',
+      lifecycle_stage: (lead.lifecycle_stage as any) || 'lead',
+      priority_level: (lead.priority_level as any) || 'medium',
       contact_preferences: (lead.contact_preferences as ('email' | 'phone' | 'whatsapp' | 'in_person')[]) || ['email'],
       follow_up_date: lead.follow_up_date || ''
     })
@@ -530,106 +662,20 @@ export default function Leads() {
         ) : (
           <div className="grid gap-6">
             {filteredLeads.map((lead) => (
-              <Card key={lead.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(lead.status)}`}>
-                            {getStatusIcon(lead.status)}
-                            <span>{lead.status}</span>
-                          </span>
-                          <div className="flex items-center space-x-1">
-                            <Star className={`h-4 w-4 ${getScoreColor(lead.score || 0)}`} />
-                            <span className={`text-sm font-medium ${getScoreColor(lead.score || 0)}`}>
-                              {lead.score || 0}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
-                        {lead.email && (
-                          <div className="flex items-center space-x-2">
-                            <Mail className="h-4 w-4" />
-                            <span>{lead.email}</span>
-                          </div>
-                        )}
-                        {lead.phone && (
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4" />
-                            <span>{lead.phone}</span>
-                          </div>
-                        )}
-                        {lead.company && (
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4" />
-                            <span>{lead.company}</span>
-                          </div>
-                        )}
-
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
-                        <span>Source: {lead.source?.replace('_', ' ')}</span>
-                        <span>•</span>
-                        <span>Created: {new Date(lead.created_at).toLocaleDateString()}</span>
-                      </div>
-                      
-                      {lead.notes && (
-                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                          {lead.notes}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col items-end space-y-2 ml-4">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedLeadForExport(lead.id)
-                            setShowExportModal(true)
-                          }}
-                          title="Manage Export Fields"
-                        >
-                          <Globe className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(lead)}
-                          data-testid="edit-lead-button"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(lead)}
-                          className="text-red-600 hover:text-red-700"
-                          data-testid="delete-lead-button"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {lead.status === 'qualified' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleConvertToCustomer(lead)}
-                          className="bg-green-600 hover:bg-green-700"
-                          data-testid="convert-lead-button"
-                        >
-                          Convert to Customer
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onConvertToCustomer={handleConvertToCustomer}
+                onExport={(leadId) => {
+                  setSelectedLeadForExport(leadId)
+                  setShowExportModal(true)
+                }}
+                getStatusColor={getStatusColor}
+                getStatusIcon={getStatusIcon}
+                getScoreColor={getScoreColor}
+              />
             ))}
           </div>
         )}

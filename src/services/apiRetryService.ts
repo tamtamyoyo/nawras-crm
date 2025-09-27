@@ -21,8 +21,8 @@ class ApiRetryService {
     backoffFactor: 2,
     retryCondition: (error: unknown) => {
       // Retry on network errors, 5xx errors, and specific 4xx errors
-      if (!error.response) return true // Network error
-      const status = error.response?.status || error.status
+      if (!(error as any)?.response) return true // Network error
+      const status = (error as any)?.response?.status || (error as any)?.status
       return status >= 500 || status === 408 || status === 429 // Server errors, timeout, rate limit
     },
     onRetry: () => {}
@@ -210,10 +210,10 @@ class ApiRetryService {
       retryCondition: (error: unknown) => {
         // Retry on network errors and specific Supabase errors
         if (!error) return false
-        if (error.code === 'PGRST301') return true // Connection error
-        if (error.code === 'PGRST116') return true // Connection timeout
-        if (error.message?.includes('network')) return true
-        if (error.message?.includes('timeout')) return true
+        if ((error as any)?.code === 'PGRST301') return true // Connection error
+        if ((error as any)?.code === 'PGRST116') return true // Connection timeout
+        if ((error as any)?.message?.includes('network')) return true
+        if ((error as any)?.message?.includes('timeout')) return true
         return false
       }
     }

@@ -3,7 +3,12 @@ import { offlineDataService } from './offlineDataService'
 import { isOfflineMode } from '../utils/offlineMode'
 import errorHandlingService from './errorHandlingService'
 import performanceMonitoringService from './performanceMonitoringService'
-import type { Lead, LeadInsert } from '../types/database'
+import type { Database } from '../lib/database.types'
+
+type Lead = Database['public']['Tables']['leads']['Row']
+type LeadInsert = Database['public']['Tables']['leads']['Insert']
+type Customer = Database['public']['Tables']['customers']['Row']
+type CustomerInsert = Database['public']['Tables']['customers']['Insert']
 
 export interface LeadFilters {
   search?: string
@@ -29,7 +34,7 @@ export class LeadService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        const leads = offlineDataService.getLeads()
+        const leads = await offlineDataService.getLeads()
         return this.applyFilters(leads, filters)
       }
 
@@ -58,13 +63,10 @@ export class LeadService {
 
       return data || []
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'LeadService.getLeads',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'LeadService.getLeads')
 
       if (shouldFallback) {
-        const leads = offlineDataService.getLeads()
+        const leads = await offlineDataService.getLeads()
         return this.applyFilters(leads, filters)
       }
 
@@ -82,7 +84,7 @@ export class LeadService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        return offlineDataService.addLead(leadData)
+        return await offlineDataService.createLead(leadData)
       }
 
       const { data, error } = await supabase
@@ -97,13 +99,10 @@ export class LeadService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'LeadService.createLead',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'LeadService.createLead')
 
       if (shouldFallback) {
-        return offlineDataService.addLead(leadData)
+        return await offlineDataService.createLead(leadData)
       }
 
       throw error
@@ -120,7 +119,7 @@ export class LeadService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        return offlineDataService.updateLead(id, leadData)
+        return await offlineDataService.updateLead(id, leadData)
       }
 
       const { data, error } = await supabase
@@ -136,13 +135,10 @@ export class LeadService {
 
       return data
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'LeadService.updateLead',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'LeadService.updateLead')
 
       if (shouldFallback) {
-        return offlineDataService.updateLead(id, leadData)
+        return await offlineDataService.updateLead(id, leadData)
       }
 
       throw error
@@ -159,7 +155,7 @@ export class LeadService {
       const isOfflineModeActive = isOfflineMode()
       
       if (isOfflineModeActive) {
-        offlineDataService.deleteLead(id)
+        await offlineDataService.deleteLead(id)
         return
       }
 
@@ -172,13 +168,10 @@ export class LeadService {
         throw error
       }
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'LeadService.deleteLead',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'LeadService.deleteLead')
 
       if (shouldFallback) {
-        offlineDataService.deleteLead(id)
+        await offlineDataService.deleteLead(id)
         return
       }
 
@@ -188,17 +181,17 @@ export class LeadService {
     }
   }
 
-  async convertLeadToCustomer(leadId: string, customerData: Record<string, unknown>): Promise<{ customer: Customer; success: boolean }> {
+  async convertLeadToCustomer(leadId: string, customerData: CustomerInsert): Promise<{ customer: Customer; success: boolean }> {
     const operationId = 'convert-lead'
     performanceMonitoringService.startOperation(operationId)
 
     try {
-      const isOfflineMode = offlineDataService.isOfflineMode()
+      const isOfflineModeActive = isOfflineMode()
       
-      if (isOfflineMode) {
+      if (isOfflineModeActive) {
         // Handle offline conversion
-        const customer = offlineDataService.createCustomer(customerData)
-        offlineDataService.deleteLead(leadId)
+        const customer = await offlineDataService.createCustomer(customerData)
+        await offlineDataService.deleteLead(leadId)
         return { customer, success: true }
       }
 
@@ -226,14 +219,11 @@ export class LeadService {
 
       return { customer, success: true }
     } catch (error) {
-      const shouldFallback = errorHandlingService.handleSupabaseError(error, {
-        context: 'LeadService.convertLeadToCustomer',
-        showToast: true
-      })
+      const shouldFallback = errorHandlingService.handleSupabaseError(error, 'LeadService.convertLeadToCustomer')
 
       if (shouldFallback) {
-        const customer = offlineDataService.createCustomer(customerData)
-        offlineDataService.deleteLead(leadId)
+        const customer = await offlineDataService.createCustomer(customerData)
+        await offlineDataService.deleteLead(leadId)
         return { customer, success: true }
       }
 

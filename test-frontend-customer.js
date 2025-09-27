@@ -1,11 +1,5 @@
 // Test customer creation using the same logic as the frontend
-import { createClient } from '@supabase/supabase-js';
-
-// Use the actual environment variables from .env
-const supabaseUrl = 'https://ayxrdxjwyjhthkimtdja.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHJkeGp3eWpodGhraW10ZGphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0ODczMTUsImV4cCI6MjA3MzA2MzMxNX0.SwVSA7h-QwZ3km3ms5ENUx6fl1n_EdJhx8XQNI044rg';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from './test-config.js';
 
 async function testFrontendCustomerCreation() {
   console.log('=== Testing Frontend Customer Creation Logic ===');

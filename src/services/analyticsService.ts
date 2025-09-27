@@ -7,6 +7,7 @@ import type { Database } from '../lib/database.types'
 
 type Deal = Database['public']['Tables']['deals']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
+type Lead = Database['public']['Tables']['leads']['Row']
 
 interface AnalyticsData {
   totalDeals: number
@@ -95,7 +96,7 @@ class AnalyticsService {
       performanceMonitoringService.recordMetric('analytics_data_load', performance.now() - startTime)
       return analyticsData
     } catch (error) {
-      errorHandlingService.handleError(error, 'Failed to load analytics data')
+      errorHandlingService.handleError(error, { showToast: true })
       throw error
     }
   }

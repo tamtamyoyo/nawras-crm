@@ -6,11 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface WorkflowExecution {
   id: string
-  workflow_id: string
-  workflow_name?: string
-  status: 'running' | 'completed' | 'failed'
+  template_id: string
+  status: string
   started_at: string
-  completed_at?: string
+  completed_at: string
+  result: any
+  created_at: string
+  updated_at: string
+  // UI computed properties
+  workflow_id?: string
+  workflow_name?: string
   error_message?: string
   duration?: number
 }
@@ -99,7 +104,7 @@ export const WorkflowExecutions: React.FC<WorkflowExecutionsProps> = ({
                 {executions.map((execution) => (
                   <TableRow key={execution.id}>
                     <TableCell className="font-medium">
-                      {execution.workflow_name || execution.workflow_id}
+                      {execution.workflow_name || execution.workflow_id || execution.template_id}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(execution.status)}>

@@ -247,6 +247,7 @@ class CRMTestRunner {
       const testDeal: Database['public']['Tables']['deals']['Insert'] = {
         title: 'Test Deal for Validation',
         stage: 'prospecting' as const,
+        amount: 50000,
         value: 50000,
         expected_close_date: '2024-03-31',
         probability: 75,

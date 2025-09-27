@@ -93,6 +93,7 @@ export function BatchDownloadModal({
             title: `Deal for Invoice ${inv.invoice_number}`,
             customer_id: inv.customer_id,
             lead_id: null,
+            amount: inv.amount || 0,
             value: inv.amount || 0,
             stage: 'closed_won',
             probability: 100,

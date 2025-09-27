@@ -217,11 +217,11 @@ function TableRenderer({ content }: TableRendererProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse border border-border">
+      <table className="w-full border-collapse border border-gray-200">
         <thead>
           <tr className="bg-muted/50">
             {headers.map((header, index) => (
-              <th key={index} className="border border-border p-2 text-left font-medium">
+              <th key={index} className="border border-gray-200 p-2 text-left font-medium">
                 {header}
               </th>
             ))}
@@ -231,7 +231,7 @@ function TableRenderer({ content }: TableRendererProps) {
           {rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="border border-border p-2">
+                <td key={cellIndex} className="border border-gray-200 p-2">
                   {cell}
                 </td>
               ))}

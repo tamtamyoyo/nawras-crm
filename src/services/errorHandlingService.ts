@@ -20,6 +20,7 @@ export interface ErrorContext {
   severity: 'low' | 'medium' | 'high' | 'critical'
   category: 'network' | 'database' | 'validation' | 'authentication' | 'unknown'
   additionalData?: Record<string, unknown>
+  stored_at?: number
 }
 
 export interface ErrorHandlingOptions {
@@ -252,7 +253,7 @@ class ErrorHandlingService {
         ...baseContext,
         message: (typeof errorObj.message === 'string' ? errorObj.message : String(error)),
         stack: (typeof errorObj.stack === 'string' ? errorObj.stack : undefined),
-        additionalData: error
+        additionalData: error as Record<string, unknown>
       }
     }
 
@@ -263,10 +264,11 @@ class ErrorHandlingService {
   }
 
   private isNetworkError(error: unknown): boolean {
-    if (!error) return false
+    if (!error || typeof error !== 'object') return false
 
-    const message = error.message || ''
-    const code = error.code || ''
+    const errorObj = error as Record<string, unknown>
+    const message = (typeof errorObj.message === 'string' ? errorObj.message : '')
+    const code = (typeof errorObj.code === 'string' ? errorObj.code : '')
 
     return (
       message.includes('Failed to fetch') ||
@@ -402,8 +404,8 @@ class ErrorHandlingService {
 
     return {
       total: storedErrors.length,
-      lastHour: storedErrors.filter(error => error.stored_at > oneHourAgo).length,
-      lastDay: storedErrors.filter(error => error.stored_at > oneDayAgo).length,
+      lastHour: storedErrors.filter(error => error.stored_at && error.stored_at > oneHourAgo).length,
+      lastDay: storedErrors.filter(error => error.stored_at && error.stored_at > oneDayAgo).length,
       byCategory: this.groupErrorsByCategory(storedErrors),
       byContext: this.groupErrorsByContext(storedErrors),
       bySeverity: this.groupErrorsBySeverity(storedErrors)

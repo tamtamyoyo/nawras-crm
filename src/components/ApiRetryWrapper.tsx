@@ -152,7 +152,7 @@ const ApiRetryWrapper: React.FC<ApiRetryWrapperProps> = ({
                     ...op,
                     status: 'retrying' as const,
                     attempt,
-                    error: error.message
+                    error: error instanceof Error ? error.message : 'Unknown error'
                   }
                 : op
             ))

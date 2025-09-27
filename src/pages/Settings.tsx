@@ -43,6 +43,8 @@ import { runComprehensiveTests } from '../test/test-runner'
 import { addDemoData } from '../utils/demo-data'
 
 import { HealthCheck } from '../components/HealthCheck'
+import PerformanceDashboard from '../components/PerformanceDashboard'
+import ErrorMonitoringDashboard from '../components/ErrorMonitoringDashboard'
 
 
 
@@ -596,15 +598,37 @@ export default function Settings() {
 
       {/* System Health Monitoring */}
       {activeTab === 'monitoring' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>System Health Monitoring</CardTitle>
-            <CardDescription>Monitor application performance, health status, and system metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <HealthCheck />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Health Status</CardTitle>
+              <CardDescription>Real-time health checks and system status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HealthCheck />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Metrics</CardTitle>
+              <CardDescription>Monitor application performance and Web Vitals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PerformanceDashboard />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Error Monitoring</CardTitle>
+              <CardDescription>Track and analyze application errors</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ErrorMonitoringDashboard />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Data Management */}

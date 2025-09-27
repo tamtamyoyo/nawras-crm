@@ -1,3 +1,4 @@
+import React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,7 +37,7 @@ const INVOICE_STATUS = [
   { value: 'cancelled', label: 'Cancelled' }
 ]
 
-export function InvoicesTable({
+export const InvoicesTable = React.memo(function InvoicesTable({
   data,
   deals,
   customers,
@@ -223,4 +224,4 @@ export function InvoicesTable({
       searchPlaceholder="Search invoices..."
     />
   )
-}
+})
